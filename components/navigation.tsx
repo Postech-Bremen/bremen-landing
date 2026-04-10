@@ -10,7 +10,6 @@ interface NavigationProps {
 const tabs = [
   { id: "home", label: "홈" },
   { id: "performances", label: "공연" },
-  { id: "photos", label: "사진" },
   { id: "members", label: "멤버" },
 ]
 

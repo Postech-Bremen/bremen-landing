@@ -4,7 +4,7 @@ import { useState } from "react"
 import { Navigation } from "@/components/navigation"
 import { HomeSection } from "@/components/home-section"
 import { PerformancesSection } from "@/components/performances-section"
-import { PhotosSection } from "@/components/photos-section"
+
 import { MembersSection } from "@/components/members-section"
 import { Footer } from "@/components/footer"
 
@@ -17,7 +17,7 @@ export default function Home() {
       <main className="pt-16">
         {activeTab === "home" && <HomeSection />}
         {activeTab === "performances" && <PerformancesSection />}
-        {activeTab === "photos" && <PhotosSection />}
+
         {activeTab === "members" && <MembersSection />}
       </main>
       <Footer />

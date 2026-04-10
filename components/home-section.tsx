@@ -1,4 +1,4 @@
-import { Calendar, MapPin, Users, Music, Clock } from "lucide-react"
+import { Calendar, MapPin, Users, Music, Clock, Instagram, Youtube } from "lucide-react"
 
 const stats = [
   { label: "현재 부원", value: "45" },
@@ -31,6 +31,26 @@ export function HomeSection() {
             함께 연주하고, 공연하며, 음악적 성장을 도모하는 공동체입니다. 
             2001년 창립 이래 꾸준히 포스텍의 음악 문화를 이끌어왔습니다.
           </p>
+          <div className="flex items-center gap-4 mt-6">
+            <a
+              href="https://www.instagram.com/postech.bremen"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center gap-2 px-4 py-2 border border-border hover:bg-muted transition-colors"
+            >
+              <Instagram className="w-4 h-4" />
+              <span className="text-sm font-mono">Instagram</span>
+            </a>
+            <a
+              href="https://www.youtube.com/@postech_bremen"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center gap-2 px-4 py-2 border border-border hover:bg-muted transition-colors"
+            >
+              <Youtube className="w-4 h-4" />
+              <span className="text-sm font-mono">YouTube</span>
+            </a>
+          </div>
         </div>
 
         <div className="grid grid-cols-4 gap-4">

@@ -110,7 +110,9 @@ function MemberCard({ member, isAlumni = false }: MemberCardProps) {
           <div className="flex items-center gap-2 flex-wrap">
             <h3 className="font-bold">{member.name}</h3>
             {member.role && (
-              <span className="text-xs font-mono text-muted-foreground">{member.role}</span>
+              <span className={`text-xs font-mono font-bold ${
+                member.role.includes("밴드장") ? "text-foreground bg-muted px-2 py-1" : "text-muted-foreground"
+              }`}>{member.role}</span>
             )}
           </div>
           <div className="flex items-center gap-1.5 text-sm text-muted-foreground mt-1">
