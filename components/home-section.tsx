@@ -11,12 +11,12 @@ const areas = [
   { title: "밴드 합주", description: "팀별 자율적 합주 및 공연 준비", schedule: "팀별 자율 일정" },
   { title: "악기별 멘토링", description: "악기별 경험자 멘토링 및 기초 레슨", schedule: "주 1-2회" },
   { title: "치어로 밴드", description: "포스텍 응원단 치어로의 응원곡 연주", schedule: "치어로 일정에 따름" },
-  { title: "친목 활동", description: "MT, 폭짜, 경주월드, 스키캠프 등의 친목활동", schedule: "연 4+회" },
+  { title: "친목 활동", description: "MT, 폭짜, 경주월드, 스키캠프 등의 친목활동", schedule: "매우 자주" },
 ]
 
 const events = [
-  { date: "05월 08일", title: "해맞이한마당 공연", location: "78계단 무대", time: "오후 8:00" },
-  { date: "05월 20일", title: "1학기 정기공연", location: "학생회관 아틀라스홀", time: "오후 9:00" },
+  { date: "05월 07일", title: "해맞이한마당 공연", location: "78계단 무대", time: "미정" },
+  { date: "05월 26일", title: "1학기 정기공연", location: "학생회관 아틀라스홀", time: "오후 9:00" },
 ]
 
 export function HomeSection() {
@@ -27,7 +27,7 @@ export function HomeSection() {
           <p className="font-mono text-xs text-muted-foreground mb-2">POSTECH BAND CLUB</p>
           <h1 className="text-3xl font-bold mb-4 text-balance">브레멘 Bremen</h1>
           <p className="text-lg text-muted-foreground max-w-2xl leading-relaxed">
-            포항공과대학교 밴드 동아리 브레멘입니다. 음악을 사랑하는 사람들이 모여
+            포스텍 대표 밴드 동아리 브레멘입니다. 음악을 사랑하는 사람들이 모여
             함께 연주하고, 공연하며, 음악적 성장을 도모하는 공동체입니다.
             2001년 창립 이래 꾸준히 포스텍의 음악 문화를 이끌어왔습니다.
           </p>

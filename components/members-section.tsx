@@ -38,6 +38,14 @@ const activeMembers = [
       { name: "신동훈", instrument: "베이스" },
     ]
   },
+  {
+    year: "2022",
+    members: [
+      { name: "박준혁", instrument: "드럼" },
+      { name: "오예린", instrument: "보컬" },
+      { name: "신동훈", instrument: "베이스" },
+    ]
+  },
 ]
 
 const alumni = [
@@ -61,7 +69,7 @@ const alumni = [
   {
     year: "2023",
     members: [
-      { name: "윤태희", instrument: "드럼", role: "밴드장", current: "LG전자 AI연구소" },
+      { name: "박성주", instrument: "기타", role: "회장", current: "" },
       { name: "강민지", instrument: "보컬", current: "스탠포드 유학" },
       { name: "임재현", instrument: "베이스", current: "토스 개발자" },
     ]
@@ -69,8 +77,8 @@ const alumni = [
   {
     year: "2022",
     members: [
-      { name: "오서준", instrument: "기타", role: "밴드장", current: "구글 코리아" },
-      { name: "신예린", instrument: "키보드", current: "음악 치료사" },
+      { name: "안홍상", instrument: "기타", role: "회장", current: "Polaris3D" },
+      { name: "배준희", instrument: "기타", role: "총무", current: "" },
       { name: "류지훈", instrument: "드럼", current: "배달의민족 개발자" },
       { name: "황수민", instrument: "보컬", current: "싱어송라이터 활동" },
     ]
@@ -89,30 +97,27 @@ interface MemberCardProps {
 
 function MemberCard({ member, isAlumni = false }: MemberCardProps) {
   const InstrumentIcon = instrumentIcons[member.instrument] || User
-  
+
   return (
     <div
-      className={`p-4 transition-colors ${
-        isAlumni 
-          ? "border border-dashed border-muted-foreground/50 hover:border-muted-foreground" 
-          : "border-2 border-foreground hover:bg-muted/30"
-      }`}
+      className={`p-4 transition-colors ${isAlumni
+        ? "border border-dashed border-muted-foreground/50 hover:border-muted-foreground"
+        : "border-2 border-foreground hover:bg-muted/30"
+        }`}
     >
       <div className="flex items-start gap-4">
-        <div className={`w-14 h-14 flex items-center justify-center flex-shrink-0 ${
-          isAlumni 
-            ? "border border-dashed border-muted-foreground/50" 
-            : "border-2 border-foreground"
-        }`}>
+        <div className={`w-14 h-14 flex items-center justify-center flex-shrink-0 ${isAlumni
+          ? "border border-dashed border-muted-foreground/50"
+          : "border-2 border-foreground"
+          }`}>
           <User className="w-7 h-7 text-muted-foreground" />
         </div>
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 flex-wrap">
             <h3 className="font-bold">{member.name}</h3>
             {member.role && (
-              <span className={`text-xs font-mono font-bold ${
-                member.role.includes("밴드장") ? "text-foreground bg-muted px-2 py-1" : "text-muted-foreground"
-              }`}>{member.role}</span>
+              <span className={`text-xs font-mono font-bold ${member.role.includes("밴드장") ? "text-foreground bg-muted px-2 py-1" : "text-muted-foreground"
+                }`}>{member.role}</span>
             )}
           </div>
           <div className="flex items-center gap-1.5 text-sm text-muted-foreground mt-1">
@@ -134,7 +139,7 @@ function MemberCard({ member, isAlumni = false }: MemberCardProps) {
 export function MembersSection() {
   // 학번별로 활동부원과 졸업생을 합쳐서 정렬
   const allYears = ["2025", "2024", "2023", "2022"]
-  
+
   const getMembersForYear = (year: string) => {
     const active = activeMembers.find(y => y.year === year)?.members || []
     const grad = alumni.find(y => y.year === year)?.members || []
@@ -144,10 +149,10 @@ export function MembersSection() {
   return (
     <div className="max-w-5xl mx-auto px-6 py-12">
       <div className="mb-12">
-        <p className="font-mono text-xs text-muted-foreground mb-2">MEMBERS</p>
+        <p className="font-mono text-xs text-muted-foreground mb-2">활동 부원과 졸업생</p>
         <h1 className="text-3xl font-bold mb-4">멤버</h1>
         <p className="text-muted-foreground max-w-2xl">
-          브레멘의 현재 활동 부원과 졸업생 네트워크입니다.
+          브레멘의 현재 활동 부원과 졸업생 리스트입니다.
         </p>
         <div className="flex items-center gap-6 mt-6">
           <div className="flex items-center gap-3">
@@ -165,9 +170,9 @@ export function MembersSection() {
         {allYears.map((year) => {
           const { active, grad } = getMembersForYear(year)
           const totalCount = active.length + grad.length
-          
+
           if (totalCount === 0) return null
-          
+
           return (
             <div key={year} className="mb-12">
               <div className="flex items-center gap-4 mb-6">
