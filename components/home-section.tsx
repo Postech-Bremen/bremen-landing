@@ -15,8 +15,8 @@ const areas = [
 ]
 
 const events = [
-  { date: "5월 8일", title: "해맞이한마당 공연", location: "78계단 무대", time: "오후 8:00" },
-  { date: "5월 20일", title: "1학기 정기공연", location: "학생회관 아틀라스홀", time: "오후 9:00" },
+  { date: "05월 08일", title: "해맞이한마당 공연", location: "78계단 무대", time: "오후 8:00" },
+  { date: "05월 20일", title: "1학기 정기공연", location: "학생회관 아틀라스홀", time: "오후 9:00" },
 ]
 
 export function HomeSection() {
