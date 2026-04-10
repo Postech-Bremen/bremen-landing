@@ -1,6 +1,6 @@
 "use client"
 
-import { Music } from "lucide-react"
+import Image from "next/image"
 
 interface NavigationProps {
   activeTab: string
@@ -20,9 +20,13 @@ export function Navigation({ activeTab, setActiveTab }: NavigationProps) {
       <div className="max-w-5xl mx-auto px-6">
         <div className="flex items-center justify-between h-16">
           <div className="flex items-center gap-3">
-            <div className="w-8 h-8 border border-foreground flex items-center justify-center">
-              <Music className="w-4 h-4" />
-            </div>
+            <Image
+              src="/bremen-logo.jpg"
+              alt="Bremen logo"
+              width={40}
+              height={40}
+              className="rounded"
+            />
             <div>
               <span className="font-mono text-sm font-bold tracking-tight">BREMEN</span>
               <span className="font-mono text-xs text-muted-foreground ml-2">POSTECH</span>

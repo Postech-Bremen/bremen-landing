@@ -8,8 +8,8 @@ const stats = [
 ]
 
 const areas = [
-  { title: "밴드 합주", description: "정기 합주 및 공연 준비", schedule: "매주 화/목 19:00" },
-  { title: "보컬 세션", description: "보컬 트레이닝 및 하모니 연습", schedule: "매주 수 18:00" },
+  { title: "밴드 합주", description: "팀별 자율적 합주 및 공연 준비", schedule: "팀별 자율 일정" },
+  { title: "악기별 멘토링", description: "악기별 경험자 멘토링 및 기초 레슨", schedule: "주 1-2회" },
   { title: "작곡/편곡", description: "오리지널 곡 작업 및 편곡 스터디", schedule: "매주 금 17:00" },
   { title: "녹음 스튜디오", description: "레코딩 및 믹싱 작업", schedule: "예약제 운영" },
 ]
@@ -17,7 +17,6 @@ const areas = [
 const events = [
   { date: "4월 20", title: "봄 정기공연", location: "무은재기념관", time: "오후 7:00" },
   { date: "5월 10", title: "포스텍 축제 공연", location: "대운동장 무대", time: "오후 8:00" },
-  { date: "6월 15", title: "졸업생 송별 공연", location: "학생회관", time: "오후 6:00" },
 ]
 
 export function HomeSection() {
@@ -107,12 +106,9 @@ export function HomeSection() {
             <Users className="w-5 h-5 text-muted-foreground mt-1" />
             <div>
               <h3 className="font-bold mb-2">신입 부원 모집</h3>
-              <p className="text-sm text-muted-foreground mb-4">
+              <p className="text-sm text-muted-foreground">
                 매년 1학기 초에 신입(1학년)을 대상으로 부원을 모집합니다. 
                 악기 경험이 없어도 괜찮습니다. 음악을 사랑하고 함께 연주하고 싶은 마음만 있다면 환영합니다.
-              </p>
-              <p className="font-mono text-xs text-muted-foreground">
-                📍 위치: 학생회관 401호
               </p>
             </div>
           </div>

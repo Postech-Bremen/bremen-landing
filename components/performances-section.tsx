@@ -2,7 +2,6 @@ import { MapPin, ExternalLink, Youtube } from "lucide-react"
 
 const performances = {
   "2026": [
-    { date: "6월 15", title: "졸업생 송별회", venue: "학생회관", type: "송별", youtubeId: null },
     { date: "5월 10", title: "포스텍 축제", venue: "대운동장", type: "축제", youtubeId: null },
     { date: "4월 20", title: "봄 정기공연", venue: "무은재기념관", type: "정기공연", youtubeId: null },
   ],
@@ -20,7 +19,6 @@ const performances = {
     { date: "11월 10", title: "교내 밴드 페스티벌", venue: "학생회관", type: "특별", youtubeId: null },
     { date: "10월 25", title: "할로윈 파티 공연", venue: "동아리방", type: "특별", youtubeId: null },
     { date: "9월 22", title: "신입생 환영회", venue: "학생회관", type: "특별", youtubeId: "dQw4w9WgXcQ" },
-    { date: "5월 18", title: "졸업생 송별 공연", venue: "무은재기념관", type: "송별", youtubeId: null },
     { date: "4월 20", title: "봄 정기공연", venue: "무은재기념관", type: "정기공연", youtubeId: null },
   ],
 }
@@ -30,7 +28,6 @@ const typeColors: Record<string, string> = {
   "축제": "bg-muted text-foreground",
   "버스킹": "border border-foreground text-foreground",
   "특별": "bg-muted text-foreground",
-  "송별": "border border-foreground text-foreground",
 }
 
 export function PerformancesSection() {
