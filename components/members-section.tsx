@@ -1,13 +1,13 @@
 "use client"
 
-import { User, Briefcase, Guitar, Mic, Drum, Piano, CircleDot } from "lucide-react"
+import { User, Briefcase, Guitar, Mic, Drum, Music, Bass } from "lucide-react"
 
 const instrumentIcons: Record<string, React.ElementType> = {
   "기타": Guitar,
   "보컬": Mic,
   "드럼": Drum,
-  "키보드": Piano,
-  "베이스": CircleDot,
+  "키보드": Music,
+  "베이스": Bass,
 }
 
 const activeMembers = [

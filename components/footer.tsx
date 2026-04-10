@@ -9,8 +9,8 @@ export function Footer() {
             <h3 className="font-mono text-sm font-bold mb-4">연락처</h3>
             <div className="space-y-3 text-sm text-muted-foreground">
               <div className="flex items-center gap-2">
-                <Mail className="w-4 h-4" />
-                <span>bremen@postech.ac.kr</span>
+                <Instagram className="w-4 h-4" />
+                <span>@postech.bremen DM</span>
               </div>
               <div className="flex items-center gap-2">
                 <MapPin className="w-4 h-4" />
@@ -64,7 +64,7 @@ export function Footer() {
             <span>포항공과대학교 밴드 동아리</span>
           </div>
           <p className="font-mono text-xs text-muted-foreground">
-            since 1994
+            since 2001
           </p>
         </div>
       </div>

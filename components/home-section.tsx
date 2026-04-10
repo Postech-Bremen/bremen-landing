@@ -10,8 +10,8 @@ const stats = [
 const areas = [
   { title: "밴드 합주", description: "팀별 자율적 합주 및 공연 준비", schedule: "팀별 자율 일정" },
   { title: "악기별 멘토링", description: "악기별 경험자 멘토링 및 기초 레슨", schedule: "주 1-2회" },
-  { title: "녹음", description: "레코딩 및 믹싱 작업", schedule: "필요 시 진행" },
   { title: "치어로 밴드", description: "포스텍 응원단체 치어로의 응원곡 연주", schedule: "경기 일정에 따름" },
+  { title: "친목 활동", description: "MT, 폭짜, 경주월드, 스키캠프 등의 친목활동", schedule: "연 3-4회" },
 ]
 
 const events = [
@@ -29,7 +29,7 @@ export function HomeSection() {
           <p className="text-lg text-muted-foreground max-w-2xl leading-relaxed">
             포항공과대학교 밴드 동아리 브레멘입니다. 음악을 사랑하는 사람들이 모여 
             함께 연주하고, 공연하며, 음악적 성장을 도모하는 공동체입니다. 
-            1994년 창립 이래 꾸준히 포스텍의 음악 문화를 이끌어왔습니다.
+            2001년 창립 이래 꾸준히 포스텍의 음악 문화를 이끌어왔습니다.
           </p>
         </div>
 
