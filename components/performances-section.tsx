@@ -40,7 +40,7 @@ export function PerformancesSection() {
 
 
 
-      {Object.entries(performances).map(([year, events]) => (
+      {Object.entries(performances).sort((a, b) => Number(b[0]) - Number(a[0])).map(([year, events]) => (
         <section key={year} className="mb-12">
           <div className="flex items-center gap-4 mb-6">
             <h2 className="font-mono text-lg font-bold">{year}</h2>

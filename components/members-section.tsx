@@ -149,13 +149,15 @@ export function MembersSection() {
         <p className="text-muted-foreground max-w-2xl">
           브레멘의 현재 활동 부원과 졸업생 네트워크입니다.
         </p>
-        <div className="mt-6 border border-border p-4 bg-muted/30">
-          <p className="text-sm text-muted-foreground mb-3">
-            <span className="font-mono font-bold">실선 테두리</span> = 활동 중인 부원
-          </p>
-          <p className="text-sm text-muted-foreground">
-            <span className="font-mono font-bold">점선 테두리</span> = 졸업생
-          </p>
+        <div className="flex items-center gap-6 mt-6">
+          <div className="flex items-center gap-3">
+            <div className="w-4 h-4 border-2 border-foreground" />
+            <span className="text-sm text-muted-foreground">활동 부원</span>
+          </div>
+          <div className="flex items-center gap-3">
+            <div className="w-4 h-4 border border-dashed border-muted-foreground/50" />
+            <span className="text-sm text-muted-foreground">졸업생</span>
+          </div>
         </div>
       </div>
 
