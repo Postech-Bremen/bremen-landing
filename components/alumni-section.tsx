@@ -1,29 +1,41 @@
 import { User, Briefcase } from "lucide-react"
 
-const alumni = {
-  "2025": [
-    { name: "김민수", instrument: "기타", role: "밴드장", current: "삼성전자 반도체부문" },
-    { name: "이서연", instrument: "보컬", role: "보컬 리더", current: "서울대 대학원 진학" },
-    { name: "박준혁", instrument: "드럼", role: "드럼 파트장", current: "현대자동차 연구소" },
-  ],
-  "2024": [
-    { name: "정하은", instrument: "베이스", role: "부밴드장", current: "카카오 개발자" },
-    { name: "최영민", instrument: "키보드", role: "키보드 파트장", current: "KAIST 대학원 진학" },
-    { name: "송지원", instrument: "기타", role: "기타 파트장", current: "네이버 기획자" },
-    { name: "한승우", instrument: "보컬", role: "음향 담당", current: "음악 프로듀서 활동" },
-  ],
-  "2023": [
-    { name: "윤태희", instrument: "드럼", role: "밴드장", current: "LG전자 AI연구소" },
-    { name: "강민지", instrument: "보컬", role: "보컬 리더", current: "스탠포드 유학" },
-    { name: "임재현", instrument: "베이스", role: "베이스 파트장", current: "토스 개발자" },
-  ],
-  "2022": [
-    { name: "오서준", instrument: "기타", role: "밴드장", current: "구글 코리아" },
-    { name: "신예린", instrument: "키보드", role: "부밴드장", current: "음악 치료사" },
-    { name: "류지훈", instrument: "드럼", role: "드럼 파트장", current: "배달의민족 개발자" },
-    { name: "황수민", instrument: "보컬", role: "홍보 담당", current: "싱어송라이터 활동" },
-  ],
-}
+const alumni = [
+  {
+    year: "2025",
+    members: [
+      { name: "김민수", instrument: "기타", role: "밴드장", current: "삼성전자 반도체부문" },
+      { name: "이서연", instrument: "보컬", role: "보컬 리더", current: "서울대 대학원 진학" },
+      { name: "박준혁", instrument: "드럼", role: "드럼 파트장", current: "현대자동차 연구소" },
+    ]
+  },
+  {
+    year: "2024",
+    members: [
+      { name: "정하은", instrument: "베이스", role: "부밴드장", current: "카카오 개발자" },
+      { name: "최영민", instrument: "키보드", role: "키보드 파트장", current: "KAIST 대학원 진학" },
+      { name: "송지원", instrument: "기타", role: "기타 파트장", current: "네이버 기획자" },
+      { name: "한승우", instrument: "보컬", role: "음향 담당", current: "음악 프로듀서 활동" },
+    ]
+  },
+  {
+    year: "2023",
+    members: [
+      { name: "윤태희", instrument: "드럼", role: "밴드장", current: "LG전자 AI연구소" },
+      { name: "강민지", instrument: "보컬", role: "보컬 리더", current: "스탠포드 유학" },
+      { name: "임재현", instrument: "베이스", role: "베이스 파트장", current: "토스 개발자" },
+    ]
+  },
+  {
+    year: "2022",
+    members: [
+      { name: "오서준", instrument: "기타", role: "밴드장", current: "구글 코리아" },
+      { name: "신예린", instrument: "키보드", role: "부밴드장", current: "음악 치료사" },
+      { name: "류지훈", instrument: "드럼", role: "드럼 파트장", current: "배달의민족 개발자" },
+      { name: "황수민", instrument: "보컬", role: "홍보 담당", current: "싱어송라이터 활동" },
+    ]
+  },
+]
 
 export function AlumniSection() {
   return (
@@ -37,7 +49,7 @@ export function AlumniSection() {
         </p>
       </div>
 
-      {Object.entries(alumni).map(([year, members]) => (
+      {alumni.map(({ year, members }) => (
         <section key={year} className="mb-10">
           <div className="flex items-center gap-4 mb-6">
             <h2 className="font-mono text-lg font-bold">{year}학번</h2>
