@@ -2,7 +2,7 @@ import { Calendar, MapPin, Users, Music, Clock } from "lucide-react"
 
 const stats = [
   { label: "현재 부원", value: "45" },
-  { label: "연간 공연", value: "8" },
+  { label: "연간 공연", value: "6+" },
   { label: "활동 연수", value: "30+" },
   { label: "졸업생 네트워크", value: "500+" },
 ]
@@ -108,11 +108,11 @@ export function HomeSection() {
             <div>
               <h3 className="font-bold mb-2">신입 부원 모집</h3>
               <p className="text-sm text-muted-foreground mb-4">
-                매 학기 초 신입 부원을 모집합니다. 악기 경험이 없어도 괜찮습니다. 
-                음악을 사랑하고 함께 연주하고 싶은 마음만 있다면 누구나 환영합니다.
+                매년 1학기 초에 신입(1학년)을 대상으로 부원을 모집합니다. 
+                악기 경험이 없어도 괜찮습니다. 음악을 사랑하고 함께 연주하고 싶은 마음만 있다면 환영합니다.
               </p>
               <p className="font-mono text-xs text-muted-foreground">
-                다음 모집 기간: 2026년 9월
+                📍 위치: 학생회관 401호
               </p>
             </div>
           </div>

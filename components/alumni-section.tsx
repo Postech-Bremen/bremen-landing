@@ -1,4 +1,4 @@
-import { User, Briefcase, Mail } from "lucide-react"
+import { User, Briefcase } from "lucide-react"
 
 const alumni = {
   "2025": [
@@ -35,21 +35,6 @@ export function AlumniSection() {
           브레멘 졸업생들은 다양한 분야에서 활약하고 있습니다. 
           30년 역사와 함께 500명 이상의 졸업생 네트워크가 형성되어 있습니다.
         </p>
-      </div>
-
-      <div className="border border-border p-6 mb-12">
-        <div className="flex items-start gap-4">
-          <Mail className="w-5 h-5 text-muted-foreground mt-1" />
-          <div>
-            <h3 className="font-bold mb-2">졸업생 연락망</h3>
-            <p className="text-sm text-muted-foreground mb-3">
-              재학생은 동아리 포털을 통해 졸업생 연락처와 디렉토리에 접근할 수 있습니다.
-            </p>
-            <p className="font-mono text-xs text-muted-foreground">
-              문의: bremen@postech.ac.kr
-            </p>
-          </div>
-        </div>
       </div>
 
       {Object.entries(alumni).map(([year, members]) => (
