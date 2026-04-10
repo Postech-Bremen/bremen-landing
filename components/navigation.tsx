@@ -1,0 +1,50 @@
+"use client"
+
+import { Music } from "lucide-react"
+
+interface NavigationProps {
+  activeTab: string
+  setActiveTab: (tab: string) => void
+}
+
+const tabs = [
+  { id: "home", label: "Home" },
+  { id: "performances", label: "Performances" },
+  { id: "photos", label: "Photos" },
+  { id: "alumni", label: "Alumni" },
+]
+
+export function Navigation({ activeTab, setActiveTab }: NavigationProps) {
+  return (
+    <header className="fixed top-0 left-0 right-0 z-50 bg-background border-b border-border">
+      <div className="max-w-5xl mx-auto px-6">
+        <div className="flex items-center justify-between h-16">
+          <div className="flex items-center gap-3">
+            <div className="w-8 h-8 border border-foreground flex items-center justify-center">
+              <Music className="w-4 h-4" />
+            </div>
+            <div>
+              <span className="font-mono text-sm font-bold tracking-tight">SOUNDWAVE LAB</span>
+              <span className="font-mono text-xs text-muted-foreground ml-2">est. 2018</span>
+            </div>
+          </div>
+          <nav className="flex items-center gap-1">
+            {tabs.map((tab) => (
+              <button
+                key={tab.id}
+                onClick={() => setActiveTab(tab.id)}
+                className={`px-4 py-2 text-sm font-mono transition-colors ${
+                  activeTab === tab.id
+                    ? "text-foreground border-b-2 border-foreground"
+                    : "text-muted-foreground hover:text-foreground"
+                }`}
+              >
+                {tab.label}
+              </button>
+            ))}
+          </nav>
+        </div>
+      </div>
+    </header>
+  )
+}
