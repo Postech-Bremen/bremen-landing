@@ -15,8 +15,8 @@ const areas = [
 ]
 
 const events = [
-  { date: "05월 07일", title: "해맞이한마당 공연", location: "78계단 무대", time: "미정" },
-  { date: "05월 26일", title: "1학기 정기공연", location: "학생회관 아틀라스홀", time: "오후 9:00" },
+  { date: "05/07", title: "해맞이한마당 공연", location: "78계단 무대", time: "미정" },
+  { date: "05/26", title: "1학기 정기공연", location: "학생회관 아틀라스홀", time: "오후 9:00" },
 ]
 
 export function HomeSection() {
@@ -94,8 +94,7 @@ export function HomeSection() {
           {events.map((event) => (
             <div key={event.title} className="p-4 flex items-center gap-6 hover:bg-muted/50 transition-colors">
               <div className="w-16 text-center">
-                <p className="font-mono text-xs text-muted-foreground">{event.date.split(" ")[0]}</p>
-                <p className="font-mono text-lg font-bold">{event.date.split(" ")[1]}</p>
+                <p className="font-mono text-lg font-bold">{event.date}</p>
               </div>
               <div className="flex-1">
                 <h3 className="font-bold">{event.title}</h3>
