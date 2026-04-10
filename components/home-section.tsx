@@ -11,12 +11,12 @@ const areas = [
   { title: "밴드 합주", description: "팀별 자율적 합주 및 공연 준비", schedule: "팀별 자율 일정" },
   { title: "악기별 멘토링", description: "악기별 경험자 멘토링 및 기초 레슨", schedule: "주 1-2회" },
   { title: "치어로 밴드", description: "포스텍 응원단 치어로의 응원곡 연주", schedule: "치어로 일정에 따름" },
-  { title: "친목 활동", description: "MT, 폭짜, 경주월드, 스키캠프 등의 친목활동", schedule: "연 4+회" },
+  { title: "친목 활동", description: "MT, 폭짜, 경주월드, 스키캠프 등의 친목활동", schedule: "매우 자주" },
 ]
 
 const events = [
-  { date: "05월 08일", title: "해맞이한마당 공연", location: "78계단 무대", time: "오후 8:00" },
-  { date: "05월 20일", title: "1학기 정기공연", location: "학생회관 아틀라스홀", time: "오후 9:00" },
+  { date: "05월 07일", title: "해맞이한마당 공연", location: "78계단 무대", time: "미정" },
+  { date: "05월 26일", title: "1학기 정기공연", location: "학생회관 아틀라스홀", time: "오후 9:00" },
 ]
 
 export function HomeSection() {
