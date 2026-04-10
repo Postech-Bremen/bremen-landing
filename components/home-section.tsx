@@ -10,13 +10,13 @@ const stats = [
 const areas = [
   { title: "밴드 합주", description: "팀별 자율적 합주 및 공연 준비", schedule: "팀별 자율 일정" },
   { title: "악기별 멘토링", description: "악기별 경험자 멘토링 및 기초 레슨", schedule: "주 1-2회" },
-  { title: "치어로 밴드", description: "포스텍 응원단체 치어로의 응원곡 연주", schedule: "경기 일정에 따름" },
-  { title: "친목 활동", description: "MT, 폭짜, 경주월드, 스키캠프 등의 친목활동", schedule: "연 3-4회" },
+  { title: "치어로 밴드", description: "포스텍 응원단 치어로의 응원곡 연주", schedule: "치어로 일정에 따름" },
+  { title: "친목 활동", description: "MT, 폭짜, 경주월드, 스키캠프 등의 친목활동", schedule: "연 4+회" },
 ]
 
 const events = [
-  { date: "4월 20", title: "1학기 정기공연", location: "무은재기념관", time: "오후 7:00" },
-  { date: "5월 10", title: "포스텍 축제 공연", location: "대운동장 무대", time: "오후 8:00" },
+  { date: "5월 8일", title: "해맞이한마당 공연", location: "78계단 무대", time: "오후 8:00" },
+  { date: "5월 20일", title: "1학기 정기공연", location: "학생회관 아틀라스홀", time: "오후 9:00" },
 ]
 
 export function HomeSection() {
@@ -27,8 +27,8 @@ export function HomeSection() {
           <p className="font-mono text-xs text-muted-foreground mb-2">POSTECH BAND CLUB</p>
           <h1 className="text-3xl font-bold mb-4 text-balance">브레멘 Bremen</h1>
           <p className="text-lg text-muted-foreground max-w-2xl leading-relaxed">
-            포항공과대학교 밴드 동아리 브레멘입니다. 음악을 사랑하는 사람들이 모여 
-            함께 연주하고, 공연하며, 음악적 성장을 도모하는 공동체입니다. 
+            포항공과대학교 밴드 동아리 브레멘입니다. 음악을 사랑하는 사람들이 모여
+            함께 연주하고, 공연하며, 음악적 성장을 도모하는 공동체입니다.
             2001년 창립 이래 꾸준히 포스텍의 음악 문화를 이끌어왔습니다.
           </p>
           <div className="flex items-center gap-4 mt-6">
@@ -127,7 +127,7 @@ export function HomeSection() {
             <div>
               <h3 className="font-bold mb-2">신입 부원 모집</h3>
               <p className="text-sm text-muted-foreground">
-                매년 1학기 초에 신입(1학년)을 대상으로 부원을 모집합니다. 
+                매년 1학기 초에 학부 1학년(새내기)만을 대상으로 부원을 모집합니다.<br></br>
                 악기 경험이 없어도 괜찮습니다. 음악을 사랑하고 함께 연주하고 싶은 마음만 있다면 환영합니다.
               </p>
             </div>
