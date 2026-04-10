@@ -1,12 +1,9 @@
 import { Calendar, MapPin, ExternalLink } from "lucide-react"
 
 const performances = {
-  "2024": [
-    { date: "05월 18일", title: "1학기 정기공연", venue: "학생회관 아틀라스홀", type: "정기공연", youtubeId: "dQw4w9WgXcQ" },
-    { date: "09월 22일", title: "새내기새로배움터", venue: "대강당", type: "특별", youtubeId: "dQw4w9WgXcQ" },
-    { date: "10월 08일", title: "해맞이한마당", venue: "78계단 무대", type: "축제", youtubeId: "dQw4w9WgXcQ" },
-    { date: "11월 10일", title: "포스텍-카이스트 학생대제전", venue: "학생회관", type: "축제", youtubeId: "dQw4w9WgXcQ" },
-    { date: "12월 18일", title: "2학기 정기공연", venue: "학생회관 아틀라스홀", type: "정기공연", youtubeId: "dQw4w9WgXcQ" },
+  "2026": [
+    { date: "04월 13일", title: "신입생 환영공연", venue: "학생회관 아틀라스홀", type: "특별", youtubeId: "dQw4w9WgXcQ" },
+    { date: "05월 10일", title: "1학기 정기공연", venue: "학생회관 아틀라스홀", type: "정기공연", youtubeId: "dQw4w9WgXcQ" },
   ],
   "2025": [
     { date: "05월 25일", title: "1학기 정기공연", venue: "학생회관 아틀라스홀", type: "정기공연", youtubeId: "dQw4w9WgXcQ" },
@@ -15,9 +12,12 @@ const performances = {
     { date: "11월 20일", title: "포스텍-카이스트 학생대제전", venue: "학생회관", type: "축제", youtubeId: "dQw4w9WgXcQ" },
     { date: "12월 15일", title: "2학기 정기공연", venue: "학생회관 아틀라스홀", type: "정기공연", youtubeId: "dQw4w9WgXcQ" },
   ],
-  "2026": [
-    { date: "04월 13일", title: "신입생 환영공연", venue: "학생회관 아틀라스홀", type: "특별", youtubeId: "dQw4w9WgXcQ" },
-    { date: "05월 10일", title: "1학기 정기공연", venue: "학생회관 아틀라스홀", type: "정기공연", youtubeId: "dQw4w9WgXcQ" },
+  "2024": [
+    { date: "05월 18일", title: "1학기 정기공연", venue: "학생회관 아틀라스홀", type: "정기공연", youtubeId: "dQw4w9WgXcQ" },
+    { date: "09월 22일", title: "새내기새로배움터", venue: "대강당", type: "특별", youtubeId: "dQw4w9WgXcQ" },
+    { date: "10월 08일", title: "해맞이한마당", venue: "78계단 무대", type: "축제", youtubeId: "dQw4w9WgXcQ" },
+    { date: "11월 10일", title: "포스텍-카이스트 학생대제전", venue: "학생회관", type: "축제", youtubeId: "dQw4w9WgXcQ" },
+    { date: "12월 18일", title: "2학기 정기공연", venue: "학생회관 아틀라스홀", type: "정기공연", youtubeId: "dQw4w9WgXcQ" },
   ],
 }
 
