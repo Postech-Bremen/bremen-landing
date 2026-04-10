@@ -107,14 +107,16 @@ function MemberCard({ member, isAlumni = false }: MemberCardProps) {
           <User className="w-7 h-7 text-muted-foreground" />
         </div>
         <div className="flex-1 min-w-0">
-          <h3 className="font-bold">{member.name}</h3>
+          <div className="flex items-center gap-2 flex-wrap">
+            <h3 className="font-bold">{member.name}</h3>
+            {member.role && (
+              <span className="text-xs font-mono text-muted-foreground">{member.role}</span>
+            )}
+          </div>
           <div className="flex items-center gap-1.5 text-sm text-muted-foreground mt-1">
             <InstrumentIcon className="w-3.5 h-3.5" />
             <span>{member.instrument}</span>
           </div>
-          {member.role && (
-            <p className="text-xs font-mono text-foreground mt-1">{member.role}</p>
-          )}
           {isAlumni && member.current && (
             <div className="flex items-center gap-1 mt-2 text-xs text-muted-foreground">
               <Briefcase className="w-3 h-3" />
@@ -128,6 +130,15 @@ function MemberCard({ member, isAlumni = false }: MemberCardProps) {
 }
 
 export function MembersSection() {
+  // 학번별로 활동부원과 졸업생을 합쳐서 정렬
+  const allYears = ["2025", "2024", "2023", "2022"]
+  
+  const getMembersForYear = (year: string) => {
+    const active = activeMembers.find(y => y.year === year)?.members || []
+    const grad = alumni.find(y => y.year === year)?.members || []
+    return { active, grad }
+  }
+
   return (
     <div className="max-w-5xl mx-auto px-6 py-12">
       <div className="mb-12">
@@ -138,56 +149,32 @@ export function MembersSection() {
         </p>
       </div>
 
-      <section className="mb-16">
-        <div className="flex items-center gap-4 mb-8">
-          <h2 className="font-mono text-lg font-bold">활동 부원</h2>
-          <div className="flex-1 border-t-2 border-foreground" />
-        </div>
-
-        {activeMembers.map(({ year, members }) => (
-          <div key={year} className="mb-10">
-            <div className="flex items-center gap-4 mb-6">
-              <h3 className="font-mono text-sm font-bold">{year}학번</h3>
-              <div className="flex-1 border-t border-border" />
-              <span className="font-mono text-xs text-muted-foreground">{members.length}명</span>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {members.map((member) => (
-                <MemberCard key={member.name} member={member} isAlumni={false} />
-              ))}
-            </div>
-          </div>
-        ))}
-      </section>
-
       <section>
-        <div className="flex items-center gap-4 mb-8">
-          <h2 className="font-mono text-lg font-bold text-muted-foreground">졸업생</h2>
-          <div className="flex-1 border-t border-dashed border-muted-foreground/50" />
-        </div>
+        {allYears.map((year) => {
+          const { active, grad } = getMembersForYear(year)
+          const totalCount = active.length + grad.length
+          
+          if (totalCount === 0) return null
+          
+          return (
+            <div key={year} className="mb-12">
+              <div className="flex items-center gap-4 mb-6">
+                <h3 className="font-mono text-sm font-bold">{year}학번</h3>
+                <div className="flex-1 border-t border-border" />
+                <span className="font-mono text-xs text-muted-foreground">{totalCount}명</span>
+              </div>
 
-        {alumni.map(({ year, members }) => (
-          <div key={year} className="mb-10">
-            <div className="flex items-center gap-4 mb-6">
-              <h3 className="font-mono text-sm text-muted-foreground">{year}학번</h3>
-              <div className="flex-1 border-t border-dashed border-muted-foreground/30" />
-              <span className="font-mono text-xs text-muted-foreground">{members.length}명</span>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {active.map((member) => (
+                  <MemberCard key={`active-${member.name}`} member={member} isAlumni={false} />
+                ))}
+                {grad.map((member) => (
+                  <MemberCard key={`alumni-${member.name}`} member={member} isAlumni={true} />
+                ))}
+              </div>
             </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {members.map((member) => (
-                <MemberCard key={member.name} member={member} isAlumni={true} />
-              ))}
-            </div>
-          </div>
-        ))}
-
-        <div className="border-t border-dashed border-muted-foreground/30 pt-8 text-center">
-          <p className="font-mono text-xs text-muted-foreground">
-            최근 졸업생(2022-2025학번) 정보입니다.
-          </p>
-        </div>
+          )
+        })}
       </section>
     </div>
   )
