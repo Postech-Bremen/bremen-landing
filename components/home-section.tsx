@@ -27,7 +27,7 @@ export function HomeSection() {
           <p className="font-mono text-xs text-muted-foreground mb-2">POSTECH BAND CLUB</p>
           <h1 className="text-3xl font-bold mb-4 text-balance">브레멘 Bremen</h1>
           <p className="text-lg text-muted-foreground max-w-2xl leading-relaxed">
-            포항공과대학교 밴드 동아리 브레멘입니다. 음악을 사랑하는 사람들이 모여
+            포스텍 대표 밴드 동아리 브레멘입니다. 음악을 사랑하는 사람들이 모여
             함께 연주하고, 공연하며, 음악적 성장을 도모하는 공동체입니다.
             2001년 창립 이래 꾸준히 포스텍의 음악 문화를 이끌어왔습니다.
           </p>
