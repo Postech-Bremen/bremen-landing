@@ -8,10 +8,10 @@ interface NavigationProps {
 }
 
 const tabs = [
-  { id: "home", label: "Home" },
-  { id: "performances", label: "Performances" },
-  { id: "photos", label: "Photos" },
-  { id: "alumni", label: "Alumni" },
+  { id: "home", label: "홈" },
+  { id: "performances", label: "공연" },
+  { id: "photos", label: "사진" },
+  { id: "alumni", label: "졸업생" },
 ]
 
 export function Navigation({ activeTab, setActiveTab }: NavigationProps) {
@@ -24,8 +24,8 @@ export function Navigation({ activeTab, setActiveTab }: NavigationProps) {
               <Music className="w-4 h-4" />
             </div>
             <div>
-              <span className="font-mono text-sm font-bold tracking-tight">SOUNDWAVE LAB</span>
-              <span className="font-mono text-xs text-muted-foreground ml-2">est. 2018</span>
+              <span className="font-mono text-sm font-bold tracking-tight">BREMEN</span>
+              <span className="font-mono text-xs text-muted-foreground ml-2">POSTECH</span>
             </div>
           </div>
           <nav className="flex items-center gap-1">

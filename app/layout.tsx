@@ -7,8 +7,8 @@ const _geist = Geist({ subsets: ["latin"] });
 const _geistMono = Geist_Mono({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: 'v0 App',
-  description: 'Created with v0',
+  title: '브레멘 Bremen | 포스텍 밴드 동아리',
+  description: '포항공과대학교 밴드 동아리 브레멘입니다. 1994년 창립 이래 음악을 사랑하는 사람들이 모여 함께 연주하고 공연합니다.',
   generator: 'v0.app',
   icons: {
     icon: [

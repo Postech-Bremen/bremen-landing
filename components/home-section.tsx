@@ -1,23 +1,23 @@
 import { Calendar, MapPin, Users, Music, Clock } from "lucide-react"
 
 const stats = [
-  { label: "Active Members", value: "42" },
-  { label: "Annual Performances", value: "12" },
-  { label: "Years Active", value: "8" },
-  { label: "Alumni Network", value: "180+" },
+  { label: "현재 부원", value: "45" },
+  { label: "연간 공연", value: "8" },
+  { label: "활동 연수", value: "30+" },
+  { label: "졸업생 네트워크", value: "500+" },
 ]
 
 const areas = [
-  { title: "Jazz Ensemble", description: "Weekly improvisation sessions and combo work", schedule: "Tues 7-9pm" },
-  { title: "Concert Band", description: "Classical and contemporary repertoire", schedule: "Wed 6-8pm" },
-  { title: "Chamber Groups", description: "Small ensemble coaching and performance", schedule: "Thu 5-7pm" },
-  { title: "Music Tech Lab", description: "Recording, production, and sound design", schedule: "Fri 4-6pm" },
+  { title: "밴드 합주", description: "정기 합주 및 공연 준비", schedule: "매주 화/목 19:00" },
+  { title: "보컬 세션", description: "보컬 트레이닝 및 하모니 연습", schedule: "매주 수 18:00" },
+  { title: "작곡/편곡", description: "오리지널 곡 작업 및 편곡 스터디", schedule: "매주 금 17:00" },
+  { title: "녹음 스튜디오", description: "레코딩 및 믹싱 작업", schedule: "예약제 운영" },
 ]
 
 const events = [
-  { date: "Apr 18", title: "Spring Concert", location: "Memorial Hall", time: "7:30 PM" },
-  { date: "May 02", title: "Jazz Night", location: "Student Center", time: "8:00 PM" },
-  { date: "May 15", title: "Chamber Recital", location: "Recital Hall", time: "4:00 PM" },
+  { date: "4월 20", title: "봄 정기공연", location: "무은재기념관", time: "오후 7:00" },
+  { date: "5월 10", title: "포스텍 축제 공연", location: "대운동장 무대", time: "오후 8:00" },
+  { date: "6월 15", title: "졸업생 송별 공연", location: "학생회관", time: "오후 6:00" },
 ]
 
 export function HomeSection() {
@@ -25,12 +25,12 @@ export function HomeSection() {
     <div className="max-w-5xl mx-auto px-6 py-12">
       <section className="mb-16">
         <div className="border border-border p-8 mb-8">
-          <p className="font-mono text-xs text-muted-foreground mb-2">RESEARCH GROUP</p>
-          <h1 className="text-3xl font-bold mb-4 text-balance">Soundwave Lab</h1>
+          <p className="font-mono text-xs text-muted-foreground mb-2">POSTECH BAND CLUB</p>
+          <h1 className="text-3xl font-bold mb-4 text-balance">브레멘 Bremen</h1>
           <p className="text-lg text-muted-foreground max-w-2xl leading-relaxed">
-            A collaborative research collective exploring the intersection of music, performance, and 
-            community. We investigate sonic expression through weekly practice, public performance, 
-            and peer mentorship.
+            포항공과대학교 밴드 동아리 브레멘입니다. 음악을 사랑하는 사람들이 모여 
+            함께 연주하고, 공연하며, 음악적 성장을 도모하는 공동체입니다. 
+            1994년 창립 이래 꾸준히 포스텍의 음악 문화를 이끌어왔습니다.
           </p>
         </div>
 
@@ -47,7 +47,7 @@ export function HomeSection() {
       <section className="mb-16">
         <div className="flex items-center gap-2 mb-6">
           <span className="font-mono text-xs text-muted-foreground">01</span>
-          <h2 className="font-mono text-sm font-bold">PRACTICE AREAS</h2>
+          <h2 className="font-mono text-sm font-bold">활동 영역</h2>
         </div>
         <div className="grid grid-cols-2 gap-4">
           {areas.map((area) => (
@@ -69,7 +69,7 @@ export function HomeSection() {
       <section className="mb-16">
         <div className="flex items-center gap-2 mb-6">
           <span className="font-mono text-xs text-muted-foreground">02</span>
-          <h2 className="font-mono text-sm font-bold">UPCOMING EVENTS</h2>
+          <h2 className="font-mono text-sm font-bold">다가오는 공연</h2>
         </div>
         <div className="border border-border divide-y divide-border">
           {events.map((event) => (
@@ -100,19 +100,19 @@ export function HomeSection() {
       <section>
         <div className="flex items-center gap-2 mb-6">
           <span className="font-mono text-xs text-muted-foreground">03</span>
-          <h2 className="font-mono text-sm font-bold">JOIN US</h2>
+          <h2 className="font-mono text-sm font-bold">가입 안내</h2>
         </div>
         <div className="border border-border p-6">
           <div className="flex items-start gap-4">
             <Users className="w-5 h-5 text-muted-foreground mt-1" />
             <div>
-              <h3 className="font-bold mb-2">Open Auditions</h3>
+              <h3 className="font-bold mb-2">신입 부원 모집</h3>
               <p className="text-sm text-muted-foreground mb-4">
-                We welcome musicians of all levels. Auditions are held at the beginning of each semester.
-                No prior ensemble experience required.
+                매 학기 초 신입 부원을 모집합니다. 악기 경험이 없어도 괜찮습니다. 
+                음악을 사랑하고 함께 연주하고 싶은 마음만 있다면 누구나 환영합니다.
               </p>
               <p className="font-mono text-xs text-muted-foreground">
-                Next audition period: September 2026
+                다음 모집 기간: 2026년 9월
               </p>
             </div>
           </div>
