@@ -4,27 +4,27 @@ import { useState } from "react"
 import { X, ChevronLeft, ChevronRight } from "lucide-react"
 
 const photos = [
-  { id: 1, title: "2025 봄 정기공연", category: "공연", aspect: "landscape" },
-  { id: 2, title: "합주 연습 모습", category: "연습", aspect: "portrait" },
-  { id: 3, title: "녹음 세션", category: "녹음", aspect: "landscape" },
-  { id: 4, title: "포스텍 축제 무대", category: "축제", aspect: "landscape" },
-  { id: 5, title: "신입생 오리엔테이션", category: "행사", aspect: "portrait" },
-  { id: 6, title: "MT 단체사진", category: "행사", aspect: "landscape" },
-  { id: 7, title: "무대 셋업 중", category: "백스테이지", aspect: "portrait" },
-  { id: 8, title: "밴드 합주", category: "공연", aspect: "landscape" },
-  { id: 9, title: "레코딩 스튜디오", category: "녹음", aspect: "landscape" },
-  { id: 10, title: "졸업생 모임", category: "행사", aspect: "portrait" },
-  { id: 11, title: "야외 버스킹", category: "공연", aspect: "landscape" },
-  { id: 12, title: "동아리방 연습", category: "연습", aspect: "portrait" },
+  { id: 1, title: "Spring Concert 2025", category: "Concert", aspect: "landscape" },
+  { id: 2, title: "Jazz Ensemble Practice", category: "Rehearsal", aspect: "portrait" },
+  { id: 3, title: "Chamber Group Recording", category: "Studio", aspect: "landscape" },
+  { id: 4, title: "Homecoming Parade", category: "Event", aspect: "landscape" },
+  { id: 5, title: "New Member Orientation", category: "Social", aspect: "portrait" },
+  { id: 6, title: "Fall Retreat", category: "Social", aspect: "landscape" },
+  { id: 7, title: "Holiday Concert Setup", category: "Backstage", aspect: "portrait" },
+  { id: 8, title: "Big Band Performance", category: "Concert", aspect: "landscape" },
+  { id: 9, title: "Recording Session", category: "Studio", aspect: "landscape" },
+  { id: 10, title: "Alumni Reunion", category: "Social", aspect: "portrait" },
+  { id: 11, title: "Outdoor Concert", category: "Concert", aspect: "landscape" },
+  { id: 12, title: "Practice Room Sessions", category: "Rehearsal", aspect: "portrait" },
 ]
 
-const categories = ["전체", "공연", "연습", "녹음", "축제", "행사", "백스테이지"]
+const categories = ["All", "Concert", "Rehearsal", "Studio", "Event", "Social", "Backstage"]
 
 export function PhotosSection() {
-  const [selectedCategory, setSelectedCategory] = useState("전체")
+  const [selectedCategory, setSelectedCategory] = useState("All")
   const [lightboxIndex, setLightboxIndex] = useState<number | null>(null)
 
-  const filteredPhotos = selectedCategory === "전체" 
+  const filteredPhotos = selectedCategory === "All" 
     ? photos 
     : photos.filter(p => p.category === selectedCategory)
 
@@ -37,9 +37,9 @@ export function PhotosSection() {
     <div className="max-w-5xl mx-auto px-6 py-12">
       <div className="mb-12">
         <p className="font-mono text-xs text-muted-foreground mb-2">GALLERY</p>
-        <h1 className="text-3xl font-bold mb-4">사진 갤러리</h1>
+        <h1 className="text-3xl font-bold mb-4">Photos</h1>
         <p className="text-muted-foreground max-w-2xl">
-          브레멘의 연습, 공연, 그리고 함께한 순간들의 기록입니다.
+          Visual documentation of our rehearsals, performances, and community gatherings.
         </p>
       </div>
 
@@ -86,7 +86,7 @@ export function PhotosSection() {
 
       <div className="mt-8 text-center">
         <p className="font-mono text-xs text-muted-foreground">
-          {filteredPhotos.length}장의 사진 - 클릭하여 확대
+          {filteredPhotos.length} photos • Click to enlarge
         </p>
       </div>
 
@@ -130,7 +130,7 @@ export function PhotosSection() {
               </span>
             </div>
             <p className="text-sm text-muted-foreground mt-1">
-              카테고리: {filteredPhotos[lightboxIndex].category}
+              Category: {filteredPhotos[lightboxIndex].category}
             </p>
           </div>
         </div>

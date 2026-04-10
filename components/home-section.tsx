@@ -10,12 +10,12 @@ const stats = [
 const areas = [
   { title: "밴드 합주", description: "팀별 자율적 합주 및 공연 준비", schedule: "팀별 자율 일정" },
   { title: "악기별 멘토링", description: "악기별 경험자 멘토링 및 기초 레슨", schedule: "주 1-2회" },
-  { title: "작곡/편곡", description: "오리지널 곡 작업 및 편곡 스터디", schedule: "매주 금 17:00" },
-  { title: "녹음 스튜디오", description: "레코딩 및 믹싱 작업", schedule: "예약제 운영" },
+  { title: "녹음", description: "레코딩 및 믹싱 작업", schedule: "필요 시 진행" },
+  { title: "치어로 밴드", description: "포스텍 응원단체 치어로의 응원곡 연주", schedule: "경기 일정에 따름" },
 ]
 
 const events = [
-  { date: "4월 20", title: "봄 정기공연", location: "무은재기념관", time: "오후 7:00" },
+  { date: "4월 20", title: "1학기 정기공연", location: "무은재기념관", time: "오후 7:00" },
   { date: "5월 10", title: "포스텍 축제 공연", location: "대운동장 무대", time: "오후 8:00" },
 ]
 

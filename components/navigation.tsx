@@ -11,7 +11,7 @@ const tabs = [
   { id: "home", label: "홈" },
   { id: "performances", label: "공연" },
   { id: "photos", label: "사진" },
-  { id: "alumni", label: "졸업생" },
+  { id: "members", label: "멤버" },
 ]
 
 export function Navigation({ activeTab, setActiveTab }: NavigationProps) {

@@ -5,7 +5,7 @@ import { Navigation } from "@/components/navigation"
 import { HomeSection } from "@/components/home-section"
 import { PerformancesSection } from "@/components/performances-section"
 import { PhotosSection } from "@/components/photos-section"
-import { AlumniSection } from "@/components/alumni-section"
+import { MembersSection } from "@/components/members-section"
 import { Footer } from "@/components/footer"
 
 export default function Home() {
@@ -18,7 +18,7 @@ export default function Home() {
         {activeTab === "home" && <HomeSection />}
         {activeTab === "performances" && <PerformancesSection />}
         {activeTab === "photos" && <PhotosSection />}
-        {activeTab === "alumni" && <AlumniSection />}
+        {activeTab === "members" && <MembersSection />}
       </main>
       <Footer />
     </div>
