@@ -2,22 +2,22 @@ import { Calendar, MapPin, ExternalLink } from "lucide-react"
 
 const performances = {
   "2026": [
-    { date: "5월 10", title: "1학기 정기공연", venue: "무은재기념관", type: "정기공연", youtubeId: null },
-    { date: "4월 13", title: "신입생 환영공연", venue: "학생회관", type: "특별", youtubeId: null },
+    { date: "5월 10일 (토)", title: "1학기 정기공연", venue: "학생회관 아틀라스홀", type: "정기공연", youtubeId: "dQw4w9WgXcQ" },
+    { date: "4월 13일 (일)", title: "신입생 환영공연", venue: "학생회관 아틀라스홀", type: "특별", youtubeId: "dQw4w9WgXcQ" },
   ],
   "2025": [
-    { date: "12월 15", title: "2학기 정기공연", venue: "무은재기념관", type: "정기공연", youtubeId: "dQw4w9WgXcQ" },
-    { date: "11월 20", title: "포스텍-카이스트 학생대제전", venue: "학생회관", type: "특별", youtubeId: null },
-    { date: "10월 8", title: "해맞이한마당", venue: "포스텍 광장", type: "축제", youtubeId: "dQw4w9WgXcQ" },
-    { date: "9월 22", title: "새내기새로배움터", venue: "학생회관", type: "특별", youtubeId: null },
-    { date: "5월 25", title: "1학기 정기공연", venue: "무은재기념관", type: "정기공연", youtubeId: "dQw4w9WgXcQ" },
+    { date: "12월 15일 (일)", title: "2학기 정기공연", venue: "학생회관 아틀라스홀", type: "정기공연", youtubeId: "dQw4w9WgXcQ" },
+    { date: "11월 20일 (목)", title: "포스텍-카이스트 학생대제전", venue: "학생회관", type: "특별", youtubeId: "dQw4w9WgXcQ" },
+    { date: "10월 8일 (수)", title: "해맞이한마당", venue: "포스텍 광장", type: "축제", youtubeId: "dQw4w9WgXcQ" },
+    { date: "9월 22일 (월)", title: "새내기새로배움터", venue: "학생회관", type: "특별", youtubeId: "dQw4w9WgXcQ" },
+    { date: "5월 25일 (토)", title: "1학기 정기공연", venue: "학생회관 아틀라스홀", type: "정기공연", youtubeId: "dQw4w9WgXcQ" },
   ],
   "2024": [
-    { date: "12월 18", title: "2학기 정기공연", venue: "무은재기념관", type: "정기공연", youtubeId: "dQw4w9WgXcQ" },
-    { date: "11월 10", title: "포스텍-카이스트 학생대제전", venue: "학생회관", type: "특별", youtubeId: null },
-    { date: "10월 8", title: "해맞이한마당", venue: "포스텍 광장", type: "축제", youtubeId: null },
-    { date: "9월 22", title: "새내기새로배움터", venue: "학생회관", type: "특별", youtubeId: "dQw4w9WgXcQ" },
-    { date: "5월 18", title: "1학기 정기공연", venue: "무은재기념관", type: "정기공연", youtubeId: null },
+    { date: "12월 18일 (수)", title: "2학기 정기공연", venue: "학생회관 아틀라스홀", type: "정기공연", youtubeId: "dQw4w9WgXcQ" },
+    { date: "11월 10일 (일)", title: "포스텍-카이스트 학생대제전", venue: "학생회관", type: "특별", youtubeId: "dQw4w9WgXcQ" },
+    { date: "10월 8일 (화)", title: "해맞이한마당", venue: "포스텍 광장", type: "축제", youtubeId: "dQw4w9WgXcQ" },
+    { date: "9월 22일 (토)", title: "새내기새로배움터", venue: "학생회관", type: "특별", youtubeId: "dQw4w9WgXcQ" },
+    { date: "5월 18일 (토)", title: "1학기 정기공연", venue: "학생회관 아틀라스홀", type: "정기공연", youtubeId: "dQw4w9WgXcQ" },
   ],
 }
 
@@ -69,18 +69,14 @@ export function PerformancesSection() {
                     {event.type}
                   </span>
                 </div>
-                {event.youtubeId ? (
-                  <a
-                    href={`https://www.youtube.com/watch?v=${event.youtubeId}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="flex items-center gap-1 px-3 py-2 border border-border hover:bg-muted transition-colors"
-                  >
-                    <span className="text-xs font-mono">영상</span>
-                  </a>
-                ) : (
-                  <ExternalLink className="w-4 h-4 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
-                )}
+                <a
+                  href={`https://www.youtube.com/watch?v=${event.youtubeId}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center gap-1 px-3 py-2 border border-border hover:bg-muted transition-colors"
+                >
+                  <span className="text-xs font-mono">영상</span>
+                </a>
               </div>
             ))}
           </div>
