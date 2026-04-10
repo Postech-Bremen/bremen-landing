@@ -10,7 +10,7 @@ export function Footer() {
             <div className="space-y-3 text-sm text-muted-foreground">
               <div className="flex items-center gap-2">
                 <Instagram className="w-4 h-4" />
-                <span>@postech.bremen DM</span>
+                <span>DM @postech.bremen</span>
               </div>
               <div className="flex items-center gap-2">
                 <MapPin className="w-4 h-4" />
