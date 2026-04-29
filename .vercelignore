@@ -1,0 +1,10 @@
+.env
+.env.*
+!.env.local.example
+.mcp.json
+.omc/
+.next/
+node_modules/
+tsconfig.tsbuildinfo
+supabase/.temp/
+supabase/_apply_all.sql
