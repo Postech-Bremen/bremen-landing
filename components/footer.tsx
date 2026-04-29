@@ -1,71 +1,120 @@
-import { Mail, MapPin, Clock, Instagram, Youtube } from "lucide-react"
+import {
+  Clock,
+  InstagramLogo,
+  MapPin,
+  YoutubeLogo,
+  Link as LinkIcon,
+} from "@phosphor-icons/react/dist/ssr"
+import { Separator } from "@/components/ui/separator"
 
-export function Footer() {
+export type FooterContactItem = {
+  kind: "location" | "time" | "text"
+  value: string
+}
+
+export type FooterSocialItem = {
+  kind: "instagram" | "youtube" | "link"
+  label: string
+  href: string
+}
+
+export type FooterConfig = {
+  titleKr: string
+  titleEn: string
+  eyebrow: string
+  description: string
+  contactTitle: string
+  contacts: FooterContactItem[]
+  socialTitle: string
+  socials: FooterSocialItem[]
+  copyrightName: string
+  foundingYear: number
+  sinceLabel: string
+}
+
+function ContactIcon({ kind }: { kind: FooterContactItem["kind"] }) {
+  if (kind === "location") {
+    return <MapPin weight="light" className="w-4 h-4 mt-0.5 shrink-0 text-muted-foreground" />
+  }
+
+  if (kind === "time") {
+    return <Clock weight="light" className="w-4 h-4 mt-0.5 shrink-0 text-muted-foreground" />
+  }
+
+  return <LinkIcon weight="light" className="w-4 h-4 mt-0.5 shrink-0 text-muted-foreground" />
+}
+
+function SocialIcon({ kind }: { kind: FooterSocialItem["kind"] }) {
+  if (kind === "instagram") {
+    return <InstagramLogo weight="light" className="w-4 h-4" />
+  }
+
+  if (kind === "youtube") {
+    return <YoutubeLogo weight="light" className="w-4 h-4" />
+  }
+
+  return <LinkIcon weight="light" className="w-4 h-4" />
+}
+
+export function Footer({ config }: { config: FooterConfig }) {
+  const currentYear = new Date().getFullYear()
+
   return (
-    <footer className="border-t border-border mt-16">
-      <div className="max-w-5xl mx-auto px-6 py-12">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-          <div>
-            <h3 className="font-mono text-sm font-bold mb-4">연락처</h3>
-            <div className="space-y-3 text-sm text-muted-foreground">
-              <div className="flex items-center gap-2">
-                <Instagram className="w-4 h-4" />
-                <span>DM @postech.bremen</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <MapPin className="w-4 h-4" />
-                <span>학생회관 401호</span>
-              </div>
-            </div>
+    <footer className="border-t mt-32">
+      <div className="max-w-6xl mx-auto px-6 md:px-8 py-16">
+        <div className="grid grid-cols-1 md:grid-cols-12 gap-12">
+          <div className="md:col-span-5">
+            <h3 className="font-serif-kr text-4xl leading-tight">
+              {config.titleKr}
+              <span className="font-serif italic text-3xl ml-3 text-muted-foreground">
+                {config.titleEn}
+              </span>
+            </h3>
+            <p className="caps mt-3">{config.eyebrow}</p>
+            <p className="mt-6 text-sm text-muted-foreground max-w-md leading-relaxed">
+              {config.description}
+            </p>
           </div>
 
-          <div>
-            <h3 className="font-mono text-sm font-bold mb-4">정기모임</h3>
-            <div className="space-y-2 text-sm text-muted-foreground">
-              <div className="flex items-center gap-2">
-                <Clock className="w-4 h-4" />
-                <span>수요일 밤 9:30</span>
-              </div>
-              <p className="text-xs mt-3">
-                필요시 정기모임을 개최합니다.
-              </p>
-            </div>
+          <div className="md:col-span-3">
+            <p className="caps mb-4">{config.contactTitle}</p>
+            <ul className="space-y-3 text-sm">
+              {config.contacts.map((contact) => (
+                <li key={`${contact.kind}:${contact.value}`} className="flex items-start gap-2">
+                  <ContactIcon kind={contact.kind} />
+                  <span>{contact.value}</span>
+                </li>
+              ))}
+            </ul>
           </div>
 
-          <div>
-            <h3 className="font-mono text-sm font-bold mb-4">SNS</h3>
-            <div className="flex items-center gap-4">
-              <a
-                href="https://www.instagram.com/postech.bremen"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-muted-foreground hover:text-foreground transition-colors"
-                aria-label="Instagram"
-              >
-                <Instagram className="w-5 h-5" />
-              </a>
-              <a
-                href="https://www.youtube.com/@postech_bremen"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-muted-foreground hover:text-foreground transition-colors"
-                aria-label="YouTube"
-              >
-                <Youtube className="w-5 h-5" />
-              </a>
-            </div>
+          <div className="md:col-span-4">
+            <p className="caps mb-4">{config.socialTitle}</p>
+            <ul className="space-y-3 text-sm">
+              {config.socials.map((social) => (
+                <li key={`${social.kind}:${social.href}`}>
+                <a
+                  href={social.href}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-3 hover:text-accent transition-colors"
+                >
+                  <SocialIcon kind={social.kind} />
+                  <span>{social.label}</span>
+                </a>
+              </li>
+              ))}
+            </ul>
           </div>
         </div>
 
-        <div className="border-t border-border mt-8 pt-8 flex items-center justify-between">
-          <div className="font-mono text-xs text-muted-foreground">
-            <span className="font-bold">BREMEN</span>
-            <span className="mx-2">|</span>
-            <span>포항공과대학교 밴드 동아리</span>
-          </div>
-          <p className="font-mono text-xs text-muted-foreground">
-            since 2001
-          </p>
+        <Separator className="my-10" />
+
+        <div className="flex flex-wrap items-center justify-between gap-4 text-sm text-muted-foreground">
+          <span className="tabular-nums">
+            © {config.foundingYear} — {currentYear} {config.copyrightName}
+          </span>
+          <span className="caps">{config.sinceLabel}</span>
         </div>
       </div>
     </footer>

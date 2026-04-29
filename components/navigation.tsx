@@ -1,51 +1,121 @@
 "use client"
 
 import Image from "next/image"
+import Link from "next/link"
+import { usePathname } from "next/navigation"
+import { UserCircle } from "@phosphor-icons/react"
 
-interface NavigationProps {
-  activeTab: string
-  setActiveTab: (tab: string) => void
+import { buttonVariants } from "@/components/ui/button"
+import { cn } from "@/lib/utils"
+
+export type NavigationItem = {
+  href: string
+  label: string
 }
 
-const tabs = [
-  { id: "home", label: "홈" },
-  { id: "performances", label: "공연" },
-  { id: "members", label: "멤버" },
-]
+export type NavigationConfig = {
+  brandHref: string
+  brandAriaLabel: string
+  logoSrc: string
+  logoAlt: string
+  title: string
+  suffix: string
+  items: NavigationItem[]
+  accountSignedInLabel: string
+  accountSignedOutLabel: string
+  accountSignedInHref: string
+  accountSignedOutHref: string
+}
 
-export function Navigation({ activeTab, setActiveTab }: NavigationProps) {
+const accountPaths = ["/mypage", "/login", "/signup"]
+
+type NavigationProps = {
+  isSignedIn?: boolean
+  config: NavigationConfig
+}
+
+export function Navigation({ isSignedIn = false, config }: NavigationProps) {
+  const pathname = usePathname()
+  const isAccountActive = accountPaths.some((path) => pathname.startsWith(path))
+  const accountHref = isSignedIn
+    ? config.accountSignedInHref
+    : config.accountSignedOutHref
+  const accountLabel = isSignedIn
+    ? config.accountSignedInLabel
+    : config.accountSignedOutLabel
+
   return (
-    <header className="fixed top-0 left-0 right-0 z-50 bg-background border-b border-border">
-      <div className="max-w-5xl mx-auto px-6">
-        <div className="flex items-center justify-between h-16">
-          <div className="flex items-center gap-3">
+    <header className="fixed top-0 left-0 right-0 z-50 bg-background/85 backdrop-blur-md border-b">
+      <div className="max-w-6xl mx-auto px-6 md:px-8">
+        <div className="flex items-center justify-between h-16 gap-6">
+          <Link href={config.brandHref} aria-label={config.brandAriaLabel} className="flex items-center gap-3 shrink-0">
             <Image
-              src="/bremen-logo.jpg"
-              alt="Bremen logo"
-              width={40}
-              height={40}
-              className="rounded"
+              src={config.logoSrc}
+              alt={config.logoAlt}
+              width={36}
+              height={36}
+              priority
+              unoptimized={config.logoSrc.startsWith("http")}
+              className="rounded-sm"
             />
-            <div>
-              <span className="font-mono text-sm font-bold tracking-tight">BREMEN</span>
-              <span className="font-mono text-xs text-muted-foreground ml-2">POSTECH</span>
-            </div>
+            <span className="hidden sm:flex items-baseline gap-2">
+              <span className="font-serif italic text-2xl leading-none text-foreground">
+                {config.title}
+              </span>
+              <span className="caps text-muted-foreground/80">
+                {config.suffix}
+              </span>
+            </span>
+          </Link>
+
+          <div className="flex min-w-0 items-center gap-2">
+            <nav className="flex min-w-0 items-center gap-1 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+              {config.items.map((tab) => {
+                const isActive =
+                  tab.href === "/" ? pathname === "/" : pathname.startsWith(tab.href)
+                return (
+                  <Link
+                    key={tab.href}
+                    href={tab.href}
+                    className="group relative shrink-0 px-3 py-2 text-sm transition-colors md:px-4"
+                    aria-current={isActive ? "page" : undefined}
+                  >
+                    <span
+                      className={
+                        isActive
+                          ? "text-foreground"
+                          : "text-muted-foreground group-hover:text-foreground transition-colors"
+                      }
+                    >
+                      {tab.label}
+                    </span>
+                    {isActive && (
+                      <span
+                        aria-hidden
+                        className="absolute left-3 right-3 md:left-4 md:right-4 -bottom-px h-px bg-foreground"
+                      />
+                    )}
+                  </Link>
+                )
+              })}
+            </nav>
+
+            <Link
+              href={accountHref}
+              aria-current={isAccountActive ? "page" : undefined}
+              aria-label={accountLabel}
+              className={cn(
+                buttonVariants({
+                  variant: isAccountActive ? "default" : "outline",
+                  size: "sm",
+                }),
+                "h-9 rounded-full px-3 md:px-4",
+              )}
+            >
+              <UserCircle weight="light" className="size-4" />
+              <span className="hidden md:inline">{accountLabel}</span>
+            </Link>
           </div>
-          <nav className="flex items-center gap-1">
-            {tabs.map((tab) => (
-              <button
-                key={tab.id}
-                onClick={() => setActiveTab(tab.id)}
-                className={`px-4 py-2 text-sm font-mono transition-colors ${
-                  activeTab === tab.id
-                    ? "text-foreground border-b-2 border-foreground"
-                    : "text-muted-foreground hover:text-foreground"
-                }`}
-              >
-                {tab.label}
-              </button>
-            ))}
-          </nav>
         </div>
       </div>
     </header>
