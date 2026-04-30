@@ -6,7 +6,7 @@ This is the first file Claude, Codex, and other coding agents should read. Do no
 
 | User intent | Read first | Then read if needed |
 | --- | --- | --- |
-| "What should we do?", planning, issue drafting, task breakdown | `CONTRIBUTING.md` | `.agents/skills/create-bremen-issue/SKILL.md` |
+| "What should we do?", planning, issue drafting, task breakdown | `CONTRIBUTING.md` | `docs/issue-driven-development.md`, `.agents/skills/create-bremen-issue/SKILL.md` |
 | UI, layout, shadcn/ui, Tailwind, animation, responsive behavior | `CONTRIBUTING.md` | `docs/content-graph.md` if content/section data is involved |
 | Page copy, section order, curated videos/photos/stats, home hero, Join Us | `docs/content-graph.md` | `docs/supabase-setup.md` if a migration or DB write is needed |
 | New section renderer or CMS-ready page structure | `docs/content-graph.md` | `docs/agentic-workflow.md`, then relevant component/loader files |
@@ -15,7 +15,7 @@ This is the first file Claude, Codex, and other coding agents should read. Do no
 | Vercel, deployment, env vars, SMTP, domains, Auth redirect URLs | `docs/operations.md` | `CONTRIBUTING.md` for issue/PR tracking |
 | First-time contributor access, GitHub/Vercel/Supabase invite | `CONTRIBUTING.md` | `docs/operations.md`, `.github/ISSUE_TEMPLATE/access-request.yml` |
 | Security review, production risk, destructive DB concern | `docs/agentic-workflow.md` | `docs/supabase-setup.md`, `docs/operations.md` |
-| README/docs/contribution guide changes | `CONTRIBUTING.md` | `docs/operations.md` for Vercel docs-only skip behavior |
+| README/docs/contribution guide changes | `CONTRIBUTING.md` | `docs/issue-driven-development.md`, `docs/operations.md` for Vercel docs-only skip behavior |
 | Bug report or regression triage | `CONTRIBUTING.md` | Pick the domain doc from the failing surface |
 
 If the user request spans multiple intents, read the highest-risk document first. Supabase/Auth/Ops risk takes precedence over UI convenience.
@@ -34,11 +34,12 @@ If the user request spans multiple intents, read the highest-risk document first
 
 1. Classify the task as code, content, schema, ops, access, security, or research.
 2. Use the intent router above to load the minimum required docs.
-3. State the write scope before editing.
-4. Keep changes narrow.
-5. Use migrations for durable Supabase changes.
-6. Run relevant checks.
-7. Summarize production impact clearly.
+3. Confirm the issue number, or draft a structured issue before non-trivial implementation.
+4. State the write scope before editing.
+5. Keep changes narrow.
+6. Use migrations for durable Supabase changes.
+7. Run relevant checks.
+8. Summarize production impact clearly.
 
 If no issue exists and the task is not trivial, draft or request a structured issue before broad implementation.
 

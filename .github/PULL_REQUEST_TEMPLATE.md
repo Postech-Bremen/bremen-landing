@@ -4,7 +4,11 @@ Describe the user-facing change.
 
 ## Linked Issue
 
-Closes #
+Closes #<issue-number>
+
+Branch format:
+
+- [ ] Branch follows `<type>/<issue-number>-short-slug` for internal branches.
 
 ## Change Type
 
@@ -30,6 +34,7 @@ Migration files:
 ## Guardrails
 
 - [ ] No secrets committed
+- [ ] Work stayed inside the linked issue scope
 - [ ] No service role key in client code
 - [ ] RLS remains enabled
 - [ ] No destructive SQL

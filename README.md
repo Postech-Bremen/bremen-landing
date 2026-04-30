@@ -27,7 +27,8 @@ The site includes:
 
 ## Documentation
 
-- [Contributing](./CONTRIBUTING.md): issue-first contribution flow, PR checks, and decision rules
+- [Contributing](./CONTRIBUTING.md): issue-driven contribution flow, PR checks, and decision rules
+- [Issue-Driven Development](./docs/issue-driven-development.md): issue contract, branch naming, and PR rules
 - [Content Graph](./docs/content-graph.md): `pages -> sections -> entities` model and content recipes
 - [Supabase Setup](./docs/supabase-setup.md): CLI/MCP setup, migrations, service role rules, type generation
 - [Agentic Workflow](./docs/agentic-workflow.md): Claude/Codex issue workflow, prompts, and hard guardrails

@@ -4,7 +4,7 @@ This repository is designed for issue-scoped agent work. Claude, Codex, and othe
 
 ## Default Rule
 
-Start from an issue. If no issue exists, the first agent task is to draft one using the structured templates, not to mutate code or data.
+Start from an issue. If no issue exists, the first agent task is to draft one using the structured templates, not to mutate code or data. See `docs/issue-driven-development.md` for the repository contract.
 
 Agents should classify every task as one or more of:
 

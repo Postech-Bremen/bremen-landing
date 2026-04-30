@@ -1,6 +1,8 @@
 # Contributing
 
-This project uses an **issue-first** contribution flow. Do not start by asking an agent to directly mutate code or Supabase. Start by writing a structured issue, get the scope clear, then let a human or agent work inside that approved scope.
+This project uses **issue-driven development**. Do not start by asking an agent to directly mutate code or Supabase. Start by writing a structured issue, get the scope clear, then let a human or agent work inside that approved scope.
+
+For the full contract, see [Issue-Driven Development](./docs/issue-driven-development.md).
 
 ## Contribution Flow
 
@@ -9,8 +11,11 @@ This project uses an **issue-first** contribution flow. Do not start by asking a
 3. Identify whether the change belongs in Supabase, code, or both.
 4. For Supabase changes, write a migration or ask a maintainer to prepare one.
 5. For code changes, keep the write scope narrow and list affected files.
-6. Run the quality gate.
-7. Open a PR that links the issue and describes validation.
+6. Create a branch named `<type>/<issue-number>-short-slug`.
+7. Run the quality gate.
+8. Open a PR with `Closes #<issue-number>` and validation notes.
+
+Internal PRs are checked by GitHub Actions. The branch issue number and PR closing reference must match.
 
 ## Issue Templates
 
@@ -90,7 +95,8 @@ Bad issues:
 
 Every PR should answer:
 
-- Which issue does this close?
+- Which issue does this close? Use `Closes #<issue-number>`.
+- Does the internal branch name match `<type>/<issue-number>-short-slug`?
 - Did this change Supabase schema/data/policies?
 - If yes, which migration file was added?
 - Did `lib/supabase/types.ts` need regeneration?
@@ -149,6 +155,7 @@ Agents may implement scoped issues, but they must follow [Agentic Workflow](./do
 
 Agents must not:
 
+- Start non-trivial work without a structured issue or issue draft.
 - Invent broad DB refactors.
 - Run destructive SQL.
 - Disable RLS.

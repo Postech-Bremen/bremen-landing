@@ -7,6 +7,8 @@ description: Draft structured GitHub issues for the Bremen Landing repository, i
 
 Use this skill when asked to create, refine, or post a GitHub issue for Bremen Landing.
 
+This repository uses issue-driven development. For non-trivial implementation work, create or identify the issue before changing code, Supabase, Vercel, Auth, Storage, or content graph data.
+
 ## Workflow
 
 1. Classify the issue as `content`, `db-migration`, `ui-change`, `bug`, `ops`, `access`, or `agent-task`.
@@ -15,6 +17,8 @@ Use this skill when asked to create, refine, or post a GitHub issue for Bremen L
 4. Add acceptance checks that a human can verify.
 5. Add non-goals to prevent broad agent drift.
 6. Add guardrails for risky areas.
+
+Implementation PRs should use a branch like `<type>/<issue-number>-short-slug` and include `Closes #<issue-number>`.
 
 ## Issue Body Template
 
