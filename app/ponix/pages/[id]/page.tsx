@@ -2,8 +2,9 @@ import type { Metadata } from "next"
 import { notFound } from "next/navigation"
 
 import { CmsDetailPage } from "@/app/ponix/_components/cms-detail"
+import { PageSectionRelationsCard } from "@/app/ponix/_components/cms-relations"
 import { requireCmsAdmin } from "@/lib/cms/auth"
-import { loadCmsPageDetail } from "@/lib/cms/content"
+import { loadCmsPageDetail, loadCmsPageRelations } from "@/lib/cms/content"
 
 export const metadata: Metadata = {
   title: "PONIX Page Detail | 브레멘 Bremen",
@@ -23,7 +24,10 @@ export default async function PonixPageRecordPage({
   const { id } = await params
 
   await requireCmsAdmin(`/ponix/pages/${id}`)
-  const detail = await loadCmsPageDetail(id)
+  const [detail, relations] = await Promise.all([
+    loadCmsPageDetail(id),
+    loadCmsPageRelations(id),
+  ])
 
   if (!detail) {
     notFound()
@@ -34,6 +38,12 @@ export default async function PonixPageRecordPage({
       detail={detail}
       backHref="/ponix/pages"
       backLabel="All pages"
-    />
+    >
+      <PageSectionRelationsCard
+        title="Page structure"
+        description="Sections attached to this page in render order."
+        relations={relations.pageSections}
+      />
+    </CmsDetailPage>
   )
 }

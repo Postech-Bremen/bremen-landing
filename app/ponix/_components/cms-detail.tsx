@@ -1,4 +1,5 @@
 import Link from "next/link"
+import type { ReactNode } from "react"
 
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { Badge } from "@/components/ui/badge"
@@ -38,10 +39,12 @@ export function CmsDetailPage({
   detail,
   backHref,
   backLabel,
+  children,
 }: {
   detail: CmsContentDetail
   backHref: string
   backLabel: string
+  children?: ReactNode
 }) {
   const schema = getCmsSchema(detail.schemaKey)
   const fieldCount = schema?.fields.length ?? 0
@@ -160,6 +163,8 @@ export function CmsDetailPage({
             </Card>
           </div>
         </div>
+
+        {children && <div className="mt-6 space-y-6">{children}</div>}
       </section>
     </main>
   )
