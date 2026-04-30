@@ -1,8 +1,13 @@
 import { createClient } from "@/lib/supabase/server"
+import type { Database } from "@/lib/supabase/types"
 
 import { getCmsSchema } from "./schema-registry"
 
 const ENTITY_LIST_LIMIT = 200
+
+type PageRow = Database["public"]["Tables"]["pages"]["Row"]
+type SectionRow = Database["public"]["Tables"]["sections"]["Row"]
+type EntityRow = Database["public"]["Tables"]["entities"]["Row"]
 
 type SchemaSummary = {
   schemaKey: string
@@ -47,6 +52,35 @@ export type CmsEntityList = {
   limit: number
 }
 
+export type CmsContentDetail =
+  | {
+      kind: "page"
+      table: "pages"
+      title: string
+      subtitle: string | null
+      published: boolean
+      updatedAt: string
+      row: PageRow
+    } & SchemaSummary
+  | {
+      kind: "section"
+      table: "sections"
+      title: string
+      subtitle: string | null
+      published: boolean
+      updatedAt: string
+      row: SectionRow
+    } & SchemaSummary
+  | {
+      kind: "entity"
+      table: "entities"
+      title: string
+      subtitle: string | null
+      published: boolean
+      updatedAt: string
+      row: EntityRow
+    } & SchemaSummary
+
 function schemaSummary(schemaKey: string): SchemaSummary {
   const schema = getCmsSchema(schemaKey)
 
@@ -79,6 +113,36 @@ export async function loadCmsPages(): Promise<CmsPageSummary[]> {
   }))
 }
 
+export async function loadCmsPageDetail(
+  id: string,
+): Promise<CmsContentDetail | null> {
+  const supabase = await createClient()
+  const { data, error } = await supabase
+    .from("pages")
+    .select("*")
+    .eq("id", id)
+    .maybeSingle()
+
+  if (error) {
+    throw new Error(`Failed to load CMS page detail: ${error.message}`)
+  }
+
+  if (!data) {
+    return null
+  }
+
+  return {
+    ...schemaSummary("page/default/v1"),
+    kind: "page",
+    table: "pages",
+    title: data.title,
+    subtitle: data.subtitle,
+    published: data.published,
+    updatedAt: data.updated_at,
+    row: data,
+  }
+}
+
 export async function loadCmsSections(): Promise<CmsSectionSummary[]> {
   const supabase = await createClient()
   const { data, error } = await supabase
@@ -100,6 +164,36 @@ export async function loadCmsSections(): Promise<CmsSectionSummary[]> {
     published: section.published,
     updatedAt: section.updated_at,
   }))
+}
+
+export async function loadCmsSectionDetail(
+  id: string,
+): Promise<CmsContentDetail | null> {
+  const supabase = await createClient()
+  const { data, error } = await supabase
+    .from("sections")
+    .select("*")
+    .eq("id", id)
+    .maybeSingle()
+
+  if (error) {
+    throw new Error(`Failed to load CMS section detail: ${error.message}`)
+  }
+
+  if (!data) {
+    return null
+  }
+
+  return {
+    ...schemaSummary(data.schema_key),
+    kind: "section",
+    table: "sections",
+    title: data.title ?? data.key,
+    subtitle: data.subtitle,
+    published: data.published,
+    updatedAt: data.updated_at,
+    row: data,
+  }
 }
 
 export async function loadCmsEntities(): Promise<CmsEntityList> {
@@ -132,5 +226,35 @@ export async function loadCmsEntities(): Promise<CmsEntityList> {
       sortAt: entity.sort_at,
       updatedAt: entity.updated_at,
     })),
+  }
+}
+
+export async function loadCmsEntityDetail(
+  id: string,
+): Promise<CmsContentDetail | null> {
+  const supabase = await createClient()
+  const { data, error } = await supabase
+    .from("entities")
+    .select("*")
+    .eq("id", id)
+    .maybeSingle()
+
+  if (error) {
+    throw new Error(`Failed to load CMS entity detail: ${error.message}`)
+  }
+
+  if (!data) {
+    return null
+  }
+
+  return {
+    ...schemaSummary(data.schema_key),
+    kind: "entity",
+    table: "entities",
+    title: data.title,
+    subtitle: data.subtitle,
+    published: data.published,
+    updatedAt: data.updated_at,
+    row: data,
   }
 }

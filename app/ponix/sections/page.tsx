@@ -1,4 +1,5 @@
 import type { Metadata } from "next"
+import Link from "next/link"
 
 import {
   CmsListPage,
@@ -51,9 +52,21 @@ export default async function PonixSectionsPage() {
           <TableBody>
             {sections.map((section) => (
               <TableRow key={section.id}>
-                <TableCell className="font-mono text-xs">{section.key}</TableCell>
+                <TableCell className="font-mono text-xs">
+                  <Link
+                    href={`/ponix/sections/${section.id}`}
+                    className="underline-offset-4 hover:underline"
+                  >
+                    {section.key}
+                  </Link>
+                </TableCell>
                 <TableCell>
-                  <div className="font-medium">{section.title ?? "Untitled"}</div>
+                  <Link
+                    href={`/ponix/sections/${section.id}`}
+                    className="font-medium underline-offset-4 hover:underline"
+                  >
+                    {section.title ?? "Untitled"}
+                  </Link>
                   {section.subtitle && (
                     <div className="text-xs text-muted-foreground">
                       {section.subtitle}
