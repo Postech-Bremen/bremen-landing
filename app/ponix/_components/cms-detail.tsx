@@ -39,11 +39,13 @@ export function CmsDetailPage({
   detail,
   backHref,
   backLabel,
+  actions,
   children,
 }: {
   detail: CmsContentDetail
   backHref: string
   backLabel: string
+  actions?: ReactNode
   children?: ReactNode
 }) {
   const schema = getCmsSchema(detail.schemaKey)
@@ -79,9 +81,12 @@ export function CmsDetailPage({
               </Badge>
             </div>
           </div>
-          <Button asChild variant="outline" className="w-fit rounded-full">
-            <Link href={backHref}>{backLabel}</Link>
-          </Button>
+          <div className="flex flex-wrap gap-2">
+            <Button asChild variant="outline" className="w-fit rounded-full">
+              <Link href={backHref}>{backLabel}</Link>
+            </Button>
+            {actions}
+          </div>
         </div>
 
         {!schema && (
