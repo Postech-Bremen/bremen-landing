@@ -99,6 +99,18 @@ When adding or changing a domain:
 3. Test signup or password reset end-to-end.
 4. Document the result in the issue or PR.
 
+## Reserved Admin Routes
+
+Do not expose the CMS at `/admin`.
+
+Route policy:
+
+- `/admin` is a public decoy warning page and must not load CMS data.
+- `/ponix` is the reserved CMS control surface route.
+- `/ponix` requires Supabase Auth and `members.role = 'admin'`.
+- Non-admin authenticated users should receive a hidden failure such as 404, not a detailed permission page.
+- Both routes should remain `noindex`.
+
 ## Email and SMTP
 
 The project uses custom SMTP through Resend.

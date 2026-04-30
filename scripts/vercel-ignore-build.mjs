@@ -36,7 +36,7 @@ function changedFilesFromGit() {
       .split("\n")
       .map((file) => file.trim().replaceAll("\\", "/"))
       .filter(Boolean)
-  } catch (error) {
+  } catch {
     console.log("Vercel build will run: unable to inspect previous commit.")
     process.exit(1)
   }
