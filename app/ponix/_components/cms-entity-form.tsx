@@ -25,6 +25,8 @@ import {
   type CmsEditableEntityField,
 } from "@/lib/cms/entity-editor"
 
+import { CmsEntityLivePreview } from "./cms-live-preview"
+
 type CmsEntityDetail = Extract<CmsContentDetail, { kind: "entity" }>
 
 export function CmsEntityEditorPage({
@@ -38,6 +40,7 @@ export function CmsEntityEditorPage({
   const editableFields = getEditableEntityFields(detail.schemaKey)
   const columnFields = editableFields.filter((field) => field.source === "column")
   const dataFields = editableFields.filter((field) => field.source === "data")
+  const formId = `cms-entity-form-${detail.row.id}`
 
   return (
     <main className="relative min-h-[calc(100vh-5rem)] overflow-hidden">
@@ -79,60 +82,72 @@ export function CmsEntityEditorPage({
             </AlertDescription>
           </Alert>
         ) : (
-          <form action={updateCmsEntityAction} className="space-y-6">
+          <form
+            id={formId}
+            action={updateCmsEntityAction}
+            className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_26rem]"
+          >
             <input type="hidden" name="entity_id" value={detail.row.id} />
 
-            {error && (
-              <Alert variant="destructive">
-                <AlertTitle>Save failed</AlertTitle>
-                <AlertDescription>{error}</AlertDescription>
-              </Alert>
-            )}
+            <div className="space-y-6">
+              {error && (
+                <Alert variant="destructive">
+                  <AlertTitle>Save failed</AlertTitle>
+                  <AlertDescription>{error}</AlertDescription>
+                </Alert>
+              )}
 
-            <Card className="rounded-md bg-card/95 shadow-xl">
-              <CardHeader className="border-b">
-                <CardTitle className="font-serif text-3xl italic">
-                  Locked identity
-                </CardTitle>
-                <CardDescription>
-                  These values define entity behavior and are not editable in
-                  this slice.
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="grid gap-4 px-6 py-6 md:grid-cols-3">
-                <ReadonlyMeta label="Entity type" value={detail.row.entity_type} />
-                <ReadonlyMeta label="Schema" value={detail.row.schema_key} />
-                <ReadonlyMeta label="ID" value={detail.row.id} />
-              </CardContent>
-            </Card>
+              <Card className="rounded-md bg-card/95 shadow-xl">
+                <CardHeader className="border-b">
+                  <CardTitle className="font-serif text-3xl italic">
+                    Locked identity
+                  </CardTitle>
+                  <CardDescription>
+                    These values define entity behavior and are not editable in
+                    this slice.
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="grid gap-4 px-6 py-6 md:grid-cols-3">
+                  <ReadonlyMeta label="Entity type" value={detail.row.entity_type} />
+                  <ReadonlyMeta label="Schema" value={detail.row.schema_key} />
+                  <ReadonlyMeta label="ID" value={detail.row.id} />
+                </CardContent>
+              </Card>
 
-            <ThumbnailCard detail={detail} />
+              <ThumbnailCard detail={detail} />
 
-            <EditorCard
-              title="Entity fields"
-              description="Shared columns used by cards, lists, and detail views."
-              fields={columnFields}
-              detail={detail}
-            />
+              <EditorCard
+                title="Entity fields"
+                description="Shared columns used by cards, lists, and detail views."
+                fields={columnFields}
+                detail={detail}
+              />
 
-            <EditorCard
-              title="Schema data"
-              description="Schema-registered JSON data for this entity type."
-              fields={dataFields}
-              detail={detail}
-            />
+              <EditorCard
+                title="Schema data"
+                description="Schema-registered JSON data for this entity type."
+                fields={dataFields}
+                detail={detail}
+              />
 
-            <div className="flex flex-col gap-3 rounded-md border bg-card/95 p-4 shadow-xl sm:flex-row sm:items-center sm:justify-between">
-              <p className="text-sm text-muted-foreground">
-                Saving updates this entity row only. Relations stay untouched.
-              </p>
-              <div className="flex gap-2">
-                <Button asChild type="button" variant="outline">
-                  <Link href={`/ponix/entities/${detail.row.id}`}>Cancel</Link>
-                </Button>
-                <Button type="submit">Save entity</Button>
+              <div className="flex flex-col gap-3 rounded-md border bg-card/95 p-4 shadow-xl sm:flex-row sm:items-center sm:justify-between">
+                <p className="text-sm text-muted-foreground">
+                  Saving updates this entity row only. Relations stay untouched.
+                </p>
+                <div className="flex gap-2">
+                  <Button asChild type="button" variant="outline">
+                    <Link href={`/ponix/entities/${detail.row.id}`}>Cancel</Link>
+                  </Button>
+                  <Button type="submit">Save entity</Button>
+                </div>
               </div>
             </div>
+
+            <CmsEntityLivePreview
+              formId={formId}
+              detail={detail}
+              fields={editableFields}
+            />
           </form>
         )}
       </section>

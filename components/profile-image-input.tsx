@@ -27,7 +27,10 @@ export function ProfileImageInput({
   }
 
   function clearFile() {
-    if (inputRef.current) inputRef.current.value = ""
+    if (inputRef.current) {
+      inputRef.current.value = ""
+      inputRef.current.dispatchEvent(new Event("change", { bubbles: true }))
+    }
     setFileName("")
   }
 

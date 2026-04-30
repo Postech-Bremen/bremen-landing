@@ -32,7 +32,7 @@ const SECTION_ENTITY_RELATION_SELECT = `
   props,
   updated_at,
   section:sections!section_entities_section_id_fkey(id, key, title, section_type, schema_key, published),
-  entity:entities!section_entities_entity_id_fkey(id, entity_type, slug, title, schema_key, published, sort_at)
+  entity:entities!section_entities_entity_id_fkey(id, entity_type, slug, title, subtitle, thumbnail_url, schema_key, published, sort_at)
 `
 
 const ENTITY_RELATION_SELECT = `
@@ -44,8 +44,8 @@ const ENTITY_RELATION_SELECT = `
   sort_order,
   props,
   updated_at,
-  fromEntity:entities!entity_relations_from_entity_id_fkey(id, entity_type, slug, title, schema_key, published, sort_at),
-  toEntity:entities!entity_relations_to_entity_id_fkey(id, entity_type, slug, title, schema_key, published, sort_at)
+  fromEntity:entities!entity_relations_from_entity_id_fkey(id, entity_type, slug, title, subtitle, thumbnail_url, schema_key, published, sort_at),
+  toEntity:entities!entity_relations_to_entity_id_fkey(id, entity_type, slug, title, subtitle, thumbnail_url, schema_key, published, sort_at)
 `
 
 type SchemaSummary = {
@@ -117,6 +117,8 @@ export type CmsLinkedEntity = SchemaSummary & {
   entityType: string
   slug: string | null
   title: string
+  subtitle: string | null
+  thumbnailUrl: string | null
   published: boolean
   sortAt: string
 }
@@ -271,6 +273,8 @@ function linkedEntity(entity: RawEntityLink | null): CmsLinkedEntity | null {
     entityType: entity.entity_type,
     slug: entity.slug,
     title: entity.title,
+    subtitle: entity.subtitle,
+    thumbnailUrl: entity.thumbnail_url,
     published: entity.published,
     sortAt: entity.sort_at,
   }
@@ -287,6 +291,8 @@ type RawEntityLink = Pick<
   | "entity_type"
   | "slug"
   | "title"
+  | "subtitle"
+  | "thumbnail_url"
   | "schema_key"
   | "published"
   | "sort_at"

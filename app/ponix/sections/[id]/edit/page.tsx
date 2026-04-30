@@ -3,7 +3,10 @@ import { notFound } from "next/navigation"
 
 import { CmsSectionEditorPage } from "@/app/ponix/_components/cms-section-form"
 import { requireCmsAdmin } from "@/lib/cms/auth"
-import { loadCmsSectionDetail } from "@/lib/cms/content"
+import {
+  loadCmsSectionDetail,
+  loadCmsSectionRelations,
+} from "@/lib/cms/content"
 
 export const metadata: Metadata = {
   title: "Edit PONIX Section | 브레멘 Bremen",
@@ -30,13 +33,20 @@ export default async function PonixSectionEditPage({
   const query = (await searchParams) ?? {}
 
   await requireCmsAdmin(`/ponix/sections/${id}/edit`)
-  const detail = await loadCmsSectionDetail(id)
+  const [detail, relations] = await Promise.all([
+    loadCmsSectionDetail(id),
+    loadCmsSectionRelations(id),
+  ])
 
   if (!detail || detail.kind !== "section") {
     notFound()
   }
 
   return (
-    <CmsSectionEditorPage detail={detail} error={firstParam(query.error)} />
+    <CmsSectionEditorPage
+      detail={detail}
+      relations={relations}
+      error={firstParam(query.error)}
+    />
   )
 }

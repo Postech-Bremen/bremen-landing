@@ -15,7 +15,7 @@ import { Checkbox } from "@/components/ui/checkbox"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
-import type { CmsContentDetail } from "@/lib/cms/content"
+import type { CmsContentDetail, CmsSectionRelationContext } from "@/lib/cms/content"
 import {
   cmsFieldInputName,
   getEditableSectionFields,
@@ -24,19 +24,24 @@ import {
   type CmsEditableSectionField,
 } from "@/lib/cms/section-editor"
 
+import { CmsSectionLivePreview } from "./cms-live-preview"
+
 type CmsSectionDetail = Extract<CmsContentDetail, { kind: "section" }>
 
 export function CmsSectionEditorPage({
   detail,
+  relations,
   error,
 }: {
   detail: CmsSectionDetail
+  relations: CmsSectionRelationContext
   error?: string
 }) {
   const schema = getSectionEditorSchema(detail.schemaKey)
   const editableFields = getEditableSectionFields(detail.schemaKey)
   const columnFields = editableFields.filter((field) => field.source === "column")
   const propsFields = editableFields.filter((field) => field.source === "props")
+  const formId = `cms-section-form-${detail.row.id}`
 
   return (
     <main className="relative min-h-[calc(100vh-5rem)] overflow-hidden">
@@ -78,58 +83,71 @@ export function CmsSectionEditorPage({
             </AlertDescription>
           </Alert>
         ) : (
-          <form action={updateCmsSectionAction} className="space-y-6">
+          <form
+            id={formId}
+            action={updateCmsSectionAction}
+            className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_28rem]"
+          >
             <input type="hidden" name="section_id" value={detail.row.id} />
 
-            {error && (
-              <Alert variant="destructive">
-                <AlertTitle>Save failed</AlertTitle>
-                <AlertDescription>{error}</AlertDescription>
-              </Alert>
-            )}
+            <div className="space-y-6">
+              {error && (
+                <Alert variant="destructive">
+                  <AlertTitle>Save failed</AlertTitle>
+                  <AlertDescription>{error}</AlertDescription>
+                </Alert>
+              )}
 
-            <Card className="rounded-md bg-card/95 shadow-xl">
-              <CardHeader className="border-b">
-                <CardTitle className="font-serif text-3xl italic">
-                  Locked identity
-                </CardTitle>
-                <CardDescription>
-                  These values define routing and renderer behavior and are not
-                  editable in this slice.
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="grid gap-4 px-6 py-6 md:grid-cols-3">
-                <ReadonlyMeta label="Key" value={detail.row.key} />
-                <ReadonlyMeta label="Renderer" value={detail.row.section_type} />
-                <ReadonlyMeta label="Schema" value={detail.row.schema_key} />
-              </CardContent>
-            </Card>
+              <Card className="rounded-md bg-card/95 shadow-xl">
+                <CardHeader className="border-b">
+                  <CardTitle className="font-serif text-3xl italic">
+                    Locked identity
+                  </CardTitle>
+                  <CardDescription>
+                    These values define routing and renderer behavior and are not
+                    editable in this slice.
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="grid gap-4 px-6 py-6 md:grid-cols-3">
+                  <ReadonlyMeta label="Key" value={detail.row.key} />
+                  <ReadonlyMeta label="Renderer" value={detail.row.section_type} />
+                  <ReadonlyMeta label="Schema" value={detail.row.schema_key} />
+                </CardContent>
+              </Card>
 
-            <EditorCard
-              title="Section copy"
-              description="Column fields shared by section renderers."
-              fields={columnFields}
-              detail={detail}
-            />
+              <EditorCard
+                title="Section copy"
+                description="Column fields shared by section renderers."
+                fields={columnFields}
+                detail={detail}
+              />
 
-            <EditorCard
-              title="Renderer props"
-              description="Schema-registered JSON props for this section renderer."
-              fields={propsFields}
-              detail={detail}
-            />
+              <EditorCard
+                title="Renderer props"
+                description="Schema-registered JSON props for this section renderer."
+                fields={propsFields}
+                detail={detail}
+              />
 
-            <div className="flex flex-col gap-3 rounded-md border bg-card/95 p-4 shadow-xl sm:flex-row sm:items-center sm:justify-between">
-              <p className="text-sm text-muted-foreground">
-                Saving updates this section row only. Relations and entities stay untouched.
-              </p>
-              <div className="flex gap-2">
-                <Button asChild type="button" variant="outline">
-                  <Link href={`/ponix/sections/${detail.row.id}`}>Cancel</Link>
-                </Button>
-                <Button type="submit">Save section</Button>
+              <div className="flex flex-col gap-3 rounded-md border bg-card/95 p-4 shadow-xl sm:flex-row sm:items-center sm:justify-between">
+                <p className="text-sm text-muted-foreground">
+                  Saving updates this section row only. Relations and entities stay untouched.
+                </p>
+                <div className="flex gap-2">
+                  <Button asChild type="button" variant="outline">
+                    <Link href={`/ponix/sections/${detail.row.id}`}>Cancel</Link>
+                  </Button>
+                  <Button type="submit">Save section</Button>
+                </div>
               </div>
             </div>
+
+            <CmsSectionLivePreview
+              formId={formId}
+              detail={detail}
+              fields={editableFields}
+              sectionEntities={relations.sectionEntities}
+            />
           </form>
         )}
       </section>
