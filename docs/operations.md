@@ -20,6 +20,25 @@ Rules:
 - Do not put service role keys in Vercel unless a server-only feature explicitly requires it.
 - If server-only secrets are added later, document the exact server path that needs them.
 
+## Vercel Build Skip Policy
+
+`vercel.json` uses:
+
+```json
+{
+  "ignoreCommand": "node scripts/vercel-ignore-build.mjs"
+}
+```
+
+The script skips Vercel builds when the latest commit only changes:
+
+- root project docs such as `README.md`, `CONTRIBUTING.md`, `AGENTS.md`, `CLAUDE.md`
+- `docs/**`
+- `.agents/**`
+- GitHub issue templates and the PR template
+
+The build still runs for application code, Supabase migrations, package files, Vercel config, GitHub Actions, scripts, public assets, and any other deployment-relevant file.
+
 Recommended checks after deployment:
 
 ```bash
