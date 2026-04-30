@@ -142,6 +142,19 @@ const photoAspectOptions = [
   textOption("landscape", "Landscape"),
 ]
 
+const instagramContentKindOptions = [
+  textOption("event", "Event"),
+  textOption("notice", "Notice"),
+  textOption("promo", "Promo"),
+  textOption("recruiting", "Recruiting"),
+  textOption("setlist", "Setlist"),
+]
+
+const videoCollectionKindOptions = [
+  textOption("performance", "Performance"),
+  textOption("video_collection", "Video collection"),
+]
+
 export const cmsSchemaRegistry: CmsSchemaDefinition[] = [
   {
     schemaKey: "page/default/v1",
@@ -354,6 +367,55 @@ export const cmsSchemaRegistry: CmsSchemaDefinition[] = [
     ],
   ),
   entitySchema(
+    "video/youtube/v1",
+    "YouTube video",
+    "YouTube recording imported from the Bremen channel.",
+    [
+      field("data", "youtube_id", "YouTube ID", "text", {
+        readOnly: true,
+        required: true,
+      }),
+      field("data", "youtube_url", "YouTube URL", "url", { readOnly: true }),
+      field("data", "source", "Source", "text", { readOnly: true }),
+      field("data", "source_index", "Source index", "number", { readOnly: true }),
+      field("data", "source_thumbnail_url", "Source thumbnail URL", "url", {
+        readOnly: true,
+      }),
+      field("data", "storage_path", "Storage path", "text", { readOnly: true }),
+      field("data", "media_type", "Media type", "text", { readOnly: true }),
+      field("data", "artist", "Artist", "text"),
+      field("data", "song", "Song", "text"),
+      field("data", "team", "Team", "text"),
+      field("data", "event_slug", "Event slug", "text"),
+      field("data", "event_title", "Event title", "text"),
+      field("data", "collection_kind", "Collection kind", "select", {
+        options: videoCollectionKindOptions,
+      }),
+      field("data", "display_order", "Display order", "number"),
+      field("data", "duration", "Duration", "text", { readOnly: true }),
+      field("data", "views", "Views", "number", { readOnly: true }),
+      field("data", "views_label", "Views label", "text", { readOnly: true }),
+      field("data", "age_label", "Age label", "text", { readOnly: true }),
+      field("data", "is_highlight", "Highlight", "boolean"),
+    ],
+  ),
+  entitySchema(
+    "playlist/youtube/v1",
+    "YouTube playlist",
+    "YouTube playlist or performance collection imported from the Bremen channel.",
+    [
+      field("data", "playlist_id", "Playlist ID", "text", {
+        readOnly: true,
+        required: true,
+      }),
+      field("data", "playlist_url", "Playlist URL", "url", { readOnly: true }),
+      field("data", "seed_video_id", "Seed video ID", "text", { readOnly: true }),
+      field("data", "source", "Source", "text", { readOnly: true }),
+      field("data", "video_count", "Video count", "number", { readOnly: true }),
+      field("data", "event_slug", "Event slug", "text"),
+    ],
+  ),
+  entitySchema(
     "photo/v1",
     "Photo",
     "Generic photo entity.",
@@ -380,6 +442,45 @@ export const cmsSchemaRegistry: CmsSchemaDefinition[] = [
           textOption("recruiting", "Recruiting"),
           textOption("setlist", "Setlist"),
         ],
+      }),
+      field("data", "gallery_include", "Show in gallery", "boolean"),
+      field("data", "category", "Category", "select", { options: photoCategoryOptions }),
+      field("data", "aspect", "Aspect", "select", { options: photoAspectOptions }),
+      field("data", "event_slug", "Event slug", "text"),
+      field("data", "event_title", "Event title", "text"),
+      field("data", "taken_at", "Taken at", "date"),
+      field("data", "display_date", "Display date", "text"),
+    ],
+  ),
+  entitySchema(
+    "post/instagram/v1",
+    "Instagram post",
+    "Instagram-sourced post used for performance updates, notices, and gallery curation.",
+    [
+      field("data", "shortcode", "Shortcode", "text", {
+        readOnly: true,
+        required: true,
+      }),
+      field("data", "source", "Source", "text", { readOnly: true }),
+      field("data", "source_index", "Source index", "number", { readOnly: true }),
+      field("data", "source_url", "Source URL", "url", { readOnly: true }),
+      field("data", "source_thumbnail_url", "Source thumbnail URL", "url", {
+        readOnly: true,
+      }),
+      field("data", "storage_path", "Storage path", "text", { readOnly: true }),
+      field("data", "imported_at", "Imported at", "datetime", { readOnly: true }),
+      field("data", "media_type", "Media type", "text", { readOnly: true }),
+      field("data", "like_count", "Like count", "number", { readOnly: true }),
+      field("data", "comment_count", "Comment count", "number", { readOnly: true }),
+      field("data", "carousel_count", "Carousel count", "number", {
+        readOnly: true,
+      }),
+      field("data", "taken_at_timestamp", "Taken at timestamp", "number", {
+        readOnly: true,
+      }),
+      field("data", "caption", "Caption", "textarea"),
+      field("data", "content_kind", "Content kind", "select", {
+        options: instagramContentKindOptions,
       }),
       field("data", "gallery_include", "Show in gallery", "boolean"),
       field("data", "category", "Category", "select", { options: photoCategoryOptions }),
