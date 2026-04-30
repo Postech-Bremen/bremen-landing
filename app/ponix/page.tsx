@@ -51,7 +51,7 @@ export default async function PonixPage() {
       kind: "relation",
       title: "Relations",
       body: "Section curation and entity-to-entity domain links.",
-      href: null,
+      href: "/ponix/relations",
     },
   ]
 

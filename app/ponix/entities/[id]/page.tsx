@@ -2,8 +2,15 @@ import type { Metadata } from "next"
 import { notFound } from "next/navigation"
 
 import { CmsDetailPage } from "@/app/ponix/_components/cms-detail"
+import {
+  EntityRelationsCard,
+  SectionEntityRelationsCard,
+} from "@/app/ponix/_components/cms-relations"
 import { requireCmsAdmin } from "@/lib/cms/auth"
-import { loadCmsEntityDetail } from "@/lib/cms/content"
+import {
+  loadCmsEntityDetail,
+  loadCmsEntityRelations,
+} from "@/lib/cms/content"
 
 export const metadata: Metadata = {
   title: "PONIX Entity Detail | 브레멘 Bremen",
@@ -23,7 +30,10 @@ export default async function PonixEntityRecordPage({
   const { id } = await params
 
   await requireCmsAdmin(`/ponix/entities/${id}`)
-  const detail = await loadCmsEntityDetail(id)
+  const [detail, relations] = await Promise.all([
+    loadCmsEntityDetail(id),
+    loadCmsEntityRelations(id),
+  ])
 
   if (!detail) {
     notFound()
@@ -34,6 +44,22 @@ export default async function PonixEntityRecordPage({
       detail={detail}
       backHref="/ponix/entities"
       backLabel="All entities"
-    />
+    >
+      <SectionEntityRelationsCard
+        title="Section placements"
+        description="Sections that curate this entity."
+        relations={relations.sectionEntities}
+      />
+      <EntityRelationsCard
+        title="Outgoing relations"
+        description="Entities linked from this record."
+        relations={relations.outgoingEntityRelations}
+      />
+      <EntityRelationsCard
+        title="Incoming relations"
+        description="Entities that link to this record."
+        relations={relations.incomingEntityRelations}
+      />
+    </CmsDetailPage>
   )
 }
