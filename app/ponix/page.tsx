@@ -1,6 +1,8 @@
 import type { Metadata } from "next"
+import Link from "next/link"
 
 import { Badge } from "@/components/ui/badge"
+import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { requireCmsAdmin } from "@/lib/cms/auth"
 import {
@@ -25,26 +27,31 @@ export default async function PonixPage() {
     kind: CmsSchemaKind
     title: string
     body: string
+    href: string | null
   }> = [
     {
       kind: "page",
       title: "Pages",
       body: "Route-level records and page metadata.",
+      href: "/ponix/pages",
     },
     {
       kind: "section",
       title: "Sections",
       body: "Renderer contracts, section copy, and props.",
+      href: "/ponix/sections",
     },
     {
       kind: "entity",
       title: "Entities",
       body: "Videos, photos, performances, history, stats, and links.",
+      href: "/ponix/entities",
     },
     {
       kind: "relation",
       title: "Relations",
       body: "Section curation and entity-to-entity domain links.",
+      href: null,
     },
   ]
 
@@ -123,6 +130,17 @@ export default async function PonixPage() {
                         {schema.label}
                       </Badge>
                     ))}
+                  </div>
+                  <div className="mt-6">
+                    {group.href ? (
+                      <Button asChild variant="outline" className="rounded-full">
+                        <Link href={group.href}>Open {group.title}</Link>
+                      </Button>
+                    ) : (
+                      <Badge variant="outline" className="rounded-full">
+                        Planned
+                      </Badge>
+                    )}
                   </div>
                 </CardContent>
               </Card>
