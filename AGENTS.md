@@ -1,14 +1,24 @@
-# Agent Instructions
+# Agent Entry Point
 
-This repository supports issue-scoped agent contributions. Read this file before making changes.
+This is the first file Claude, Codex, and other coding agents should read. Do not load every document by default. Classify the user's intent, then read only the documents needed for that task.
 
-## Start Here
+## Intent Router
 
-- Human contribution flow: `CONTRIBUTING.md`
-- Content graph model: `docs/content-graph.md`
-- Supabase setup and safe DB workflow: `docs/supabase-setup.md`
-- Agent guardrails: `docs/agentic-workflow.md`
-- Deployment and ops: `docs/operations.md`
+| User intent | Read first | Then read if needed |
+| --- | --- | --- |
+| "What should we do?", planning, issue drafting, task breakdown | `CONTRIBUTING.md` | `.agents/skills/create-bremen-issue/SKILL.md` |
+| UI, layout, shadcn/ui, Tailwind, animation, responsive behavior | `CONTRIBUTING.md` | `docs/content-graph.md` if content/section data is involved |
+| Page copy, section order, curated videos/photos/stats, home hero, Join Us | `docs/content-graph.md` | `docs/supabase-setup.md` if a migration or DB write is needed |
+| New section renderer or CMS-ready page structure | `docs/content-graph.md` | `docs/agentic-workflow.md`, then relevant component/loader files |
+| Supabase schema, RLS, Storage policy, Auth trigger, migrations | `docs/supabase-setup.md` | `.agents/skills/guarded-supabase-mcp/SKILL.md`, `docs/agentic-workflow.md` |
+| Supabase MCP inspection or production DB work | `.agents/skills/guarded-supabase-mcp/SKILL.md` | `docs/supabase-setup.md`, `docs/agentic-workflow.md` |
+| Vercel, deployment, env vars, SMTP, domains, Auth redirect URLs | `docs/operations.md` | `CONTRIBUTING.md` for issue/PR tracking |
+| First-time contributor access, GitHub/Vercel/Supabase invite | `CONTRIBUTING.md` | `docs/operations.md`, `.github/ISSUE_TEMPLATE/access-request.yml` |
+| Security review, production risk, destructive DB concern | `docs/agentic-workflow.md` | `docs/supabase-setup.md`, `docs/operations.md` |
+| README/docs/contribution guide changes | `CONTRIBUTING.md` | `docs/operations.md` for Vercel docs-only skip behavior |
+| Bug report or regression triage | `CONTRIBUTING.md` | Pick the domain doc from the failing surface |
+
+If the user request spans multiple intents, read the highest-risk document first. Supabase/Auth/Ops risk takes precedence over UI convenience.
 
 ## Non-Negotiable Guardrails
 
@@ -22,13 +32,15 @@ This repository supports issue-scoped agent contributions. Read this file before
 
 ## Working Pattern
 
-1. Confirm the issue or create a structured issue draft.
-2. Classify the task as code, content, schema, ops, or research.
+1. Classify the task as code, content, schema, ops, access, security, or research.
+2. Use the intent router above to load the minimum required docs.
 3. State the write scope before editing.
 4. Keep changes narrow.
 5. Use migrations for durable Supabase changes.
 6. Run relevant checks.
 7. Summarize production impact clearly.
+
+If no issue exists and the task is not trivial, draft or request a structured issue before broad implementation.
 
 ## Local Skill Files
 

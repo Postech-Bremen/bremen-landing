@@ -1,8 +1,8 @@
 # Claude Guide
 
-Use the same guardrails as Codex.
+Use [AGENTS.md](./AGENTS.md) as the entry point. It routes user intent to the correct contribution, content graph, Supabase, ops, and agent workflow documents.
 
-Start with:
+Default follow-up references:
 
 - `CONTRIBUTING.md`
 - `docs/agentic-workflow.md`
