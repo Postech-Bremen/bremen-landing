@@ -28,8 +28,8 @@ jobs:
             const sameRepo = pr.head.repo.full_name === pr.base.repo.full_name
 
             const closingIssuePattern = /\b(close[sd]?|fix(?:e[sd])?|resolve[sd]?)\s+#(\d+)\b/gi
-            const branchPattern = /^(issue|ui|content|db|ops|bug|docs|agent|access|security|chore)\/\d+[-_][a-z0-9][a-z0-9._-]*$/i
-            const branchNumberPattern = /^(issue|ui|content|db|ops|bug|docs|agent|access|security|chore)\/(\d+)[-_][a-z0-9][a-z0-9._-]*$/i
+            const branchPattern = /^(issue|ui|content|cms|db|ops|bug|docs|agent|access|security|chore)\/\d+[-_][a-z0-9][a-z0-9._-]*$/i
+            const branchNumberPattern = /^(issue|ui|content|cms|db|ops|bug|docs|agent|access|security|chore)\/(\d+)[-_][a-z0-9][a-z0-9._-]*$/i
 
             const failures = []
             const linkedIssues = [...body.matchAll(closingIssuePattern)].map((match) => match[2])

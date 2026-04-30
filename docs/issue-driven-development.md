@@ -46,6 +46,7 @@ Examples:
 
 - `ui/42-video-filter-search`
 - `content/51-home-hero-curation`
+- `cms/57-read-only-list-views`
 - `db/64-member-profile-policy`
 - `ops/72-vercel-auth-redirects`
 - `docs/88-agent-onboarding`
@@ -56,6 +57,7 @@ Allowed internal branch prefixes:
 - `issue`
 - `ui`
 - `content`
+- `cms`
 - `db`
 - `ops`
 - `bug`
