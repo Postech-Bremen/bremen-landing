@@ -27,8 +27,8 @@ export default function AdminDecoyPage() {
         </h1>
         <div className="mt-10 max-w-2xl border-l border-[#b21f13] pl-6">
           <p className="text-xl leading-relaxed text-[#d6c7b3] md:text-2xl">
-            This route is not the Bremen CMS. Unauthorized access attempts are
-            not welcome here.
+            Unauthorized access is prohibited. This request may be logged and
+            reviewed.
           </p>
           <div className="mt-8">
             <Button asChild variant="secondary" className="rounded-full">
