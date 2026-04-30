@@ -175,6 +175,7 @@ export type CmsPageRelationContext = {
 export type CmsSectionRelationContext = {
   pageSections: CmsPageSectionRelation[]
   sectionEntities: CmsSectionEntityRelation[]
+  entityRelations: CmsEntityRelation[]
 }
 
 export type CmsEntityRelationContext = {
@@ -717,6 +718,39 @@ async function loadEntityRelations({
   return relationList(relations, count, limit)
 }
 
+async function loadEntityRelationsForFromEntities({
+  supabase,
+  fromEntityIds,
+  limit = RELATION_LIST_LIMIT,
+}: {
+  supabase: SupabaseClient
+  fromEntityIds: string[]
+  limit?: number
+}): Promise<CmsRelationList<CmsEntityRelation>> {
+  if (!fromEntityIds.length) {
+    return relationList([], 0, limit)
+  }
+
+  const { data, error, count } = await supabase
+    .from("entity_relations")
+    .select(ENTITY_RELATION_SELECT, { count: "exact" })
+    .in("from_entity_id", fromEntityIds)
+    .order("from_entity_id", { ascending: true })
+    .order("slot", { ascending: true })
+    .order("sort_order", { ascending: true })
+    .range(0, limit - 1)
+
+  if (error) {
+    throw new Error(`Failed to load entity relations: ${error.message}`)
+  }
+
+  const relations = ((data ?? []) as unknown as RawEntityRelation[])
+    .map(mapEntityRelation)
+    .sort(byEntityRelationOrder)
+
+  return relationList(relations, count, limit)
+}
+
 export async function loadCmsRelationGraph(): Promise<CmsRelationGraph> {
   const supabase = await createClient()
   const [pageSections, sectionEntities, entityRelations] = await Promise.all([
@@ -751,10 +785,15 @@ export async function loadCmsSectionRelations(
     loadPageSectionRelations({ supabase, sectionId }),
     loadSectionEntityRelations({ supabase, sectionId }),
   ])
+  const entityRelations = await loadEntityRelationsForFromEntities({
+    supabase,
+    fromEntityIds: sectionEntities.relations.map((relation) => relation.entityId),
+  })
 
   return {
     pageSections: pageSections.relations,
     sectionEntities: sectionEntities.relations,
+    entityRelations: entityRelations.relations,
   }
 }
 

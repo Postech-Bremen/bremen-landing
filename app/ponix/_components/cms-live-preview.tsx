@@ -53,6 +53,7 @@ import type {
 import { type EventKey, type Video } from "@/lib/data/videos"
 import type {
   CmsContentDetail,
+  CmsEntityRelation,
   CmsSectionEntityRelation,
 } from "@/lib/cms/content"
 import type { CmsFieldDefinition } from "@/lib/cms/schema-registry"
@@ -60,6 +61,7 @@ import type { Json } from "@/lib/supabase/types"
 
 type CmsEntityDetail = Extract<CmsContentDetail, { kind: "entity" }>
 type CmsSectionDetail = Extract<CmsContentDetail, { kind: "section" }>
+type PreviewLinkedEntity = NonNullable<CmsSectionEntityRelation["entity"]>
 
 type PreviewValue = {
   key: string
@@ -175,11 +177,13 @@ export function CmsSectionLivePreview({
   detail,
   fields,
   sectionEntities,
+  entityRelations,
 }: {
   formId: string
   detail: CmsSectionDetail
   fields: CmsFieldDefinition[]
   sectionEntities: CmsSectionEntityRelation[]
+  entityRelations: CmsEntityRelation[]
 }) {
   const initialSnapshot = useMemo(
     () => sectionSnapshotFromDetail(detail, fields),
@@ -219,6 +223,7 @@ export function CmsSectionLivePreview({
         detail={detail}
         snapshot={deferredSnapshot}
         sectionEntities={sectionEntities}
+        entityRelations={entityRelations}
         fallback={
           <SectionPreviewCard
             sectionKey={detail.row.key}
@@ -262,11 +267,13 @@ function PublicSectionPreview({
   detail,
   snapshot,
   sectionEntities,
+  entityRelations,
   fallback,
 }: {
   detail: CmsSectionDetail
   snapshot: SectionPreviewSnapshot
   sectionEntities: CmsSectionEntityRelation[]
+  entityRelations: CmsEntityRelation[]
   fallback: ReactNode
 }) {
   const section = contentSectionFromPreview(detail, snapshot)
@@ -274,25 +281,33 @@ function PublicSectionPreview({
     .map((relation) => videoFromRelation(relation))
     .filter((item): item is Video => Boolean(item))
   const playlists = sectionEntities
-    .map((relation) => performancePlaylistFromRelation(relation))
+    .map((relation) => performancePlaylistFromRelation(relation, entityRelations))
     .filter((item): item is PerformancePlaylistItem => Boolean(item))
-  const photos = sectionEntities
+  const directPhotos = sectionEntities
     .map((relation) => photoFromRelation(relation))
     .filter((item): item is PhotoArchiveItem => Boolean(item))
+  const photos = uniqueById([
+    ...directPhotos,
+    ...playlists.flatMap((playlist) => playlist.photos),
+  ])
   const milestones = sectionEntities
     .map((relation) => historyMilestoneFromRelation(relation))
     .filter((item): item is HistoryMilestoneItem => Boolean(item))
     .sort((left, right) => left.order - right.order)
-  const updates = sectionEntities
+  const directUpdates = sectionEntities
     .map((relation) => performanceUpdateFromRelation(relation))
     .filter((item): item is PerformanceUpdateItem => Boolean(item))
+  const updates = uniqueById([
+    ...directUpdates,
+    ...playlists.flatMap((playlist) => playlist.updates),
+  ])
     .sort((left, right) => right.isoDate.localeCompare(left.isoDate))
 
   if (detail.row.key.startsWith("home-")) {
     return (
       <PublicPreviewCanvas>
         <HomeSection
-          overview={homeOverviewFromRelations(section, sectionEntities)}
+          overview={homeOverviewFromRelations(section, sectionEntities, entityRelations)}
         />
       </PublicPreviewCanvas>
     )
@@ -898,6 +913,7 @@ function contentSectionFromPreview(
 function homeOverviewFromRelations(
   section: ContentSectionConfig,
   relations: CmsSectionEntityRelation[],
+  entityRelations: CmsEntityRelation[],
 ): HomeOverview {
   const videos = relations
     .map((relation) => homeVideoFromRelation(relation))
@@ -909,7 +925,7 @@ function homeOverviewFromRelations(
     .map((relation) => homeActivityFromRelation(relation))
     .filter((item): item is HomeOverview["activities"][number] => Boolean(item))
   const upcomingEvents = relations
-    .map((relation) => performancePlaylistFromRelation(relation))
+    .map((relation) => performancePlaylistFromRelation(relation, entityRelations))
     .filter((item): item is PerformancePlaylistItem => Boolean(item))
     .slice(0, 2)
     .map((performance) => ({
@@ -970,7 +986,12 @@ function linkedEntity(relation: CmsSectionEntityRelation) {
 }
 
 function relationData(relation: CmsSectionEntityRelation) {
-  return jsonObject(relation.entity?.data ?? null)
+  const entity = linkedEntity(relation)
+  return entity ? entityData(entity) : {}
+}
+
+function entityData(entity: PreviewLinkedEntity) {
+  return jsonObject(entity.data)
 }
 
 function relationProps(relation: CmsSectionEntityRelation) {
@@ -1055,9 +1076,13 @@ function homeActivityFromRelation(
 
 function videoFromRelation(relation: CmsSectionEntityRelation): Video | null {
   const entity = linkedEntity(relation)
-  if (!entity || entity.entityType !== "video") return null
+  return entity ? videoFromEntity(entity) : null
+}
 
-  const data = relationData(relation)
+function videoFromEntity(entity: PreviewLinkedEntity): Video | null {
+  if (entity.entityType !== "video") return null
+
+  const data = entityData(entity)
   const youtubeId = stringOrNull(data.youtube_id)
   if (!youtubeId) return null
 
@@ -1082,18 +1107,35 @@ function videoFromRelation(relation: CmsSectionEntityRelation): Video | null {
 
 function performancePlaylistFromRelation(
   relation: CmsSectionEntityRelation,
+  entityRelations: CmsEntityRelation[],
 ): PerformancePlaylistItem | null {
   const entity = linkedEntity(relation)
   if (!entity || entity.entityType !== "performance") return null
 
-  const data = relationData(relation)
+  const data = entityData(entity)
   const isoDate = stringOrNull(data.event_date) ?? entity.sortAt.slice(0, 10)
   const year = isoDate.slice(0, 4)
   if (!year) return null
 
-  const recordingCount = numberOrNull(data.recording_count) ?? 1
-  const photoCount = numberOrNull(data.photo_count) ?? 0
-  const postCount = numberOrNull(data.post_count) ?? 0
+  const related = entityRelations.filter((item) => item.fromEntityId === entity.id)
+  const videos = related
+    .map((item) => item.toEntity)
+    .filter((item): item is PreviewLinkedEntity => Boolean(item))
+    .map((item) => videoFromEntity(item))
+    .filter((item): item is Video => Boolean(item))
+  const photos = related
+    .map((item) => item.toEntity)
+    .filter((item): item is PreviewLinkedEntity => Boolean(item))
+    .map((item) => photoFromEntity(item))
+    .filter((item): item is PhotoArchiveItem => Boolean(item))
+  const updates = related
+    .map((item) => item.toEntity)
+    .filter((item): item is PreviewLinkedEntity => Boolean(item))
+    .map((item) => performanceUpdateFromEntity(item))
+    .filter((item): item is PerformanceUpdateItem => Boolean(item))
+  const recordingCount = videos.length || numberOrNull(data.recording_count) || 0
+  const photoCount = photos.length || numberOrNull(data.photo_count) || 0
+  const postCount = updates.length || numberOrNull(data.post_count) || 0
 
   return {
     id: entity.id,
@@ -1109,10 +1151,15 @@ function performancePlaylistFromRelation(
     recordingCount,
     photoCount,
     postCount,
-    coverUrl: entity.thumbnailUrl,
-    videos: [],
-    photos: [],
-    updates: [],
+    coverUrl:
+      entity.thumbnailUrl ??
+      videos[0]?.thumbnailUrl ??
+      photos[0]?.thumbnailUrl ??
+      updates[0]?.thumbnailUrl ??
+      null,
+    videos,
+    photos,
+    updates,
   }
 }
 
@@ -1120,9 +1167,15 @@ function performanceUpdateFromRelation(
   relation: CmsSectionEntityRelation,
 ): PerformanceUpdateItem | null {
   const entity = linkedEntity(relation)
-  if (!entity || entity.entityType !== "post") return null
+  return entity ? performanceUpdateFromEntity(entity) : null
+}
 
-  const data = relationData(relation)
+function performanceUpdateFromEntity(
+  entity: PreviewLinkedEntity,
+): PerformanceUpdateItem | null {
+  if (entity.entityType !== "post") return null
+
+  const data = entityData(entity)
   const isoDate = stringOrNull(data.taken_at) ?? entity.sortAt.slice(0, 10)
 
   return {
@@ -1140,9 +1193,13 @@ function performanceUpdateFromRelation(
 
 function photoFromRelation(relation: CmsSectionEntityRelation): PhotoArchiveItem | null {
   const entity = linkedEntity(relation)
-  if (!entity || entity.entityType !== "photo") return null
+  return entity ? photoFromEntity(entity) : null
+}
 
-  const data = relationData(relation)
+function photoFromEntity(entity: PreviewLinkedEntity): PhotoArchiveItem | null {
+  if (entity.entityType !== "photo") return null
+
+  const data = entityData(entity)
   if (booleanOrNull(data.gallery_include) === false) return null
 
   return {
@@ -1259,6 +1316,10 @@ function photoCategoryLabel(category: string | null): "공연" | "일상" {
     category === "performance"
     ? "공연"
     : "일상"
+}
+
+function uniqueById<T extends { id: string }>(items: T[]) {
+  return [...new Map(items.map((item) => [item.id, item])).values()]
 }
 
 function stringArray(value: unknown) {

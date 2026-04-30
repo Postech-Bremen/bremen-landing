@@ -147,6 +147,7 @@ export function CmsSectionEditorPage({
               detail={detail}
               fields={editableFields}
               sectionEntities={relations.sectionEntities}
+              entityRelations={relations.entityRelations}
             />
           </form>
         )}
