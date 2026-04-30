@@ -113,6 +113,293 @@ Before changing anything, decide which layer owns the change.
 | Add profile/content image assets | Yes | Maybe | Upload to Supabase Storage and store public URL in DB. Code only if flow changes. |
 | Change SMTP, auth redirect URLs, Vercel env, custom domains | Dashboard/config | No | Document operational changes. Do not encode secrets in repo. |
 
+### Supabase Initial Setup
+
+There are three different levels of Supabase access. Most contributors only need the first one.
+
+| Contributor type | Needs | Can do |
+| --- | --- | --- |
+| App/UI contributor | `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Run the app against the shared Supabase project. |
+| Content/DB contributor | Supabase Dashboard access or CLI access | Add migrations, edit content graph data, upload assets, regenerate types. |
+| Maintainer | Service role key and project owner/admin access | Run maintenance scripts, apply sensitive migrations, manage Auth/SMTP/RLS settings. |
+
+#### 1. Get Project Values
+
+Ask a maintainer for:
+
+- Supabase project ref
+- Supabase project URL
+- Supabase anon key
+- Whether you should use the shared remote project or a local Supabase stack
+
+Create `.env.local`:
+
+```bash
+cp .env.local.example .env.local
+```
+
+Fill:
+
+```bash
+NEXT_PUBLIC_SUPABASE_URL=https://your-project-ref.supabase.co
+NEXT_PUBLIC_SUPABASE_ANON_KEY=your-anon-key
+```
+
+Do not add service role keys unless you are explicitly running maintenance scripts.
+
+#### 2. Install and Log In to Supabase CLI
+
+Use either a global CLI or one-off runner. The repo does not require the CLI as a runtime dependency.
+
+```bash
+pnpm dlx supabase --version
+pnpm dlx supabase login
+```
+
+If you prefer a global install, follow the official Supabase CLI install method for your machine.
+
+#### 3. Link the Remote Project
+
+Link this working copy to the Supabase project:
+
+```bash
+pnpm dlx supabase link --project-ref <project-ref>
+```
+
+The project ref is the ID in the Supabase dashboard URL:
+
+```txt
+https://supabase.com/dashboard/project/<project-ref>
+```
+
+This creates local Supabase CLI metadata. Do not commit local CLI state or secrets.
+
+#### 4. Optional: Use Supabase Locally
+
+Local Supabase is useful for schema/RLS work, but normal UI work can use the remote project.
+
+Requirements:
+
+- Docker running
+- Supabase CLI available
+
+Start local Supabase:
+
+```bash
+pnpm dlx supabase start
+```
+
+Apply all migrations and seed data to the local database:
+
+```bash
+pnpm dlx supabase db reset
+```
+
+Use `pnpm dlx supabase status` to get local API URL and anon key if you want the app to point at local Supabase.
+
+Do not run destructive reset commands against production. `db reset` is for local development.
+
+#### 5. Create a Migration
+
+For durable DB/content changes, create a migration:
+
+```bash
+pnpm dlx supabase migration new describe_change_in_snake_case
+```
+
+Then edit the generated SQL file in `supabase/migrations`.
+
+Good migration names:
+
+- `add_2026_history_milestone`
+- `update_home_join_copy`
+- `link_new_performance_recordings`
+- `tighten_member_profile_policy`
+
+Bad migration names:
+
+- `fix`
+- `changes`
+- `update_db`
+
+#### 6. Test a Migration
+
+For local testing:
+
+```bash
+pnpm dlx supabase db reset
+```
+
+For an already-running local stack where you only want to apply pending migrations:
+
+```bash
+pnpm dlx supabase migration up
+```
+
+Also run app checks:
+
+```bash
+pnpm exec tsc --noEmit
+pnpm run lint
+pnpm run build
+```
+
+#### 7. Apply a Migration to the Shared Project
+
+Preferred flow:
+
+1. Commit the migration.
+2. Open a PR or ask a maintainer to review.
+3. A maintainer applies it to Supabase.
+4. Regenerate TypeScript types if schema changed.
+5. Deploy the app if code or required data changed.
+
+Maintainers can apply migrations with the Supabase CLI:
+
+```bash
+pnpm dlx supabase db push
+```
+
+Maintainers using Codex/Supabase MCP can apply the same migration SQL with the Supabase MCP `apply_migration` tool. The migration file still needs to be committed so the repo remains reproducible.
+
+#### 8. Regenerate Types After Schema Changes
+
+If tables, columns, enums, views, or function signatures changed, regenerate Supabase types:
+
+```bash
+pnpm dlx supabase gen types typescript --project-id <project-ref> --schema public > lib/supabase/types.ts
+```
+
+Then run:
+
+```bash
+pnpm exec tsc --noEmit
+```
+
+Commit `lib/supabase/types.ts` with the migration.
+
+#### 9. Optional: Codex/Supabase MCP Setup
+
+The repo does not commit `.mcp.json`. Each contributor configures MCP locally.
+
+```bash
+codex mcp add supabase --url "https://mcp.supabase.com/mcp?project_ref=<project-ref>"
+codex mcp login supabase
+```
+
+Useful MCP operations:
+
+- Inspect tables and migrations
+- Apply reviewed migrations
+- Generate TypeScript types
+- Run security/performance advisors
+- Inspect Edge Functions if they are added later
+
+Never paste service role keys or SMTP credentials into prompts, issues, or committed files.
+
+#### 10. Service Role Key Rules
+
+The service role key bypasses RLS. Treat it like production root access.
+
+Use it only for:
+
+- `scripts/upload-seed-assets.mjs`
+- `scripts/apply-scraped-content.mjs`
+- `scripts/apply-instagram-feed.mjs`
+- trusted maintainer operations
+
+Never:
+
+- Put it in `NEXT_PUBLIC_*`
+- Use it in browser/client code
+- Commit it to `.env.local.example`
+- Paste it into README examples, issues, PRs, or chat logs
+
+#### 11. Common Supabase Change Recipes
+
+Update section copy:
+
+```sql
+update public.sections
+set title = 'New title',
+    subtitle = '새 제목',
+    props = coalesce(props, '{}'::jsonb) || jsonb_build_object(
+      'body', 'New body copy'
+    )
+where key = 'home-join';
+```
+
+Add a content entity:
+
+```sql
+insert into public.entities (
+  entity_type,
+  schema_key,
+  slug,
+  title,
+  summary,
+  thumbnail_url,
+  data,
+  published
+)
+values (
+  'history_milestone',
+  'history/milestone/v1',
+  'history-2026-new-season',
+  '2026 New Season',
+  'Short summary',
+  null,
+  '{"year":"2026","display_order":120}'::jsonb,
+  true
+);
+```
+
+Link an entity to a section:
+
+```sql
+insert into public.section_entities (
+  section_id,
+  entity_id,
+  relation_type,
+  slot,
+  sort_order,
+  props
+)
+select
+  section_ref.id,
+  entity_ref.id,
+  'item',
+  'default',
+  120,
+  '{}'::jsonb
+from public.sections section_ref
+join public.entities entity_ref on entity_ref.slug = 'history-2026-new-season'
+where section_ref.key = 'history-timeline'
+on conflict (section_id, entity_id, relation_type, slot) do update
+set sort_order = excluded.sort_order,
+    props = excluded.props,
+    updated_at = now();
+```
+
+Upload a public content image:
+
+1. Upload the image to Supabase Storage.
+2. Copy the public URL.
+3. Store it in `entities.thumbnail_url` or `members.avatar_url`.
+4. Prefer full public URLs for public content cards and gallery images.
+
+#### 12. After Any Supabase Change
+
+Check:
+
+- Does the affected page still have required sections and entities?
+- Did RLS remain enabled?
+- Did policies still allow public reads where needed?
+- Did member/profile write policies still restrict ownership?
+- Do auth redirects still match deployed domains?
+- Do TypeScript types need regeneration?
+- Did `pnpm run build` pass?
+
 ### Supabase Changes
 
 Use migrations for durable changes. Direct dashboard edits are acceptable for emergency operations, but anything that defines schema, policies, seeds, or important content structure should become a migration in `supabase/migrations`.
