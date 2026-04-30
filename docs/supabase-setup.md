@@ -19,6 +19,16 @@ Ask a maintainer for:
 - anon key
 - whether to use shared remote Supabase or local Supabase
 
+If you need Dashboard, CLI, or MCP access to the shared project, open an `Access request` issue first.
+
+Access request guidance:
+
+- Create or sign in to Supabase before asking for an invite.
+- Use the same email as GitHub/Vercel if practical, but it is not required.
+- Do not paste your email in a public issue unless you are comfortable with it being public.
+- Write `sent privately` and send the email privately when needed.
+- Ask for access only for a linked issue, PR, or maintenance task.
+
 Create local env:
 
 ```bash

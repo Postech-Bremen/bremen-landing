@@ -9,7 +9,7 @@ Use this skill when asked to create, refine, or post a GitHub issue for Bremen L
 
 ## Workflow
 
-1. Classify the issue as `content`, `db-migration`, `ui-change`, `bug`, `ops`, or `agent-task`.
+1. Classify the issue as `content`, `db-migration`, `ui-change`, `bug`, `ops`, `access`, or `agent-task`.
 2. Identify affected routes, tables, files, and user-facing behavior.
 3. State whether Supabase changes are expected.
 4. Add acceptance checks that a human can verify.
@@ -30,6 +30,7 @@ Describe the user-facing outcome.
 - [ ] UI/UX
 - [ ] Auth/member flow
 - [ ] Ops/deployment
+- [ ] Access/onboarding
 - [ ] Research/data collection
 
 ## Affected Surface
@@ -69,6 +70,7 @@ What should change.
 - Do not disable RLS.
 - Do not use service role keys outside approved scripts.
 - Do not hardcode content that belongs in `sections` or `entities`.
+- Do not paste invitation emails in public issues unless the contributor explicitly accepts public exposure.
 ```
 
 ## Posting

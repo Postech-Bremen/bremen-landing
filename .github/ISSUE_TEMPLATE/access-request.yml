@@ -1,0 +1,81 @@
+name: Access request
+description: Request GitHub, Vercel, or Supabase access for contribution work.
+title: "[Access] "
+labels: ["access"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        This repository is public. Only write an invitation email here if you are comfortable exposing it publicly.
+        If not, write "sent privately" and send the email to a maintainer through a private channel.
+  - type: input
+    id: github_username
+    attributes:
+      label: GitHub username
+      placeholder: "@username"
+    validations:
+      required: true
+  - type: dropdown
+    id: email_handoff
+    attributes:
+      label: Invitation email handoff
+      description: Using the same email for GitHub, Vercel, and Supabase is recommended but not required.
+      options:
+        - Same as my public GitHub email
+        - I will provide it privately
+        - I am comfortable writing it in this public issue
+    validations:
+      required: true
+  - type: input
+    id: invitation_email
+    attributes:
+      label: Invitation email
+      description: Optional. Leave blank if you selected private handoff.
+      placeholder: "name@example.com or sent privately"
+  - type: checkboxes
+    id: requested_access
+    attributes:
+      label: Requested access
+      options:
+        - label: GitHub repository collaboration
+        - label: Vercel project access
+        - label: Supabase project access
+        - label: Supabase MCP setup support only
+        - label: No platform access; issue/PR contribution only
+  - type: textarea
+    id: purpose
+    attributes:
+      label: Purpose
+      description: What work requires this access?
+      placeholder: "Example: edit content graph migrations, inspect Vercel deployment logs, review Supabase RLS behavior..."
+    validations:
+      required: true
+  - type: dropdown
+    id: duration
+    attributes:
+      label: Expected duration
+      options:
+        - One task or one PR
+        - Current feature cycle
+        - Ongoing maintainer work
+        - Unsure
+    validations:
+      required: true
+  - type: textarea
+    id: linked_work
+    attributes:
+      label: Linked issue or PR
+      description: Link the work item that needs access, if one exists.
+  - type: checkboxes
+    id: guardrails
+    attributes:
+      label: Access guardrails
+      options:
+        - label: I understand this issue is public.
+          required: true
+        - label: I will not paste secrets, tokens, SMTP credentials, or service role keys in issues, PRs, or chat.
+          required: true
+        - label: Supabase production writes require explicit maintainer approval.
+          required: true
+        - label: I will use the least access needed for the linked task.
+          required: true

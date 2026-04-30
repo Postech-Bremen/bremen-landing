@@ -39,6 +39,33 @@ The script skips Vercel builds when the latest commit only changes:
 
 The build still runs for application code, Supabase migrations, package files, Vercel config, GitHub Actions, scripts, public assets, and any other deployment-relevant file.
 
+## Platform Access
+
+Use the `Access request` issue template before inviting a contributor to GitHub, Vercel, or Supabase.
+
+Access should be task-based:
+
+| Platform | Invite when | Identifier |
+| --- | --- | --- |
+| GitHub | The contributor needs direct branch/issue/project collaboration beyond fork PRs. | GitHub username. |
+| Vercel | The contributor needs deployment logs, env visibility, or deployment operations. | Vercel account email. |
+| Supabase | The contributor needs Dashboard, CLI, Auth, Storage, RLS, or MCP-backed DB work. | Supabase account email. |
+
+Email guidance:
+
+- Prefer the same email across GitHub, Vercel, and Supabase when practical.
+- Same email is not a security requirement, but it reduces invitation mistakes and makes audit trails easier.
+- If the contributor does not want the email public, they should write `sent privately` in the issue and send the email through a private channel.
+- POSTECH site login email is separate from platform access. Do not invite a contributor to Vercel or Supabase just because they created a site member account.
+
+Maintainer checklist before sending invitations:
+
+- Confirm the access request links to a real issue, PR, or maintenance task.
+- Grant the least access needed.
+- Do not share service role keys, SMTP credentials, Vercel tokens, or recovery links.
+- Prefer maintainer-applied production migrations over broad write access for one-off DB changes.
+- Remove or downgrade access after one-off work is complete.
+
 Recommended checks after deployment:
 
 ```bash

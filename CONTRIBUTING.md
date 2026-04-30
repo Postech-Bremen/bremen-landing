@@ -21,12 +21,35 @@ Use the closest template:
 - `UI or interaction change`: layout, shadcn/ui, Tailwind, carousel, filters, search, pagination, responsive behavior
 - `Agent task`: bounded work intended for Claude, Codex, or another agent
 - `Ops or deployment change`: Vercel, Supabase Auth, SMTP, domains, env vars, public repo settings
+- `Access request`: GitHub, Vercel, Supabase, or MCP onboarding access
 - `Bug report`: regressions, broken pages, incorrect data, auth issues, deployment failures
 
 Agents that support repo-local skills should use:
 
 - `.agents/skills/create-bremen-issue/SKILL.md` for drafting structured issues
 - `.agents/skills/guarded-supabase-mcp/SKILL.md` before any Supabase MCP operation
+
+## First-Time Access Requests
+
+Most contributors can start with public issues and PRs. Ask for platform access only when the task actually needs it.
+
+Use the `Access request` issue template when you need:
+
+- GitHub repository collaboration beyond normal fork/PR flow
+- Vercel project access for deployment logs, env configuration, or production deployment checks
+- Supabase project access for migrations, content graph inspection, Auth/Storage/RLS work, or MCP setup
+
+Recommended identity setup:
+
+- Use the same email for GitHub, Vercel, and Supabase if possible. It makes invitations, audit trails, and deployment permission issues easier to reason about.
+- It is not required. GitHub username plus the correct Vercel/Supabase account email is enough.
+- The site member login email is separate. POSTECH email is used for member authentication and profile claiming, not necessarily for GitHub/Vercel/Supabase access.
+
+Public issue safety:
+
+- This repository is public, so do not paste an email if you do not want it public.
+- In that case, write `sent privately` in the access request and send the invitation email to a maintainer through a private channel.
+- Never paste tokens, service role keys, SMTP credentials, recovery links, or one-time auth links in issues or PRs.
 
 ## Change Decision Table
 
