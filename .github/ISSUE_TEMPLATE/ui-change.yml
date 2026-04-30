@@ -1,0 +1,45 @@
+name: UI or interaction change
+description: Change layout, visuals, components, animation, filters, search, pagination, or responsive behavior.
+title: "[UI] "
+labels: ["ui"]
+body:
+  - type: textarea
+    id: goal
+    attributes:
+      label: User-facing goal
+      description: Describe the visual or interaction outcome.
+    validations:
+      required: true
+  - type: input
+    id: routes
+    attributes:
+      label: Affected routes
+      placeholder: "/members, /videos"
+    validations:
+      required: true
+  - type: textarea
+    id: references
+    attributes:
+      label: References
+      description: Screenshots, links, or design notes.
+  - type: textarea
+    id: data_dependency
+    attributes:
+      label: Data dependency
+      description: Does this rely on sections/entities, members, auth, or storage data?
+  - type: textarea
+    id: acceptance
+    attributes:
+      label: Acceptance checks
+      placeholder: "- [ ] Desktop and mobile layouts are checked.\n- [ ] Empty/missing data state is intentional."
+    validations:
+      required: true
+  - type: checkboxes
+    id: guardrails
+    attributes:
+      label: Guardrails
+      options:
+        - label: Do not bypass Supabase content by hardcoding page copy that belongs in sections/entities.
+          required: true
+        - label: Keep shadcn/ui and Tailwind patterns consistent with the existing design system.
+          required: true

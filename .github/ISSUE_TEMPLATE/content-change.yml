@@ -1,0 +1,58 @@
+name: Content graph change
+description: Update page sections, entities, curation, copy, videos, photos, history, or member seed data.
+title: "[Content] "
+labels: ["content"]
+body:
+  - type: textarea
+    id: goal
+    attributes:
+      label: User-facing goal
+      description: What should visitors or members experience after this change?
+    validations:
+      required: true
+  - type: input
+    id: routes
+    attributes:
+      label: Affected routes
+      placeholder: "/, /performances, /videos"
+    validations:
+      required: true
+  - type: textarea
+    id: graph
+    attributes:
+      label: Content graph scope
+      description: List known page slugs, section keys, entity slugs, relation types, or member rows.
+      placeholder: "page: home; section: home-on-stage; entities: video slugs..."
+  - type: dropdown
+    id: supabase
+    attributes:
+      label: Supabase impact
+      options:
+        - Content rows only
+        - Migration required
+        - Unsure
+    validations:
+      required: true
+  - type: textarea
+    id: acceptance
+    attributes:
+      label: Acceptance checks
+      placeholder: "- [ ] The affected page loads from Supabase content, not fallback data."
+    validations:
+      required: true
+  - type: textarea
+    id: non_goals
+    attributes:
+      label: Non-goals
+      description: What should not be changed?
+  - type: checkboxes
+    id: guardrails
+    attributes:
+      label: Guardrails
+      options:
+        - label: Do not hardcode CMS content in React unless this issue explicitly asks for renderer behavior.
+          required: true
+        - label: Do not run destructive SQL.
+          required: true
+        - label: Preserve the section/entity loading model.
+          required: true

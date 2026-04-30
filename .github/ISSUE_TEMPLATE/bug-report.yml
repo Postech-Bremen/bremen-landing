@@ -1,0 +1,54 @@
+name: Bug report
+description: Report a broken page, regression, incorrect data, auth issue, or deployment problem.
+title: "[Bug] "
+labels: ["bug"]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem
+      description: What is broken or incorrect?
+    validations:
+      required: true
+  - type: input
+    id: route
+    attributes:
+      label: Route or URL
+      placeholder: "https://bremen-landing.vercel.app/videos"
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behavior
+    validations:
+      required: true
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual behavior
+    validations:
+      required: true
+  - type: textarea
+    id: evidence
+    attributes:
+      label: Evidence
+      description: Screenshots, console errors, server logs, SQL query result, or reproduction steps.
+  - type: dropdown
+    id: likely_area
+    attributes:
+      label: Likely area
+      options:
+        - Unknown
+        - UI/code
+        - Supabase content graph
+        - Auth/member data
+        - Storage/image
+        - Deployment/env
+    validations:
+      required: true
+  - type: checkboxes
+    id: guardrails
+    attributes:
+      label: Guardrails
+      options:
+        - label: Do not fix production data with ad-hoc destructive SQL.
+          required: true

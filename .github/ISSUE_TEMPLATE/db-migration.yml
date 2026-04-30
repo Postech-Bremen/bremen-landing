@@ -1,0 +1,56 @@
+name: Database migration
+description: Change schema, policies, triggers, functions, storage policies, or durable seed data.
+title: "[DB] "
+labels: ["database"]
+body:
+  - type: textarea
+    id: goal
+    attributes:
+      label: Goal
+      description: What capability or data correction does this migration provide?
+    validations:
+      required: true
+  - type: textarea
+    id: affected
+    attributes:
+      label: Affected database objects
+      placeholder: "tables, columns, policies, functions, triggers, buckets"
+    validations:
+      required: true
+  - type: dropdown
+    id: risk
+    attributes:
+      label: Risk level
+      options:
+        - Low: additive content/data only
+        - Medium: schema or policy changes
+        - High: auth, RLS, storage, destructive, or backfill work
+    validations:
+      required: true
+  - type: textarea
+    id: plan
+    attributes:
+      label: Proposed migration plan
+      description: Include whether this is additive, reversible, and how it will be tested.
+    validations:
+      required: true
+  - type: textarea
+    id: validation
+    attributes:
+      label: Validation
+      placeholder: "- [ ] Local migration reset passes\n- [ ] Types regenerated\n- [ ] Advisors checked"
+    validations:
+      required: true
+  - type: checkboxes
+    id: guardrails
+    attributes:
+      label: Required guardrails
+      options:
+        - label: SQL must be committed under `supabase/migrations` before production apply.
+          required: true
+        - label: RLS must remain enabled.
+          required: true
+        - label: No broad `drop`, `truncate`, `delete`, or `update` without explicit maintainer approval.
+          required: true
+        - label: Service role keys must not be committed or pasted into the issue.
+          required: true

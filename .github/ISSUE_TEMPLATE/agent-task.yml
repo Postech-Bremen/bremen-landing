@@ -1,0 +1,58 @@
+name: Agent task
+description: A scoped task intended for Claude, Codex, or another coding agent.
+title: "[Agent] "
+labels: ["agent-task"]
+body:
+  - type: textarea
+    id: objective
+    attributes:
+      label: Objective
+      description: State exactly what the agent should accomplish.
+    validations:
+      required: true
+  - type: dropdown
+    id: classification
+    attributes:
+      label: Classification
+      options:
+        - Code only
+        - Content graph
+        - DB migration
+        - Ops/config
+        - Research/data collection
+        - Mixed
+    validations:
+      required: true
+  - type: textarea
+    id: write_scope
+    attributes:
+      label: Allowed write scope
+      description: List files, directories, tables, or migrations the agent may touch.
+      placeholder: "files: components/videos-section.tsx; tables: read-only"
+    validations:
+      required: true
+  - type: textarea
+    id: context
+    attributes:
+      label: Context
+      description: Relevant screenshots, links, known constraints, or prior decisions.
+  - type: textarea
+    id: acceptance
+    attributes:
+      label: Acceptance checks
+      placeholder: "- [ ] Agent reports changed files.\n- [ ] Agent reports whether Supabase changed."
+    validations:
+      required: true
+  - type: checkboxes
+    id: guardrails
+    attributes:
+      label: Agent guardrails
+      options:
+        - label: Agent must follow `AGENTS.md` and `docs/agentic-workflow.md`.
+          required: true
+        - label: Agent must not perform production Supabase writes without explicit maintainer approval.
+          required: true
+        - label: Agent must not run destructive SQL.
+          required: true
+        - label: Agent must not commit secrets.
+          required: true

@@ -1,0 +1,49 @@
+name: Ops or deployment change
+description: Change Vercel, Supabase Auth, SMTP, domains, env vars, or public repo settings.
+title: "[Ops] "
+labels: ["ops"]
+body:
+  - type: textarea
+    id: goal
+    attributes:
+      label: Goal
+      description: What operational outcome is needed?
+    validations:
+      required: true
+  - type: dropdown
+    id: system
+    attributes:
+      label: System
+      options:
+        - Vercel
+        - Supabase Auth
+        - Supabase Storage
+        - Resend/SMTP
+        - GitHub repository
+        - Domain/DNS
+        - Other
+    validations:
+      required: true
+  - type: textarea
+    id: change
+    attributes:
+      label: Proposed change
+      description: Include dashboard paths or CLI commands, but never paste secrets.
+    validations:
+      required: true
+  - type: textarea
+    id: validation
+    attributes:
+      label: Validation
+      placeholder: "- [ ] Production responds 200\n- [ ] Auth callback tested\n- [ ] Email delivery confirmed"
+    validations:
+      required: true
+  - type: checkboxes
+    id: guardrails
+    attributes:
+      label: Guardrails
+      options:
+        - label: Do not paste secrets into this issue.
+          required: true
+        - label: Document any dashboard-only change in the final PR or issue comment.
+          required: true
