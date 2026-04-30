@@ -1,4 +1,5 @@
 import type { Metadata } from "next"
+import Link from "next/link"
 
 import {
   CmsListPage,
@@ -58,7 +59,12 @@ export default async function PonixEntitiesPage() {
                   {entity.entityType}
                 </TableCell>
                 <TableCell>
-                  <div className="font-medium">{entity.title}</div>
+                  <Link
+                    href={`/ponix/entities/${entity.id}`}
+                    className="font-medium underline-offset-4 hover:underline"
+                  >
+                    {entity.title}
+                  </Link>
                   {entity.subtitle && (
                     <div className="text-xs text-muted-foreground">
                       {entity.subtitle}
@@ -66,7 +72,12 @@ export default async function PonixEntitiesPage() {
                   )}
                 </TableCell>
                 <TableCell className="max-w-[18rem] truncate font-mono text-xs text-muted-foreground">
-                  {entity.slug ?? entity.id}
+                  <Link
+                    href={`/ponix/entities/${entity.id}`}
+                    className="underline-offset-4 hover:underline"
+                  >
+                    {entity.slug ?? entity.id}
+                  </Link>
                 </TableCell>
                 <TableCell>
                   <SchemaBadge
