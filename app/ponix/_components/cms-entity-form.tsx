@@ -1,6 +1,7 @@
 import Link from "next/link"
 
-import { updateCmsSectionAction } from "@/app/ponix/sections/actions"
+import { updateCmsEntityAction } from "@/app/ponix/entities/actions"
+import { ProfileImageInput } from "@/components/profile-image-input"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -15,33 +16,31 @@ import { Checkbox } from "@/components/ui/checkbox"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
-import type { CmsContentDetail, CmsSectionRelationContext } from "@/lib/cms/content"
+import type { CmsContentDetail } from "@/lib/cms/content"
 import {
-  cmsFieldInputName,
-  getEditableSectionFields,
-  getSectionEditorSchema,
-  getSectionFieldValue,
-  type CmsEditableSectionField,
-} from "@/lib/cms/section-editor"
+  cmsEntityFieldInputName,
+  getEditableEntityFields,
+  getEntityEditorSchema,
+  getEntityFieldValue,
+  type CmsEditableEntityField,
+} from "@/lib/cms/entity-editor"
 
-import { CmsSectionLivePreview } from "./cms-live-preview"
+import { CmsEntityLivePreview } from "./cms-live-preview"
 
-type CmsSectionDetail = Extract<CmsContentDetail, { kind: "section" }>
+type CmsEntityDetail = Extract<CmsContentDetail, { kind: "entity" }>
 
-export function CmsSectionEditorPage({
+export function CmsEntityEditorPage({
   detail,
-  relations,
   error,
 }: {
-  detail: CmsSectionDetail
-  relations: CmsSectionRelationContext
+  detail: CmsEntityDetail
   error?: string
 }) {
-  const schema = getSectionEditorSchema(detail.schemaKey)
-  const editableFields = getEditableSectionFields(detail.schemaKey)
+  const schema = getEntityEditorSchema(detail.schemaKey)
+  const editableFields = getEditableEntityFields(detail.schemaKey)
   const columnFields = editableFields.filter((field) => field.source === "column")
-  const propsFields = editableFields.filter((field) => field.source === "props")
-  const formId = `cms-section-form-${detail.row.id}`
+  const dataFields = editableFields.filter((field) => field.source === "data")
+  const formId = `cms-entity-form-${detail.row.id}`
 
   return (
     <main className="relative min-h-[calc(100vh-5rem)] overflow-hidden">
@@ -53,16 +52,16 @@ export function CmsSectionEditorPage({
       <section className="mx-auto max-w-6xl px-6 py-16 md:px-8 md:py-24">
         <div className="mb-10 flex flex-col gap-6 md:flex-row md:items-start md:justify-between">
           <div>
-            <p className="caps mb-5">PONIX / Edit section</p>
+            <p className="caps mb-5">PONIX / Edit entity</p>
             <h1 className="font-serif text-[clamp(3.25rem,8vw,6.5rem)] italic leading-[0.84] tracking-tight">
               {detail.title}
             </h1>
             <p className="mt-5 max-w-2xl text-sm leading-relaxed text-muted-foreground md:text-base">
-              Edit only the fields registered for this section schema.
+              Edit reusable content fields and the canonical thumbnail URL.
             </p>
             <div className="mt-6 flex flex-wrap items-center gap-2">
               <Badge variant="outline" className="rounded-full font-mono">
-                {detail.row.key}
+                {detail.row.entity_type}
               </Badge>
               <Badge variant="secondary" className="rounded-full">
                 {schema?.label ?? "Unregistered schema"}
@@ -70,7 +69,7 @@ export function CmsSectionEditorPage({
             </div>
           </div>
           <Button asChild variant="outline" className="w-fit rounded-full">
-            <Link href={`/ponix/sections/${detail.row.id}`}>Back to section</Link>
+            <Link href={`/ponix/entities/${detail.row.id}`}>Back to entity</Link>
           </Button>
         </div>
 
@@ -78,17 +77,17 @@ export function CmsSectionEditorPage({
           <Alert variant="destructive">
             <AlertTitle>Schema is not editable</AlertTitle>
             <AlertDescription>
-              This section uses <code>{detail.schemaKey}</code>, which is not
-              registered as a section editor schema.
+              This entity uses <code>{detail.schemaKey}</code>, which is not
+              registered as an entity editor schema.
             </AlertDescription>
           </Alert>
         ) : (
           <form
             id={formId}
-            action={updateCmsSectionAction}
-            className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_28rem]"
+            action={updateCmsEntityAction}
+            className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_26rem]"
           >
-            <input type="hidden" name="section_id" value={detail.row.id} />
+            <input type="hidden" name="entity_id" value={detail.row.id} />
 
             <div className="space-y-6">
               {error && (
@@ -104,54 +103,95 @@ export function CmsSectionEditorPage({
                     Locked identity
                   </CardTitle>
                   <CardDescription>
-                    These values define routing and renderer behavior and are not
-                    editable in this slice.
+                    These values define entity behavior and are not editable in
+                    this slice.
                   </CardDescription>
                 </CardHeader>
                 <CardContent className="grid gap-4 px-6 py-6 md:grid-cols-3">
-                  <ReadonlyMeta label="Key" value={detail.row.key} />
-                  <ReadonlyMeta label="Renderer" value={detail.row.section_type} />
+                  <ReadonlyMeta label="Entity type" value={detail.row.entity_type} />
                   <ReadonlyMeta label="Schema" value={detail.row.schema_key} />
+                  <ReadonlyMeta label="ID" value={detail.row.id} />
                 </CardContent>
               </Card>
 
+              <ThumbnailCard detail={detail} />
+
               <EditorCard
-                title="Section copy"
-                description="Column fields shared by section renderers."
+                title="Entity fields"
+                description="Shared columns used by cards, lists, and detail views."
                 fields={columnFields}
                 detail={detail}
               />
 
               <EditorCard
-                title="Renderer props"
-                description="Schema-registered JSON props for this section renderer."
-                fields={propsFields}
+                title="Schema data"
+                description="Schema-registered JSON data for this entity type."
+                fields={dataFields}
                 detail={detail}
               />
 
               <div className="flex flex-col gap-3 rounded-md border bg-card/95 p-4 shadow-xl sm:flex-row sm:items-center sm:justify-between">
                 <p className="text-sm text-muted-foreground">
-                  Saving updates this section row only. Relations and entities stay untouched.
+                  Saving updates this entity row only. Relations stay untouched.
                 </p>
                 <div className="flex gap-2">
                   <Button asChild type="button" variant="outline">
-                    <Link href={`/ponix/sections/${detail.row.id}`}>Cancel</Link>
+                    <Link href={`/ponix/entities/${detail.row.id}`}>Cancel</Link>
                   </Button>
-                  <Button type="submit">Save section</Button>
+                  <Button type="submit">Save entity</Button>
                 </div>
               </div>
             </div>
 
-            <CmsSectionLivePreview
+            <CmsEntityLivePreview
               formId={formId}
               detail={detail}
               fields={editableFields}
-              sectionEntities={relations.sectionEntities}
             />
           </form>
         )}
       </section>
     </main>
+  )
+}
+
+function ThumbnailCard({ detail }: { detail: CmsEntityDetail }) {
+  return (
+    <Card className="rounded-md bg-card/95 shadow-xl">
+      <CardHeader className="border-b">
+        <CardTitle className="font-serif text-3xl italic">
+          Thumbnail upload
+        </CardTitle>
+        <CardDescription>
+          Uploading a new image stores it in Supabase Storage and replaces
+          <code> thumbnail_url</code>.
+        </CardDescription>
+      </CardHeader>
+      <CardContent className="grid gap-5 px-6 py-6 md:grid-cols-[12rem_minmax(0,1fr)]">
+        {detail.row.thumbnail_url ? (
+          <div className="h-32 w-48 max-w-full overflow-hidden rounded-md border bg-muted">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={detail.row.thumbnail_url}
+              alt={`${detail.title} thumbnail`}
+              className="h-full w-full object-cover"
+            />
+          </div>
+        ) : (
+          <div className="grid h-32 w-48 max-w-full place-items-center rounded-md border bg-muted text-sm text-muted-foreground">
+            No thumbnail
+          </div>
+        )}
+        <div className="space-y-2">
+          <Label htmlFor="thumbnail_file">Upload image</Label>
+          <ProfileImageInput id="thumbnail_file" name="thumbnail_file" />
+          <p className="text-xs leading-relaxed text-muted-foreground">
+            Leave empty to keep the current URL. Manual URL edits are available
+            in Entity fields.
+          </p>
+        </div>
+      </CardContent>
+    </Card>
   )
 }
 
@@ -163,8 +203,8 @@ function EditorCard({
 }: {
   title: string
   description: string
-  fields: CmsEditableSectionField[]
-  detail: CmsSectionDetail
+  fields: CmsEditableEntityField[]
+  detail: CmsEntityDetail
 }) {
   return (
     <Card className="rounded-md bg-card/95 shadow-xl">
@@ -196,12 +236,12 @@ function EditorField({
   field,
   detail,
 }: {
-  field: CmsEditableSectionField
-  detail: CmsSectionDetail
+  field: CmsEditableEntityField
+  detail: CmsEntityDetail
 }) {
-  const id = `section-${field.source}-${field.key}`
-  const name = cmsFieldInputName(field)
-  const value = getSectionFieldValue(detail.row, field)
+  const id = `entity-${field.source}-${field.key}`
+  const name = cmsEntityFieldInputName(field)
+  const value = getEntityFieldValue(detail.row, field)
   const wide = field.type === "textarea" || field.type === "json" || field.type === "string-list"
 
   return (
@@ -233,7 +273,7 @@ function renderFieldInput({
   name,
   value,
 }: {
-  field: CmsEditableSectionField
+  field: CmsEditableEntityField
   id: string
   name: string
   value: unknown
@@ -296,14 +336,14 @@ function renderFieldInput({
   )
 }
 
-function inputType(field: CmsEditableSectionField) {
+function inputType(field: CmsEditableEntityField) {
   if (field.type === "number") return "number"
   if (field.type === "date") return "date"
   if (field.type === "datetime") return "datetime-local"
   return "text"
 }
 
-function fieldDefaultText(field: CmsEditableSectionField, value: unknown) {
+function fieldDefaultText(field: CmsEditableEntityField, value: unknown) {
   if (value === null || value === undefined) {
     return ""
   }
