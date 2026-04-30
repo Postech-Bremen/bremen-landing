@@ -42,6 +42,19 @@ Examples:
 
 Required DB content should fail visibly when missing. Do not reintroduce mock fallbacks for required production pages.
 
+## CMS Schema Registry
+
+CMS forms should not infer editable fields directly from arbitrary JSONB.
+
+Use `lib/cms/schema-registry.ts` as the code-level contract for:
+
+- `sections.props`
+- `entities.data`
+- `section_entities.props`
+- `entity_relations.props`
+
+Each registry entry defines the schema key, field source, field type, required/read-only status, and select options. Future CMS editor screens should render fields from this registry before adding write actions.
+
 ## Where Data Belongs
 
 Use `sections` columns for section identity:

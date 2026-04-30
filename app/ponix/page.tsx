@@ -1,9 +1,13 @@
 import type { Metadata } from "next"
-import { notFound, redirect } from "next/navigation"
 
 import { Badge } from "@/components/ui/badge"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { createClient } from "@/lib/supabase/server"
+import { requireCmsAdmin } from "@/lib/cms/auth"
+import {
+  getCmsSchemaStats,
+  getCmsSchemasByKind,
+  type CmsSchemaKind,
+} from "@/lib/cms/schema-registry"
 
 export const metadata: Metadata = {
   title: "PONIX CMS | 브레멘 Bremen",
@@ -15,24 +19,34 @@ export const metadata: Metadata = {
 }
 
 export default async function PonixPage() {
-  const supabase = await createClient()
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
-
-  if (!user) {
-    redirect("/login?next=/ponix")
-  }
-
-  const { data: member } = await supabase
-    .from("members")
-    .select("id, name, role")
-    .eq("auth_user_id", user.id)
-    .maybeSingle()
-
-  if (member?.role !== "admin") {
-    notFound()
-  }
+  const member = await requireCmsAdmin("/ponix")
+  const stats = getCmsSchemaStats()
+  const schemaGroups: Array<{
+    kind: CmsSchemaKind
+    title: string
+    body: string
+  }> = [
+    {
+      kind: "page",
+      title: "Pages",
+      body: "Route-level records and page metadata.",
+    },
+    {
+      kind: "section",
+      title: "Sections",
+      body: "Renderer contracts, section copy, and props.",
+    },
+    {
+      kind: "entity",
+      title: "Entities",
+      body: "Videos, photos, performances, history, stats, and links.",
+    },
+    {
+      kind: "relation",
+      title: "Relations",
+      body: "Section curation and entity-to-entity domain links.",
+    },
+  ]
 
   return (
     <main className="relative min-h-[calc(100vh-5rem)] overflow-hidden">
@@ -57,25 +71,63 @@ export default async function PonixPage() {
           </Badge>
         </div>
 
-        <div className="grid grid-cols-1 gap-5 md:grid-cols-3">
-          {[
-            ["Pages", "페이지별 섹션 구성과 공개 상태를 관리합니다."],
-            ["Sections", "섹션 문구, props, renderer contract를 관리합니다."],
-            ["Entities", "영상, 사진, 공연, 히스토리, 링크 데이터를 관리합니다."],
-          ].map(([title, body]) => (
-            <Card key={title} className="rounded-md border bg-card/95 shadow-xl">
-              <CardHeader>
-                <CardTitle className="font-serif text-3xl italic">
-                  {title}
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <p className="text-sm leading-relaxed text-muted-foreground">
-                  {body}
-                </p>
-              </CardContent>
-            </Card>
-          ))}
+        <Card className="mb-5 rounded-md border bg-card/95 shadow-xl">
+          <CardHeader>
+            <CardTitle className="font-serif text-3xl italic">
+              Schema registry
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-2 gap-3 md:grid-cols-5">
+              {[
+                ["Total", stats.total],
+                ["Pages", stats.pages],
+                ["Sections", stats.sections],
+                ["Entities", stats.entities],
+                ["Relations", stats.relations],
+              ].map(([label, value]) => (
+                <div key={label} className="rounded-md border bg-background/60 p-4">
+                  <p className="caps mb-2">{label}</p>
+                  <p className="font-serif text-4xl italic">{value}</p>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+
+        <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
+          {schemaGroups.map((group) => {
+            const schemas = getCmsSchemasByKind(group.kind)
+
+            return (
+              <Card
+                key={group.kind}
+                className="rounded-md border bg-card/95 shadow-xl"
+              >
+                <CardHeader>
+                  <CardTitle className="font-serif text-3xl italic">
+                    {group.title}
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <p className="text-sm leading-relaxed text-muted-foreground">
+                    {group.body}
+                  </p>
+                  <div className="mt-5 flex flex-wrap gap-2">
+                    {schemas.map((schema) => (
+                      <Badge
+                        key={schema.schemaKey}
+                        variant="secondary"
+                        className="rounded-full"
+                      >
+                        {schema.label}
+                      </Badge>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+            )
+          })}
         </div>
       </section>
     </main>
