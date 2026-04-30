@@ -13,6 +13,54 @@ type HistorySectionProps = {
   milestones: HistoryMilestoneItem[]
 }
 
+export function HistoryTimelineSurface({
+  timelineSection,
+  milestones,
+}: {
+  timelineSection?: ContentSectionConfig
+  milestones: HistoryMilestoneItem[]
+}) {
+  return (
+    <PageSection>
+      <Reveal offset={24} blur={10}>
+        <EditorialSectionHead
+          eyebrow={timelineSection?.eyebrow ?? ""}
+          en={timelineSection?.title ?? ""}
+          kr={timelineSection?.subtitle ?? ""}
+        />
+      </Reveal>
+
+      <ol className="border-t">
+        {milestones.map((item, index) => (
+          <Reveal
+            key={item.id}
+            as="li"
+            delay={index * 55}
+            className="grid grid-cols-12 gap-6 border-b py-8 md:gap-10 md:py-10"
+          >
+            <div className="col-span-12 md:col-span-3">
+              <p className="caps">Year</p>
+              <p className="mt-2 font-serif italic text-5xl leading-none tracking-tight tabular-nums md:text-6xl">
+                {item.year}
+              </p>
+            </div>
+            <div className="col-span-12 md:col-span-8">
+              <h3 className="font-serif-kr text-2xl leading-tight md:text-3xl">
+                {item.title}
+              </h3>
+              {item.summary && (
+                <p className="mt-4 max-w-3xl text-sm leading-relaxed text-muted-foreground md:text-base">
+                  {item.summary}
+                </p>
+              )}
+            </div>
+          </Reveal>
+        ))}
+      </ol>
+    </PageSection>
+  )
+}
+
 export function HistorySection({
   page,
   sections,
@@ -43,43 +91,10 @@ export function HistorySection({
         }
       />
 
-      <PageSection>
-        <Reveal offset={24} blur={10}>
-          <EditorialSectionHead
-            eyebrow={timelineSection?.eyebrow ?? ""}
-            en={timelineSection?.title ?? ""}
-            kr={timelineSection?.subtitle ?? ""}
-          />
-        </Reveal>
-
-        <ol className="border-t">
-          {items.map((item, index) => (
-            <Reveal
-              key={item.id}
-              as="li"
-              delay={index * 55}
-              className="grid grid-cols-12 gap-6 border-b py-8 md:gap-10 md:py-10"
-            >
-              <div className="col-span-12 md:col-span-3">
-                <p className="caps">Year</p>
-                <p className="mt-2 font-serif italic text-5xl leading-none tracking-tight tabular-nums md:text-6xl">
-                  {item.year}
-                </p>
-              </div>
-              <div className="col-span-12 md:col-span-8">
-                <h3 className="font-serif-kr text-2xl leading-tight md:text-3xl">
-                  {item.title}
-                </h3>
-                {item.summary && (
-                  <p className="mt-4 max-w-3xl text-sm leading-relaxed text-muted-foreground md:text-base">
-                    {item.summary}
-                  </p>
-                )}
-              </div>
-            </Reveal>
-          ))}
-        </ol>
-      </PageSection>
+      <HistoryTimelineSurface
+        timelineSection={timelineSection}
+        milestones={items}
+      />
     </div>
   )
 }

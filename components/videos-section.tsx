@@ -474,18 +474,60 @@ type VideosSectionProps = {
   initialEvent?: string
 }
 
-export function VideosSection({
-  page: pageConfig,
-  sections,
+export function FeaturedVideosSurface({
+  featuredSection,
+  popularSection,
+  featured,
+  picks,
+}: {
+  featuredSection?: ContentSectionConfig
+  popularSection?: ContentSectionConfig
+  featured: Video
+  picks: Video[]
+}) {
+  return (
+    <PageSection>
+      <Reveal offset={24} blur={10}>
+        <EditorialSectionHead
+          eyebrow={featuredSection?.eyebrow ?? ""}
+          en={featuredSection?.title ?? ""}
+          kr={featuredSection?.subtitle ?? ""}
+        />
+      </Reveal>
+
+      <div className="grid grid-cols-12 gap-5">
+        <div className="col-span-12 lg:col-span-7">
+          <FeaturedVideoCard video={featured} />
+        </div>
+        <div className="col-span-12 lg:col-span-5">
+          <Reveal offset={18} blur={8}>
+            <div className="mb-4 flex items-center justify-between">
+              <p className="caps">
+                {popularSection?.title}
+              </p>
+            </div>
+          </Reveal>
+          <div className="border-t">
+            {picks.map((video, index) => (
+              <PickRow key={`${video.id}-${index}`} video={video} index={index} />
+            ))}
+          </div>
+        </div>
+      </div>
+    </PageSection>
+  )
+}
+
+export function VideoLibrarySurface({
+  section,
   videos,
-  featuredVideos,
-  popularVideos,
   initialEvent,
-}: VideosSectionProps) {
+}: {
+  section?: ContentSectionConfig
+  videos: Video[]
+  initialEvent?: string
+}) {
   const sourceVideos = videos
-  const featuredSection = sections.find((section) => section.key === "videos-featured")
-  const popularSection = sections.find((section) => section.key === "videos-popular")
-  const librarySection = sections.find((section) => section.key === "videos-library")
   const initialEventFilter =
     initialEvent && sourceVideos.some((video) => video.event === initialEvent)
       ? initialEvent
@@ -495,20 +537,9 @@ export function VideosSection({
   const [sortBy, setSortBy] = useState<SortOption>("recent")
   const [page, setPage] = useState(1)
   const deferredQuery = useDeferredValue(query)
-  const featured =
-    featuredVideos.find((video) => video.highlight) ??
-    featuredVideos[0]
-  if (!featured) return null
-
-  const library = featured
-    ? [...sourceVideos].filter((video) => video.id !== featured.id)
-    : [...sourceVideos]
-  const picks = popularVideos
-    .filter((video) => video.id !== featured.id)
-    .slice(0, 3)
 
   const eventOptions = Array.from(
-    library
+    sourceVideos
       .reduce((events, video) => {
         const existing = events.get(video.event)
 
@@ -525,7 +556,7 @@ export function VideosSection({
   ).sort((left, right) => left.order - right.order)
 
   const searchText = normalizeSearch(deferredQuery)
-  const filteredLibrary = library.filter((video) => {
+  const filteredLibrary = sourceVideos.filter((video) => {
     const matchesEvent =
       eventFilter === ALL_EVENTS || video.event === eventFilter
     const matchesSearch =
@@ -548,6 +579,136 @@ export function VideosSection({
   }
 
   return (
+    <PageSection className="mb-0" id="recordings-library">
+      <Reveal offset={24} blur={10}>
+        <EditorialSectionHead
+          eyebrow={section?.eyebrow ?? ""}
+          en={section?.title ?? ""}
+          kr={section?.subtitle ?? ""}
+          action={
+            <p className="caps text-right tabular-nums">
+              {orderedLibrary.length} / {sourceVideos.length}
+            </p>
+          }
+        />
+      </Reveal>
+
+      <Reveal offset={18} blur={8}>
+        <div className="mb-8 rounded-md border bg-card/80 p-4 shadow-sm md:p-5">
+          <div className="grid grid-cols-1 gap-3 md:grid-cols-[1fr_16rem_12rem]">
+            <label className="relative">
+              <span className="sr-only">영상 검색</span>
+              <MagnifyingGlass
+                weight="light"
+                className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground"
+              />
+              <Input
+                value={query}
+                onChange={(event) => {
+                  setQuery(event.target.value)
+                  setPage(1)
+                }}
+                placeholder="곡, 가수, 팀 검색"
+                className="h-11 bg-background/70 pl-9"
+              />
+            </label>
+
+            <EventCombobox
+              value={eventFilter}
+              options={eventOptions}
+              onChange={(nextEvent) => {
+                setEventFilter(nextEvent)
+                setPage(1)
+              }}
+            />
+
+            <Select
+              value={sortBy}
+              onValueChange={(value) => {
+                setSortBy(value as SortOption)
+                setPage(1)
+              }}
+            >
+              <SelectTrigger className="h-11 w-full bg-background/70">
+                <SelectValue placeholder="정렬" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="recent">최신 공연순</SelectItem>
+                <SelectItem value="popular">조회수순</SelectItem>
+                <SelectItem value="title">곡명순</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
+            <p className="caps tabular-nums text-muted-foreground">
+              Page {currentPage} / {pageCount}
+            </p>
+            {hasActiveFilter && (
+              <Button variant="ghost" size="sm" onClick={resetFilters}>
+                Clear filters
+              </Button>
+            )}
+          </div>
+        </div>
+      </Reveal>
+
+      {pageItems.length > 0 ? (
+        <>
+          <ul className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
+            {pageItems.map((video, index) => (
+              <VideoCard
+                key={`${video.id}-${currentPage}-${index}`}
+                video={video}
+                index={index}
+              />
+            ))}
+          </ul>
+          <LibraryPagination
+            currentPage={currentPage}
+            pageCount={pageCount}
+            onPageChange={setPage}
+          />
+        </>
+      ) : (
+        <Reveal>
+          <div className="rounded-md border bg-muted/30 px-6 py-12 text-center">
+            <p className="font-serif-kr text-2xl">조건에 맞는 영상이 없습니다.</p>
+            <Button variant="outline" className="mt-5" onClick={resetFilters}>
+              Clear filters
+            </Button>
+          </div>
+        </Reveal>
+      )}
+    </PageSection>
+  )
+}
+
+export function VideosSection({
+  page: pageConfig,
+  sections,
+  videos,
+  featuredVideos,
+  popularVideos,
+  initialEvent,
+}: VideosSectionProps) {
+  const sourceVideos = videos
+  const featuredSection = sections.find((section) => section.key === "videos-featured")
+  const popularSection = sections.find((section) => section.key === "videos-popular")
+  const librarySection = sections.find((section) => section.key === "videos-library")
+  const featured =
+    featuredVideos.find((video) => video.highlight) ??
+    featuredVideos[0]
+  if (!featured) return null
+
+  const library = featured
+    ? [...sourceVideos].filter((video) => video.id !== featured.id)
+    : [...sourceVideos]
+  const picks = popularVideos
+    .filter((video) => video.id !== featured.id)
+    .slice(0, 3)
+
+  return (
     <div className="mx-auto max-w-6xl px-6 py-16 md:px-8 md:py-24">
       <PageHero
         eyebrow="Recorded live"
@@ -567,138 +728,18 @@ export function VideosSection({
         }
       />
 
-      <PageSection>
-        <Reveal offset={24} blur={10}>
-          <EditorialSectionHead
-            eyebrow={featuredSection?.eyebrow ?? ""}
-            en={featuredSection?.title ?? ""}
-            kr={featuredSection?.subtitle ?? ""}
-          />
-        </Reveal>
+      <FeaturedVideosSurface
+        featuredSection={featuredSection}
+        popularSection={popularSection}
+        featured={featured}
+        picks={picks}
+      />
 
-        <div className="grid grid-cols-12 gap-5">
-          <div className="col-span-12 lg:col-span-7">
-            <FeaturedVideoCard video={featured} />
-          </div>
-          <div className="col-span-12 lg:col-span-5">
-            <Reveal offset={18} blur={8}>
-              <div className="mb-4 flex items-center justify-between">
-                <p className="caps">
-                  {popularSection?.title}
-                </p>
-              </div>
-            </Reveal>
-            <div className="border-t">
-              {picks.map((video, index) => (
-                <PickRow key={`${video.id}-${index}`} video={video} index={index} />
-              ))}
-            </div>
-          </div>
-        </div>
-      </PageSection>
-
-      <PageSection className="mb-0" id="recordings-library">
-        <Reveal offset={24} blur={10}>
-          <EditorialSectionHead
-            eyebrow={librarySection?.eyebrow ?? ""}
-            en={librarySection?.title ?? ""}
-            kr={librarySection?.subtitle ?? ""}
-            action={
-              <p className="caps text-right tabular-nums">
-                {orderedLibrary.length} / {library.length}
-              </p>
-            }
-          />
-        </Reveal>
-
-        <Reveal offset={18} blur={8}>
-          <div className="mb-8 rounded-md border bg-card/80 p-4 shadow-sm md:p-5">
-            <div className="grid grid-cols-1 gap-3 md:grid-cols-[1fr_16rem_12rem]">
-              <label className="relative">
-                <span className="sr-only">영상 검색</span>
-                <MagnifyingGlass
-                  weight="light"
-                  className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground"
-                />
-                <Input
-                  value={query}
-                  onChange={(event) => {
-                    setQuery(event.target.value)
-                    setPage(1)
-                  }}
-                  placeholder="곡, 가수, 팀 검색"
-                  className="h-11 bg-background/70 pl-9"
-                />
-              </label>
-
-              <EventCombobox
-                value={eventFilter}
-                options={eventOptions}
-                onChange={(nextEvent) => {
-                  setEventFilter(nextEvent)
-                  setPage(1)
-                }}
-              />
-
-              <Select
-                value={sortBy}
-                onValueChange={(value) => {
-                  setSortBy(value as SortOption)
-                  setPage(1)
-                }}
-              >
-                <SelectTrigger className="h-11 w-full bg-background/70">
-                  <SelectValue placeholder="정렬" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="recent">최신 공연순</SelectItem>
-                  <SelectItem value="popular">조회수순</SelectItem>
-                  <SelectItem value="title">곡명순</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
-              <p className="caps tabular-nums text-muted-foreground">
-                Page {currentPage} / {pageCount}
-              </p>
-              {hasActiveFilter && (
-                <Button variant="ghost" size="sm" onClick={resetFilters}>
-                  Clear filters
-                </Button>
-              )}
-            </div>
-          </div>
-        </Reveal>
-
-        {pageItems.length > 0 ? (
-          <>
-            <ul className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
-              {pageItems.map((video, index) => (
-                <VideoCard
-                  key={`${video.id}-${currentPage}-${index}`}
-                  video={video}
-                  index={index}
-                />
-              ))}
-            </ul>
-            <LibraryPagination
-              currentPage={currentPage}
-              pageCount={pageCount}
-              onPageChange={setPage}
-            />
-          </>
-        ) : (
-          <Reveal>
-            <div className="rounded-md border bg-muted/30 px-6 py-12 text-center">
-              <p className="font-serif-kr text-2xl">조건에 맞는 영상이 없습니다.</p>
-              <Button variant="outline" className="mt-5" onClick={resetFilters}>
-                Clear filters
-              </Button>
-            </div>
-          </Reveal>
-        )}
-      </PageSection>
+      <VideoLibrarySurface
+        section={librarySection}
+        videos={library}
+        initialEvent={initialEvent}
+      />
     </div>
   )
 }
