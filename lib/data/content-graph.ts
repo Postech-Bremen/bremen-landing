@@ -1,5 +1,11 @@
-import { createClient } from "@/lib/supabase/server"
+import { unstable_cache } from "next/cache"
+
+import {
+  PUBLIC_CONTENT_CACHE_TAG,
+  PUBLIC_CONTENT_REVALIDATE_SECONDS,
+} from "@/lib/data/public-cache"
 import type { Database, Json } from "@/lib/supabase/types"
+import { createPublicClient } from "@/lib/supabase/public"
 import {
   eventByKey,
   type EventKey,
@@ -447,11 +453,11 @@ function contentSectionFromGraph(section: GraphSection): ContentSectionConfig {
   }
 }
 
-export async function loadGraphPage(slug: string): Promise<GraphPage | null> {
+async function loadGraphPageUncached(slug: string): Promise<GraphPage | null> {
   if (!hasSupabaseEnv()) return null
 
   try {
-    const supabase = await createClient()
+    const supabase = createPublicClient()
     const { data: page, error: pageError } = await supabase
       .from("pages")
       .select("*")
@@ -538,6 +544,15 @@ export async function loadGraphPage(slug: string): Promise<GraphPage | null> {
   }
 }
 
+export const loadGraphPage = unstable_cache(
+  loadGraphPageUncached,
+  ["public-content", "graph-page"],
+  {
+    tags: [PUBLIC_CONTENT_CACHE_TAG],
+    revalidate: PUBLIC_CONTENT_REVALIDATE_SECONDS,
+  },
+)
+
 function sectionItems(page: GraphPage | null, key: string) {
   return page?.sections.find((section) => section.key === key)?.items ?? []
 }
@@ -588,7 +603,7 @@ function siteSocialFromSectionItem(item: GraphSectionItem): SiteSocialItem | nul
   }
 }
 
-export async function loadSiteChrome(): Promise<SiteChrome | null> {
+async function loadSiteChromeUncached(): Promise<SiteChrome | null> {
   const page = await loadGraphPage("site")
   if (!page) return null
 
@@ -858,7 +873,7 @@ async function loadPerformanceSlugsById() {
   return new Map(entries.map((entity) => [entity.id, entity.slug ?? entity.id]))
 }
 
-export async function loadHomeCuration(): Promise<HomeCuration | null> {
+async function loadHomeCurationUncached(): Promise<HomeCuration | null> {
   const page = await loadGraphPage("home")
   if (!page) return null
 
@@ -916,7 +931,7 @@ async function loadPerformancePlaylistsFromPage(page: GraphPage | null) {
   )
 
   try {
-    const supabase = await createClient()
+    const supabase = createPublicClient()
     const performanceIds = performanceEntities.map((entity) => entity.id)
     const { data: relations, error: relationsError } = await supabase
       .from("entity_relations")
@@ -1001,7 +1016,7 @@ async function loadPerformancePlaylistsFromPage(page: GraphPage | null) {
   }
 }
 
-export async function loadPerformanceArchive() {
+async function loadPerformanceArchiveUncached() {
   const page = await loadGraphPage("performances")
   const archiveItems = sectionItems(page, "performances-archive")
     .map((item) => performanceFromEntity(item.entity))
@@ -1014,12 +1029,12 @@ export async function loadPerformanceArchive() {
   return null
 }
 
-export async function loadPerformancePlaylists() {
+async function loadPerformancePlaylistsUncached() {
   const page = await loadGraphPage("performances")
   return loadPerformancePlaylistsFromPage(page)
 }
 
-export async function loadPerformancePage(): Promise<PerformancePageContent | null> {
+async function loadPerformancePageUncached(): Promise<PerformancePageContent | null> {
   const page = await loadGraphPage("performances")
   if (!page) return null
 
@@ -1032,7 +1047,7 @@ export async function loadPerformancePage(): Promise<PerformancePageContent | nu
   }
 }
 
-export async function loadPerformanceUpdates() {
+async function loadPerformanceUpdatesUncached() {
   const page = await loadGraphPage("performances")
   const updates = sectionItems(page, "performances-updates")
     .map((item) => performanceUpdateFromEntity(item.entity))
@@ -1060,7 +1075,7 @@ function sortVideoArchive(recordings: Video[]) {
   })
 }
 
-export async function loadVideoPage(): Promise<VideoPageContent | null> {
+async function loadVideoPageUncached(): Promise<VideoPageContent | null> {
   const page = await loadGraphPage("videos")
   if (!page) return null
 
@@ -1086,7 +1101,7 @@ export async function loadVideoPage(): Promise<VideoPageContent | null> {
   }
 }
 
-export async function loadVideoArchive() {
+async function loadVideoArchiveUncached() {
   const page = await loadVideoPage()
   const recordings = page?.libraryVideos ?? []
 
@@ -1095,7 +1110,7 @@ export async function loadVideoArchive() {
   return recordings
 }
 
-export async function loadPhotoPage(): Promise<PhotoPageContent | null> {
+async function loadPhotoPageUncached(): Promise<PhotoPageContent | null> {
   const page = await loadGraphPage("photos")
   if (!page) return null
 
@@ -1110,12 +1125,12 @@ export async function loadPhotoPage(): Promise<PhotoPageContent | null> {
   }
 }
 
-export async function loadPhotoArchive() {
+async function loadPhotoArchiveUncached() {
   const page = await loadPhotoPage()
   return page?.photos.length ? page.photos : null
 }
 
-export async function loadHistoryPage(): Promise<HistoryPageContent | null> {
+async function loadHistoryPageUncached(): Promise<HistoryPageContent | null> {
   const page = await loadGraphPage("history")
   if (!page) return null
 
@@ -1130,7 +1145,84 @@ export async function loadHistoryPage(): Promise<HistoryPageContent | null> {
   }
 }
 
-export async function loadHistoryArchive() {
+async function loadHistoryArchiveUncached() {
   const page = await loadHistoryPage()
   return page?.milestones.length ? page.milestones : null
 }
+
+const publicContentCacheOptions = {
+  tags: [PUBLIC_CONTENT_CACHE_TAG],
+  revalidate: PUBLIC_CONTENT_REVALIDATE_SECONDS,
+}
+
+export const loadSiteChrome = unstable_cache(
+  loadSiteChromeUncached,
+  ["public-content", "site-chrome"],
+  publicContentCacheOptions,
+)
+
+export const loadHomeCuration = unstable_cache(
+  loadHomeCurationUncached,
+  ["public-content", "home-curation"],
+  publicContentCacheOptions,
+)
+
+export const loadPerformanceArchive = unstable_cache(
+  loadPerformanceArchiveUncached,
+  ["public-content", "performance-archive"],
+  publicContentCacheOptions,
+)
+
+export const loadPerformancePlaylists = unstable_cache(
+  loadPerformancePlaylistsUncached,
+  ["public-content", "performance-playlists"],
+  publicContentCacheOptions,
+)
+
+export const loadPerformancePage = unstable_cache(
+  loadPerformancePageUncached,
+  ["public-content", "performance-page"],
+  publicContentCacheOptions,
+)
+
+export const loadPerformanceUpdates = unstable_cache(
+  loadPerformanceUpdatesUncached,
+  ["public-content", "performance-updates"],
+  publicContentCacheOptions,
+)
+
+export const loadVideoPage = unstable_cache(
+  loadVideoPageUncached,
+  ["public-content", "video-page"],
+  publicContentCacheOptions,
+)
+
+export const loadVideoArchive = unstable_cache(
+  loadVideoArchiveUncached,
+  ["public-content", "video-archive"],
+  publicContentCacheOptions,
+)
+
+export const loadPhotoPage = unstable_cache(
+  loadPhotoPageUncached,
+  ["public-content", "photo-page"],
+  publicContentCacheOptions,
+)
+
+export const loadPhotoArchive = unstable_cache(
+  loadPhotoArchiveUncached,
+  ["public-content", "photo-archive"],
+  publicContentCacheOptions,
+)
+
+export const loadHistoryPage = unstable_cache(
+  loadHistoryPageUncached,
+  ["public-content", "history-page"],
+  publicContentCacheOptions,
+)
+
+export const loadHistoryArchive = unstable_cache(
+  loadHistoryArchiveUncached,
+  ["public-content", "history-archive"],
+  publicContentCacheOptions,
+)

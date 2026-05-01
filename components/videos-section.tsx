@@ -1,8 +1,8 @@
 "use client"
 
 import Image from "next/image"
-import type { CSSProperties } from "react"
-import { useDeferredValue, useState } from "react"
+import { useSearchParams } from "next/navigation"
+import { Suspense, useDeferredValue, useState, type CSSProperties } from "react"
 import {
   ArrowUpRight,
   CaretDown,
@@ -157,7 +157,6 @@ function VideoCard({
             src={videoThumbnailUrl(video, "mq")}
             alt={video.raw_title}
             fill
-            unoptimized
             sizes="(max-width: 768px) 100vw, 33vw"
             className="object-cover transition-transform duration-700 group-hover:scale-[1.04]"
           />
@@ -217,7 +216,6 @@ function FeaturedVideoCard({ video }: { video: Video }) {
             src={videoThumbnailUrl(video, "max")}
             alt={video.raw_title}
             fill
-            unoptimized
             sizes="(max-width: 1024px) 100vw, 60vw"
             className="object-cover transition-transform duration-700 group-hover:scale-[1.04]"
           />
@@ -268,7 +266,6 @@ function PickRow({ video, index }: { video: Video; index: number }) {
             src={videoThumbnailUrl(video, "mq")}
             alt={video.raw_title}
             fill
-            unoptimized
             sizes="128px"
             className="object-cover"
           />
@@ -471,7 +468,6 @@ type VideosSectionProps = {
   videos: Video[]
   featuredVideos: Video[]
   popularVideos: Video[]
-  initialEvent?: string
 }
 
 export function FeaturedVideosSurface({
@@ -684,13 +680,30 @@ export function VideoLibrarySurface({
   )
 }
 
+function VideoLibrarySurfaceWithSearchParams({
+  section,
+  videos,
+}: {
+  section?: ContentSectionConfig
+  videos: Video[]
+}) {
+  const searchParams = useSearchParams()
+
+  return (
+    <VideoLibrarySurface
+      section={section}
+      videos={videos}
+      initialEvent={searchParams.get("event") ?? undefined}
+    />
+  )
+}
+
 export function VideosSection({
   page: pageConfig,
   sections,
   videos,
   featuredVideos,
   popularVideos,
-  initialEvent,
 }: VideosSectionProps) {
   const sourceVideos = videos
   const featuredSection = sections.find((section) => section.key === "videos-featured")
@@ -735,11 +748,12 @@ export function VideosSection({
         picks={picks}
       />
 
-      <VideoLibrarySurface
-        section={librarySection}
-        videos={library}
-        initialEvent={initialEvent}
-      />
+      <Suspense fallback={<VideoLibrarySurface section={librarySection} videos={library} />}>
+        <VideoLibrarySurfaceWithSearchParams
+          section={librarySection}
+          videos={library}
+        />
+      </Suspense>
     </div>
   )
 }

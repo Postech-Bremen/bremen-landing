@@ -4,7 +4,12 @@ import {
   type HomeSectionConfig,
   type HomeStatCard,
 } from "@/components/home-section"
+import { unstable_cache } from "next/cache"
 import { notFound } from "next/navigation"
+import {
+  PUBLIC_CONTENT_CACHE_TAG,
+  PUBLIC_CONTENT_REVALIDATE_SECONDS,
+} from "@/lib/data/public-cache"
 import {
   loadHomeCuration,
   loadPerformancePlaylists,
@@ -14,7 +19,7 @@ import {
   type HomeCurationStatItem,
 } from "@/lib/data/content-graph"
 import { formatViews, type Video } from "@/lib/data/videos"
-import { createClient } from "@/lib/supabase/server"
+import { createPublicClient } from "@/lib/supabase/public"
 
 type HomeVideoSource = Video & {
   caption?: string
@@ -32,7 +37,7 @@ type StatMetricContext = {
   topVideo?: HomeVideoSource
 }
 
-async function loadMemberStats() {
+async function loadMemberStatsUncached() {
   if (
     !process.env.NEXT_PUBLIC_SUPABASE_URL ||
     !process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
@@ -41,7 +46,7 @@ async function loadMemberStats() {
   }
 
   try {
-    const supabase = await createClient()
+    const supabase = createPublicClient()
     const { data, error } = await supabase
       .from("members")
       .select("status")
@@ -59,6 +64,15 @@ async function loadMemberStats() {
     return { memberCount: 0, activeMemberCount: 0 }
   }
 }
+
+const loadMemberStats = unstable_cache(
+  loadMemberStatsUncached,
+  ["public-content", "home-member-stats"],
+  {
+    tags: [PUBLIC_CONTENT_CACHE_TAG],
+    revalidate: PUBLIC_CONTENT_REVALIDATE_SECONDS,
+  },
+)
 
 function videoTitle(video: HomeVideoSource) {
   return video.song || video.raw_title

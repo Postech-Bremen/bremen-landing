@@ -1,9 +1,10 @@
 "use server"
 
 import { headers } from "next/headers"
-import { revalidatePath } from "next/cache"
+import { revalidatePath, updateTag } from "next/cache"
 import { redirect } from "next/navigation"
 
+import { PUBLIC_CONTENT_CACHE_TAG } from "@/lib/data/public-cache"
 import { createClient } from "@/lib/supabase/server"
 import type { Database } from "@/lib/supabase/types"
 
@@ -213,7 +214,9 @@ export async function updateProfileAction(formData: FormData) {
   }
 
   revalidatePath("/members")
+  revalidatePath("/")
   revalidatePath("/mypage")
+  updateTag(PUBLIC_CONTENT_CACHE_TAG)
   redirectWithParams("/mypage", {
     message: "프로필을 저장했습니다.",
   })

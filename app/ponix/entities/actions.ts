@@ -1,6 +1,6 @@
 "use server"
 
-import { revalidatePath } from "next/cache"
+import { revalidatePath, updateTag } from "next/cache"
 import { redirect } from "next/navigation"
 
 import { requireCmsAdmin } from "@/lib/cms/auth"
@@ -12,6 +12,7 @@ import {
   type CmsEditableEntityField,
   type CmsJsonObject,
 } from "@/lib/cms/entity-editor"
+import { PUBLIC_CONTENT_CACHE_TAG } from "@/lib/data/public-cache"
 import { createClient } from "@/lib/supabase/server"
 import type { Database, Json } from "@/lib/supabase/types"
 
@@ -387,6 +388,7 @@ export async function updateCmsEntityAction(formData: FormData) {
   revalidatePath("/videos")
   revalidatePath("/photos")
   revalidatePath("/history")
+  updateTag(PUBLIC_CONTENT_CACHE_TAG)
   revalidatePath("/ponix")
   revalidatePath("/ponix/entities")
   revalidatePath(`/ponix/entities/${entityId}`)

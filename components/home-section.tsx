@@ -170,7 +170,6 @@ function StatCardView({ card }: { card: HomeStatCard }) {
             src={imageSrc}
             alt={card.label}
             fill
-            unoptimized
             sizes="(max-width: 768px) 50vw, 25vw"
             className="object-cover"
           />
@@ -298,7 +297,6 @@ export function HomeSection({ overview }: { overview: HomeOverview }) {
                 src={homeFeaturedVideo.thumbnailUrl ?? thumbnailUrl(homeFeaturedVideo.id, "max")}
                 alt={homeFeaturedVideo.title}
                 fill
-                unoptimized
                 priority
                 sizes="(max-width: 768px) 100vw, 60vw"
                 className="object-cover transition-transform duration-700 group-hover:scale-[1.03]"
@@ -383,7 +381,6 @@ export function HomeSection({ overview }: { overview: HomeOverview }) {
                     src={v.thumbnailUrl ?? thumbnailUrl(v.id, "max")}
                     alt={`${v.artist ?? "Bremen"} - ${v.song ?? v.title}`}
                     fill
-                    unoptimized
                     sizes="(max-width: 768px) 50vw, 25vw"
                     className="object-cover transition-transform duration-700 group-hover:scale-[1.04]"
                   />

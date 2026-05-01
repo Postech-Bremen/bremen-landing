@@ -1,11 +1,13 @@
 "use client"
 
+import { useEffect, useState } from "react"
 import Image from "next/image"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { UserCircle } from "@phosphor-icons/react"
 
 import { buttonVariants } from "@/components/ui/button"
+import { createClient } from "@/lib/supabase/client"
 import { cn } from "@/lib/utils"
 
 export type NavigationItem = {
@@ -36,11 +38,33 @@ type NavigationProps = {
 
 export function Navigation({ isSignedIn = false, config }: NavigationProps) {
   const pathname = usePathname()
+  const [hasSession, setHasSession] = useState(isSignedIn)
+
+  useEffect(() => {
+    let mounted = true
+    const supabase = createClient()
+
+    supabase.auth.getUser().then(({ data }) => {
+      if (mounted) setHasSession(Boolean(data.user))
+    })
+
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (mounted) setHasSession(Boolean(session?.user))
+    })
+
+    return () => {
+      mounted = false
+      subscription.unsubscribe()
+    }
+  }, [])
+
   const isAccountActive = accountPaths.some((path) => pathname.startsWith(path))
-  const accountHref = isSignedIn
+  const accountHref = hasSession
     ? config.accountSignedInHref
     : config.accountSignedOutHref
-  const accountLabel = isSignedIn
+  const accountLabel = hasSession
     ? config.accountSignedInLabel
     : config.accountSignedOutLabel
 
@@ -55,7 +79,6 @@ export function Navigation({ isSignedIn = false, config }: NavigationProps) {
               width={36}
               height={36}
               priority
-              unoptimized={config.logoSrc.startsWith("http")}
               className="rounded-sm"
             />
             <span className="hidden sm:flex items-baseline gap-2">
