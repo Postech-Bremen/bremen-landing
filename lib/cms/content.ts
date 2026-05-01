@@ -4,6 +4,7 @@ import type { Database, Json } from "@/lib/supabase/types"
 import { getCmsSchema } from "./schema-registry"
 
 const ENTITY_LIST_LIMIT = 200
+const RELATION_ENTITY_OPTION_LIMIT = 1000
 const RELATION_LIST_LIMIT = 300
 
 type PageRow = Database["public"]["Tables"]["pages"]["Row"]
@@ -166,6 +167,13 @@ export type CmsRelationGraph = {
   pageSections: CmsRelationList<CmsPageSectionRelation>
   sectionEntities: CmsRelationList<CmsSectionEntityRelation>
   entityRelations: CmsRelationList<CmsEntityRelation>
+}
+
+export type CmsRelationEditorOptions = {
+  sections: CmsSectionSummary[]
+  entities: CmsEntitySummary[]
+  entityCount: number | null
+  entityLimit: number
 }
 
 export type CmsPageRelationContext = {
@@ -566,6 +574,64 @@ export async function loadCmsEntities(): Promise<CmsEntityList> {
       sortAt: entity.sort_at,
       updatedAt: entity.updated_at,
     })),
+  }
+}
+
+export async function loadCmsRelationEditorOptions(): Promise<CmsRelationEditorOptions> {
+  const supabase = await createClient()
+  const [sectionsResult, entitiesResult] = await Promise.all([
+    supabase
+      .from("sections")
+      .select("id, key, section_type, schema_key, title, subtitle, published, updated_at")
+      .order("key", { ascending: true }),
+    supabase
+      .from("entities")
+      .select(
+        "id, entity_type, schema_key, slug, title, subtitle, thumbnail_url, published, sort_at, updated_at",
+        { count: "exact" },
+      )
+      .order("entity_type", { ascending: true })
+      .order("sort_at", { ascending: false })
+      .range(0, RELATION_ENTITY_OPTION_LIMIT - 1),
+  ])
+
+  if (sectionsResult.error) {
+    throw new Error(
+      `Failed to load CMS section options: ${sectionsResult.error.message}`,
+    )
+  }
+
+  if (entitiesResult.error) {
+    throw new Error(
+      `Failed to load CMS entity options: ${entitiesResult.error.message}`,
+    )
+  }
+
+  return {
+    sections: (sectionsResult.data ?? []).map((section) => ({
+      ...schemaSummary(section.schema_key),
+      id: section.id,
+      key: section.key,
+      sectionType: section.section_type,
+      title: section.title,
+      subtitle: section.subtitle,
+      published: section.published,
+      updatedAt: section.updated_at,
+    })),
+    entities: (entitiesResult.data ?? []).map((entity) => ({
+      ...schemaSummary(entity.schema_key),
+      id: entity.id,
+      entityType: entity.entity_type,
+      slug: entity.slug,
+      title: entity.title,
+      subtitle: entity.subtitle,
+      thumbnailUrl: entity.thumbnail_url,
+      published: entity.published,
+      sortAt: entity.sort_at,
+      updatedAt: entity.updated_at,
+    })),
+    entityCount: entitiesResult.count,
+    entityLimit: RELATION_ENTITY_OPTION_LIMIT,
   }
 }
 

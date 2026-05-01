@@ -1,7 +1,17 @@
 import Link from "next/link"
 import type { ReactNode } from "react"
 
+import {
+  addEntityRelationAction,
+  addSectionEntityRelationAction,
+  deleteEntityRelationAction,
+  deleteSectionEntityRelationAction,
+  updateEntityRelationAction,
+  updateSectionEntityRelationAction,
+} from "@/app/ponix/relations/actions"
+import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Badge } from "@/components/ui/badge"
+import { Button } from "@/components/ui/button"
 import {
   Card,
   CardContent,
@@ -17,6 +27,8 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
 import type {
   CmsEntityRelation,
   CmsLinkedEntity,
@@ -24,6 +36,7 @@ import type {
   CmsLinkedSection,
   CmsPageSectionRelation,
   CmsRelationList,
+  CmsRelationEditorOptions,
   CmsSectionEntityRelation,
 } from "@/lib/cms/content"
 
@@ -45,6 +58,42 @@ export function RelationCount({
       {limit && total > limit ? `${visible} of ${total}` : `${visible}`} records
     </p>
   )
+}
+
+export function RelationMutationNotice({
+  message,
+  error,
+}: {
+  message?: string
+  error?: string
+}) {
+  if (!message && !error) return null
+
+  return (
+    <Alert
+      variant={error ? "destructive" : "default"}
+      className="rounded-md bg-card/95 shadow-xl"
+    >
+      <AlertDescription>{error ?? message}</AlertDescription>
+    </Alert>
+  )
+}
+
+export function relationMutationState(
+  searchParams?: Record<string, string | string[] | undefined>,
+) {
+  const message = searchValue(searchParams?.relation_message)
+  const error = searchValue(searchParams?.relation_error)
+
+  return {
+    message,
+    error,
+  }
+}
+
+function searchValue(value: string | string[] | undefined) {
+  if (Array.isArray(value)) return value[0]
+  return value
 }
 
 export function PageSectionRelationsCard({
@@ -78,11 +127,21 @@ export function SectionEntityRelationsCard({
   description = "Ordered entity curation inside sections.",
   relationList,
   relations,
+  editable = false,
+  editorOptions,
+  redirectTo = "/ponix/relations",
+  fixedSectionId,
+  fixedEntityId,
 }: {
   title?: string
   description?: string
   relationList?: CmsRelationList<CmsSectionEntityRelation>
   relations?: CmsSectionEntityRelation[]
+  editable?: boolean
+  editorOptions?: CmsRelationEditorOptions
+  redirectTo?: string
+  fixedSectionId?: string
+  fixedEntityId?: string
 }) {
   const rows = relationList?.relations ?? relations ?? []
 
@@ -94,7 +153,19 @@ export function SectionEntityRelationsCard({
       count={relationList?.count ?? rows.length}
       limit={relationList?.limit}
     >
-      <SectionEntityRelationsTable relations={rows} />
+      {editable && editorOptions && (
+        <SectionEntityAddForm
+          options={editorOptions}
+          redirectTo={redirectTo}
+          fixedSectionId={fixedSectionId}
+          fixedEntityId={fixedEntityId}
+        />
+      )}
+      <SectionEntityRelationsTable
+        relations={rows}
+        editable={editable}
+        redirectTo={redirectTo}
+      />
     </RelationCard>
   )
 }
@@ -104,11 +175,23 @@ export function EntityRelationsCard({
   description = "Domain links between reusable entities.",
   relationList,
   relations,
+  editable = false,
+  allowAdd = true,
+  editorOptions,
+  redirectTo = "/ponix/relations",
+  fixedFromEntityId,
+  fixedToEntityId,
 }: {
   title?: string
   description?: string
   relationList?: CmsRelationList<CmsEntityRelation>
   relations?: CmsEntityRelation[]
+  editable?: boolean
+  allowAdd?: boolean
+  editorOptions?: CmsRelationEditorOptions
+  redirectTo?: string
+  fixedFromEntityId?: string
+  fixedToEntityId?: string
 }) {
   const rows = relationList?.relations ?? relations ?? []
 
@@ -120,10 +203,233 @@ export function EntityRelationsCard({
       count={relationList?.count ?? rows.length}
       limit={relationList?.limit}
     >
-      <EntityRelationsTable relations={rows} />
+      {editable && allowAdd && editorOptions && (
+        <EntityRelationAddForm
+          options={editorOptions}
+          redirectTo={redirectTo}
+          fixedFromEntityId={fixedFromEntityId}
+          fixedToEntityId={fixedToEntityId}
+        />
+      )}
+      <EntityRelationsTable
+        relations={rows}
+        editable={editable}
+        redirectTo={redirectTo}
+      />
     </RelationCard>
   )
 }
+
+function SectionEntityAddForm({
+  options,
+  redirectTo,
+  fixedSectionId,
+  fixedEntityId,
+}: {
+  options: CmsRelationEditorOptions
+  redirectTo: string
+  fixedSectionId?: string
+  fixedEntityId?: string
+}) {
+  return (
+    <form
+      action={addSectionEntityRelationAction}
+      className="grid gap-4 border-b bg-muted/20 px-6 py-6 lg:grid-cols-[minmax(12rem,0.9fr)_minmax(14rem,1.2fr)_9rem_9rem_7rem_auto]"
+    >
+      <input type="hidden" name="redirect_to" value={redirectTo} />
+      {fixedSectionId ? (
+        <input type="hidden" name="section_id" value={fixedSectionId} />
+      ) : (
+        <FieldGroup label="Section">
+          <SectionSelect name="section_id" sections={options.sections} />
+        </FieldGroup>
+      )}
+      {fixedEntityId ? (
+        <input type="hidden" name="entity_id" value={fixedEntityId} />
+      ) : (
+        <FieldGroup label="Entity">
+          <EntitySelect name="entity_id" entities={options.entities} />
+        </FieldGroup>
+      )}
+      <FieldGroup label="Type">
+        <Input
+          name="relation_type"
+          defaultValue="item"
+          list="section-relation-types"
+          required
+          className="h-10 bg-background/80"
+        />
+      </FieldGroup>
+      <FieldGroup label="Slot">
+        <Input
+          name="slot"
+          defaultValue="default"
+          className="h-10 bg-background/80"
+        />
+      </FieldGroup>
+      <FieldGroup label="Order">
+        <Input
+          name="sort_order"
+          type="number"
+          defaultValue="0"
+          className="h-10 bg-background/80"
+        />
+      </FieldGroup>
+      <div className="flex items-end">
+        <Button type="submit" className="w-full rounded-full">
+          Add
+        </Button>
+      </div>
+      <datalist id="section-relation-types">
+        <option value="item" />
+        <option value="features_photo" />
+        <option value="features_post" />
+        <option value="contains_video" />
+      </datalist>
+    </form>
+  )
+}
+
+function EntityRelationAddForm({
+  options,
+  redirectTo,
+  fixedFromEntityId,
+  fixedToEntityId,
+}: {
+  options: CmsRelationEditorOptions
+  redirectTo: string
+  fixedFromEntityId?: string
+  fixedToEntityId?: string
+}) {
+  return (
+    <form
+      action={addEntityRelationAction}
+      className="grid gap-4 border-b bg-muted/20 px-6 py-6 lg:grid-cols-[minmax(14rem,1.2fr)_minmax(14rem,1.2fr)_9rem_9rem_7rem_auto]"
+    >
+      <input type="hidden" name="redirect_to" value={redirectTo} />
+      {fixedFromEntityId ? (
+        <input type="hidden" name="from_entity_id" value={fixedFromEntityId} />
+      ) : (
+        <FieldGroup label="From">
+          <EntitySelect name="from_entity_id" entities={options.entities} />
+        </FieldGroup>
+      )}
+      {fixedToEntityId ? (
+        <input type="hidden" name="to_entity_id" value={fixedToEntityId} />
+      ) : (
+        <FieldGroup label="To">
+          <EntitySelect name="to_entity_id" entities={options.entities} />
+        </FieldGroup>
+      )}
+      <FieldGroup label="Type">
+        <Input
+          name="relation_type"
+          defaultValue="has_recording"
+          list="entity-relation-types"
+          required
+          className="h-10 bg-background/80"
+        />
+      </FieldGroup>
+      <FieldGroup label="Slot">
+        <Input
+          name="slot"
+          defaultValue="default"
+          className="h-10 bg-background/80"
+        />
+      </FieldGroup>
+      <FieldGroup label="Order">
+        <Input
+          name="sort_order"
+          type="number"
+          defaultValue="0"
+          className="h-10 bg-background/80"
+        />
+      </FieldGroup>
+      <div className="flex items-end">
+        <Button type="submit" className="w-full rounded-full">
+          Add
+        </Button>
+      </div>
+      <datalist id="entity-relation-types">
+        <option value="has_recording" />
+        <option value="has_photo" />
+        <option value="has_post" />
+        <option value="related" />
+      </datalist>
+    </form>
+  )
+}
+
+function FieldGroup({
+  label,
+  children,
+}: {
+  label: string
+  children: ReactNode
+}) {
+  return (
+    <div className="space-y-2">
+      <Label className="caps text-muted-foreground">{label}</Label>
+      {children}
+    </div>
+  )
+}
+
+function SectionSelect({
+  name,
+  sections,
+}: {
+  name: string
+  sections: CmsRelationEditorOptions["sections"]
+}) {
+  return (
+    <select
+      name={name}
+      required
+      className={selectClassName}
+      defaultValue=""
+    >
+      <option value="" disabled>
+        Select section
+      </option>
+      {sections.map((section) => (
+        <option key={section.id} value={section.id}>
+          {section.key} · {section.title ?? "Untitled"}
+        </option>
+      ))}
+    </select>
+  )
+}
+
+function EntitySelect({
+  name,
+  entities,
+}: {
+  name: string
+  entities: CmsRelationEditorOptions["entities"]
+}) {
+  return (
+    <select
+      name={name}
+      required
+      className={selectClassName}
+      defaultValue=""
+    >
+      <option value="" disabled>
+        Select entity
+      </option>
+      {entities.map((entity) => (
+        <option key={entity.id} value={entity.id}>
+          {entity.entityType} · {entity.title}
+          {entity.slug ? ` · ${entity.slug}` : ""}
+        </option>
+      ))}
+    </select>
+  )
+}
+
+const selectClassName =
+  "flex h-10 w-full rounded-md border border-input bg-background/80 px-3 py-2 text-sm shadow-xs outline-none transition-[color,box-shadow] focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50 disabled:cursor-not-allowed disabled:opacity-50"
 
 function RelationCard({
   title,
@@ -219,8 +525,12 @@ function PageSectionRelationsTable({
 
 function SectionEntityRelationsTable({
   relations,
+  editable = false,
+  redirectTo = "/ponix/relations",
 }: {
   relations: CmsSectionEntityRelation[]
+  editable?: boolean
+  redirectTo?: string
 }) {
   if (relations.length === 0) {
     return <EmptyRelationRows message="No section-entity relations." />
@@ -236,6 +546,7 @@ function SectionEntityRelationsTable({
           <TableHead>Entity</TableHead>
           <TableHead>Type</TableHead>
           <TableHead>Status</TableHead>
+          {editable && <TableHead>Manage</TableHead>}
         </TableRow>
       </TableHeader>
       <TableBody>
@@ -260,6 +571,14 @@ function SectionEntityRelationsTable({
             <TableCell>
               <SectionEntityStatus relation={relation} />
             </TableCell>
+            {editable && (
+              <TableCell>
+                <SectionEntityRelationActions
+                  relation={relation}
+                  redirectTo={redirectTo}
+                />
+              </TableCell>
+            )}
           </TableRow>
         ))}
       </TableBody>
@@ -269,8 +588,12 @@ function SectionEntityRelationsTable({
 
 function EntityRelationsTable({
   relations,
+  editable = false,
+  redirectTo = "/ponix/relations",
 }: {
   relations: CmsEntityRelation[]
+  editable?: boolean
+  redirectTo?: string
 }) {
   if (relations.length === 0) {
     return <EmptyRelationRows message="No entity relations." />
@@ -286,6 +609,7 @@ function EntityRelationsTable({
           <TableHead>Order</TableHead>
           <TableHead>To</TableHead>
           <TableHead>Status</TableHead>
+          {editable && <TableHead>Manage</TableHead>}
         </TableRow>
       </TableHeader>
       <TableBody>
@@ -313,10 +637,99 @@ function EntityRelationsTable({
             <TableCell>
               <EntityRelationStatus relation={relation} />
             </TableCell>
+            {editable && (
+              <TableCell>
+                <EntityRelationActions
+                  relation={relation}
+                  redirectTo={redirectTo}
+                />
+              </TableCell>
+            )}
           </TableRow>
         ))}
       </TableBody>
     </Table>
+  )
+}
+
+function SectionEntityRelationActions({
+  relation,
+  redirectTo,
+}: {
+  relation: CmsSectionEntityRelation
+  redirectTo: string
+}) {
+  return (
+    <div className="flex min-w-44 flex-col gap-2">
+      <form
+        action={updateSectionEntityRelationAction}
+        className="flex items-center gap-2"
+      >
+        <input type="hidden" name="redirect_to" value={redirectTo} />
+        <input type="hidden" name="relation_id" value={relation.id} />
+        <Input
+          aria-label="Sort order"
+          name="sort_order"
+          type="number"
+          defaultValue={relation.sortOrder}
+          className="h-8 w-20 bg-background/80"
+        />
+        <Button type="submit" size="sm" variant="outline">
+          Save
+        </Button>
+      </form>
+      <form action={deleteSectionEntityRelationAction}>
+        <input type="hidden" name="redirect_to" value={redirectTo} />
+        <input type="hidden" name="relation_id" value={relation.id} />
+        <Button
+          type="submit"
+          size="sm"
+          variant="ghost"
+          className="h-8 px-2 text-destructive hover:text-destructive"
+        >
+          Remove relation
+        </Button>
+      </form>
+    </div>
+  )
+}
+
+function EntityRelationActions({
+  relation,
+  redirectTo,
+}: {
+  relation: CmsEntityRelation
+  redirectTo: string
+}) {
+  return (
+    <div className="flex min-w-44 flex-col gap-2">
+      <form action={updateEntityRelationAction} className="flex items-center gap-2">
+        <input type="hidden" name="redirect_to" value={redirectTo} />
+        <input type="hidden" name="relation_id" value={relation.id} />
+        <Input
+          aria-label="Sort order"
+          name="sort_order"
+          type="number"
+          defaultValue={relation.sortOrder}
+          className="h-8 w-20 bg-background/80"
+        />
+        <Button type="submit" size="sm" variant="outline">
+          Save
+        </Button>
+      </form>
+      <form action={deleteEntityRelationAction}>
+        <input type="hidden" name="redirect_to" value={redirectTo} />
+        <input type="hidden" name="relation_id" value={relation.id} />
+        <Button
+          type="submit"
+          size="sm"
+          variant="ghost"
+          className="h-8 px-2 text-destructive hover:text-destructive"
+        >
+          Remove relation
+        </Button>
+      </form>
+    </div>
   )
 }
 
