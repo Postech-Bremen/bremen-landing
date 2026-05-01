@@ -8,6 +8,7 @@ import {
   PublishBadge,
   SchemaBadge,
 } from "@/app/ponix/_components/cms-list"
+import { Button } from "@/components/ui/button"
 import {
   Table,
   TableBody,
@@ -38,7 +39,12 @@ export default async function PonixEntitiesPage() {
     <CmsListPage
       eyebrow="PONIX / Entities"
       title="Entities"
-      description="Reusable content records. This read-only list exposes schema registration status before edit forms are added."
+      description="Reusable content records that can be edited, linked, and placed into public sections."
+      actions={
+        <Button asChild className="w-fit rounded-full">
+          <Link href="/ponix/entities/new">New entity</Link>
+        </Button>
+      }
     >
       <CmsTableCard title="Entity records" meta={meta}>
         <Table>

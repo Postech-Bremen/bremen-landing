@@ -6,7 +6,9 @@ import { redirect } from "next/navigation"
 import { requireCmsAdmin } from "@/lib/cms/auth"
 import {
   cmsEntityFieldInputName,
+  entityTypeFromSchemaKey,
   getEditableEntityFields,
+  getEntityCreationSchema,
   getEntityEditorSchema,
   jsonObject,
   type CmsEditableEntityField,
@@ -17,6 +19,7 @@ import { createClient } from "@/lib/supabase/server"
 import type { Database, Json } from "@/lib/supabase/types"
 
 type EntityUpdate = Database["public"]["Tables"]["entities"]["Update"]
+type EntityInsert = Database["public"]["Tables"]["entities"]["Insert"]
 type EntityRow = Database["public"]["Tables"]["entities"]["Row"]
 
 type ParsedValue =
@@ -30,7 +33,7 @@ type ParsedValue =
       error: string
     }
 
-const maxThumbnailSize = 8 * 1024 * 1024
+const maxThumbnailSize = 5 * 1024 * 1024
 
 function stringField(formData: FormData, key: string) {
   const value = formData.get(key)
@@ -38,8 +41,33 @@ function stringField(formData: FormData, key: string) {
 }
 
 function redirectWithParams(path: string, params: Record<string, string>): never {
-  const search = new URLSearchParams(params)
-  redirect(`${path}?${search.toString()}`)
+  const [pathname, currentSearch = ""] = path.split("?")
+  const search = new URLSearchParams(currentSearch)
+
+  for (const [key, value] of Object.entries(params)) {
+    search.set(key, value)
+  }
+
+  redirect(`${pathname}?${search.toString()}`)
+}
+
+function revalidateEntitySurfaces(entityId?: string) {
+  revalidatePath("/")
+  revalidatePath("/performances")
+  revalidatePath("/performances/updates")
+  revalidatePath("/videos")
+  revalidatePath("/photos")
+  revalidatePath("/history")
+  updateTag(PUBLIC_CONTENT_CACHE_TAG)
+  revalidatePath("/ponix")
+  revalidatePath("/ponix/entities")
+  revalidatePath("/ponix/entities/new")
+  revalidatePath("/ponix/relations")
+
+  if (entityId) {
+    revalidatePath(`/ponix/entities/${entityId}`)
+    revalidatePath(`/ponix/entities/${entityId}/edit`)
+  }
 }
 
 function isSafeUrl(value: string) {
@@ -256,7 +284,7 @@ async function uploadThumbnailIfPresent({
 
   if (file.size > maxThumbnailSize) {
     redirectWithParams(editPath, {
-      error: "Thumbnail image must be 8MB or smaller.",
+      error: "Thumbnail image must be 5MB or smaller.",
     })
   }
 
@@ -277,6 +305,114 @@ async function uploadThumbnailIfPresent({
   }
 
   return supabase.storage.from(bucket).getPublicUrl(path).data.publicUrl
+}
+
+export async function createCmsEntityAction(formData: FormData) {
+  const schemaKey = stringField(formData, "schema_key")
+  const createPath = schemaKey
+    ? `/ponix/entities/new?schema=${encodeURIComponent(schemaKey)}`
+    : "/ponix/entities/new"
+  const admin = await requireCmsAdmin(createPath)
+
+  const schema = getEntityCreationSchema(schemaKey)
+  if (!schema) {
+    redirectWithParams("/ponix/entities/new", {
+      error: "Choose a schema that can be created from CMS.",
+    })
+  }
+
+  const fields = getEditableEntityFields(schema.schemaKey)
+  const data: CmsJsonObject = {}
+  const insert: EntityInsert = {
+    data,
+    entity_type: entityTypeFromSchemaKey(schema.schemaKey),
+    owner_member_id: admin.id,
+    published: false,
+    schema_key: schema.schemaKey,
+    sort_at: new Date().toISOString(),
+    title: "",
+  }
+
+  for (const field of fields) {
+    const parsed = parseFieldValue(formData, field)
+
+    if (!parsed.ok) {
+      redirectWithParams(createPath, {
+        error: parsed.error,
+      })
+    }
+
+    if (field.source === "data") {
+      updateDataValue(data, field, parsed)
+      continue
+    }
+
+    if (field.key === "published") {
+      insert.published = Boolean(parsed.value)
+    }
+
+    if (field.key === "slug") {
+      insert.slug = parsed.value === null ? null : String(parsed.value)
+    }
+
+    if (field.key === "title") {
+      insert.title = String(parsed.value)
+    }
+
+    if (field.key === "subtitle") {
+      insert.subtitle = parsed.value === null ? null : String(parsed.value)
+    }
+
+    if (field.key === "summary") {
+      insert.summary = parsed.value === null ? null : String(parsed.value)
+    }
+
+    if (field.key === "thumbnail_url") {
+      insert.thumbnail_url = parsed.value === null ? null : String(parsed.value)
+    }
+
+    if (field.key === "sort_at") {
+      insert.sort_at = new Date(String(parsed.value)).toISOString()
+    }
+  }
+
+  const supabase = await createClient()
+  const { data: created, error: insertError } = await supabase
+    .from("entities")
+    .insert(insert)
+    .select("*")
+    .single()
+
+  if (insertError || !created) {
+    redirectWithParams(createPath, {
+      error: "Entity creation failed.",
+    })
+  }
+
+  const editPath = `/ponix/entities/${created.id}/edit`
+  const uploadedThumbnailUrl = await uploadThumbnailIfPresent({
+    supabase,
+    entity: created,
+    formData,
+    editPath,
+  })
+
+  if (uploadedThumbnailUrl) {
+    const { error: thumbnailUpdateError } = await supabase
+      .from("entities")
+      .update({ thumbnail_url: uploadedThumbnailUrl })
+      .eq("id", created.id)
+
+    if (thumbnailUpdateError) {
+      redirectWithParams(editPath, {
+        error: "Thumbnail URL save failed.",
+      })
+    }
+  }
+
+  revalidateEntitySurfaces(created.id)
+
+  redirect(`/ponix/entities/${created.id}`)
 }
 
 export async function updateCmsEntityAction(formData: FormData) {
@@ -382,17 +518,7 @@ export async function updateCmsEntityAction(formData: FormData) {
     })
   }
 
-  revalidatePath("/")
-  revalidatePath("/performances")
-  revalidatePath("/performances/updates")
-  revalidatePath("/videos")
-  revalidatePath("/photos")
-  revalidatePath("/history")
-  updateTag(PUBLIC_CONTENT_CACHE_TAG)
-  revalidatePath("/ponix")
-  revalidatePath("/ponix/entities")
-  revalidatePath(`/ponix/entities/${entityId}`)
-  revalidatePath("/ponix/relations")
+  revalidateEntitySurfaces(entityId)
 
   redirect(`/ponix/entities/${entityId}`)
 }

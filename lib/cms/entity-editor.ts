@@ -2,7 +2,7 @@ import type {
   CmsFieldDefinition,
   CmsSchemaDefinition,
 } from "@/lib/cms/schema-registry"
-import { getCmsSchema } from "@/lib/cms/schema-registry"
+import { getCmsSchema, getCmsSchemasByKind } from "@/lib/cms/schema-registry"
 import type { Database, Json } from "@/lib/supabase/types"
 
 type EntityRow = Database["public"]["Tables"]["entities"]["Row"]
@@ -37,6 +37,38 @@ export function getEntityEditorSchema(
   }
 
   return schema
+}
+
+export function entityTypeFromSchemaKey(schemaKey: string) {
+  return schemaKey.split("/")[0] || "entity"
+}
+
+function hasRequiredReadOnlyField(schema: CmsSchemaDefinition) {
+  return schema.fields.some((field) => {
+    if (!field.required || !field.readOnly) {
+      return false
+    }
+
+    return !(field.source === "column" && field.key === "entity_type")
+  })
+}
+
+export function getEntityCreationSchema(
+  schemaKey: string,
+): CmsSchemaDefinition | null {
+  const schema = getEntityEditorSchema(schemaKey)
+
+  if (!schema || hasRequiredReadOnlyField(schema)) {
+    return null
+  }
+
+  return schema
+}
+
+export function getEntityCreationSchemas() {
+  return getCmsSchemasByKind("entity")
+    .filter((schema) => getEntityCreationSchema(schema.schemaKey))
+    .sort((left, right) => left.label.localeCompare(right.label))
 }
 
 export function getEditableEntityFields(schemaKey: string) {

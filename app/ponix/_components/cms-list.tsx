@@ -15,11 +15,13 @@ export function CmsListPage({
   eyebrow,
   title,
   description,
+  actions,
   children,
 }: {
   eyebrow: string
   title: string
   description: string
+  actions?: ReactNode
   children: ReactNode
 }) {
   return (
@@ -40,9 +42,12 @@ export function CmsListPage({
               {description}
             </p>
           </div>
-          <Button asChild variant="outline" className="w-fit rounded-full">
-            <Link href="/ponix">PONIX Home</Link>
-          </Button>
+          <div className="flex flex-wrap items-center gap-2">
+            {actions}
+            <Button asChild variant="outline" className="w-fit rounded-full">
+              <Link href="/ponix">PONIX Home</Link>
+            </Button>
+          </div>
         </div>
         {children}
       </section>
