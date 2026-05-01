@@ -8,13 +8,7 @@ export const metadata: Metadata = {
   description: "포스텍 밴드 동아리 브레멘의 공연 영상 아카이브.",
 }
 
-type VideosPageProps = {
-  searchParams?: Promise<Record<string, string | string[] | undefined>>
-}
-
-export default async function VideosPage({ searchParams }: VideosPageProps) {
-  const params = (await searchParams) ?? {}
-  const event = Array.isArray(params.event) ? params.event[0] : params.event
+export default async function VideosPage() {
   const content = await loadVideoPage()
   const sectionKeys = new Set(content?.sections.map((section) => section.key))
   const hasRequiredSections = [
@@ -40,7 +34,6 @@ export default async function VideosPage({ searchParams }: VideosPageProps) {
       videos={content.libraryVideos}
       featuredVideos={content.featuredVideos}
       popularVideos={content.popularVideos}
-      initialEvent={event}
     />
   )
 }

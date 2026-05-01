@@ -1,6 +1,6 @@
 "use server"
 
-import { revalidatePath } from "next/cache"
+import { revalidatePath, updateTag } from "next/cache"
 import { redirect } from "next/navigation"
 
 import { requireCmsAdmin } from "@/lib/cms/auth"
@@ -12,6 +12,7 @@ import {
   type CmsEditableSectionField,
   type CmsJsonObject,
 } from "@/lib/cms/section-editor"
+import { PUBLIC_CONTENT_CACHE_TAG } from "@/lib/data/public-cache"
 import { createClient } from "@/lib/supabase/server"
 import type { Database, Json } from "@/lib/supabase/types"
 
@@ -292,6 +293,7 @@ export async function updateCmsSectionAction(formData: FormData) {
   revalidatePath("/videos")
   revalidatePath("/photos")
   revalidatePath("/history")
+  updateTag(PUBLIC_CONTENT_CACHE_TAG)
   revalidatePath("/ponix")
   revalidatePath("/ponix/sections")
   revalidatePath(`/ponix/sections/${sectionId}`)

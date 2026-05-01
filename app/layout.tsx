@@ -4,7 +4,6 @@ import { Analytics } from '@vercel/analytics/next'
 import { Navigation } from '@/components/navigation'
 import { Footer } from '@/components/footer'
 import { loadSiteChrome } from '@/lib/data/content-graph'
-import { createClient } from '@/lib/supabase/server'
 import './globals.css'
 
 const instrumentSerif = Instrument_Serif({
@@ -34,13 +33,7 @@ export default async function RootLayout({
 }: Readonly<{
   children: React.ReactNode
 }>) {
-  const supabase = await createClient()
-  const [
-    {
-      data: { user },
-    },
-    siteChrome,
-  ] = await Promise.all([supabase.auth.getUser(), loadSiteChrome()])
+  const siteChrome = await loadSiteChrome()
 
   if (!siteChrome) {
     throw new Error("Missing CMS site chrome configuration")
@@ -53,7 +46,7 @@ export default async function RootLayout({
     >
       <body className="font-sans antialiased">
         <div className="min-h-screen bg-background flex flex-col">
-          <Navigation isSignedIn={Boolean(user)} config={siteChrome.navigation} />
+          <Navigation config={siteChrome.navigation} />
           <main className="pt-20 flex-1">{children}</main>
           <Footer config={siteChrome.footer} />
         </div>
