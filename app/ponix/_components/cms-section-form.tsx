@@ -50,7 +50,7 @@ export function CmsSectionEditorPage({
         <div className="absolute left-[-8rem] bottom-0 h-80 w-80 rounded-full bg-muted blur-3xl" />
       </div>
 
-      <section className="mx-auto max-w-6xl px-6 py-16 md:px-8 md:py-24">
+      <section className="mx-auto max-w-[96rem] px-6 py-16 md:px-8 md:py-24">
         <div className="mb-10 flex flex-col gap-6 md:flex-row md:items-start md:justify-between">
           <div>
             <p className="caps mb-5">PONIX / Edit section</p>
@@ -86,7 +86,7 @@ export function CmsSectionEditorPage({
           <form
             id={formId}
             action={updateCmsSectionAction}
-            className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_28rem]"
+            className="grid gap-6 xl:grid-cols-[minmax(26rem,0.8fr)_minmax(42rem,1.2fr)]"
           >
             <input type="hidden" name="section_id" value={detail.row.id} />
 
@@ -147,6 +147,7 @@ export function CmsSectionEditorPage({
               detail={detail}
               fields={editableFields}
               sectionEntities={relations.sectionEntities}
+              entityRelations={relations.entityRelations}
             />
           </form>
         )}

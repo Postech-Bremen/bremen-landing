@@ -50,15 +50,16 @@ function pinHeight(photo: Photo, index: number) {
   return "min-h-[16rem] md:min-h-[18rem]"
 }
 
-export function PhotosSection({
-  page,
-  sections,
+export function PhotoGallerySurface({
+  gallerySection,
   photos,
-}: PhotosSectionProps) {
+}: {
+  gallerySection?: ContentSectionConfig
+  photos: Photo[]
+}) {
   const [selectedCategory, setSelectedCategory] = useState("전체")
   const [lightboxIndex, setLightboxIndex] = useState<number | null>(null)
   const sourcePhotos = photos
-  const gallerySection = sections.find((section) => section.key === "photos-gallery")
   const derivedCategories = Array.from(
     new Set(sourcePhotos.map((photo) => photo.category)),
   )
@@ -124,14 +125,7 @@ export function PhotosSection({
   )
 
   return (
-    <div className="mx-auto max-w-6xl px-6 py-16 md:px-8 md:py-24">
-      <PageHero
-        eyebrow={gallerySection?.eyebrow ?? ""}
-        titleEn={page.subtitle ?? ""}
-        titleKr={page.title}
-        description={page.description}
-      />
-
+    <>
       <PageSection className="mb-0">
         <Reveal offset={24} blur={10}>
           <EditorialSectionHead
@@ -267,6 +261,27 @@ export function PhotosSection({
           )}
         </DialogContent>
       </Dialog>
+    </>
+  )
+}
+
+export function PhotosSection({
+  page,
+  sections,
+  photos,
+}: PhotosSectionProps) {
+  const gallerySection = sections.find((section) => section.key === "photos-gallery")
+
+  return (
+    <div className="mx-auto max-w-6xl px-6 py-16 md:px-8 md:py-24">
+      <PageHero
+        eyebrow={gallerySection?.eyebrow ?? ""}
+        titleEn={page.subtitle ?? ""}
+        titleKr={page.title}
+        description={page.description}
+      />
+
+      <PhotoGallerySurface gallerySection={gallerySection} photos={photos} />
     </div>
   )
 }

@@ -135,7 +135,7 @@ function PlaylistCard({
   )
 }
 
-function PlaylistCarousel({
+export function PlaylistCarousel({
   playlists,
   section,
 }: {
@@ -180,7 +180,7 @@ function PlaylistCarousel({
   )
 }
 
-function SeasonIndex({
+export function SeasonIndex({
   playlists,
   section,
 }: {
@@ -259,7 +259,7 @@ function SeasonIndex({
   )
 }
 
-function StageMoments({
+export function StageMoments({
   photos,
   section,
 }: {
