@@ -5,10 +5,13 @@ import { notFound } from "next/navigation"
 import { CmsDetailPage } from "@/app/ponix/_components/cms-detail"
 import {
   PageSectionRelationsCard,
+  RelationMutationNotice,
+  relationMutationState,
   SectionEntityRelationsCard,
 } from "@/app/ponix/_components/cms-relations"
 import { requireCmsAdmin } from "@/lib/cms/auth"
 import {
+  loadCmsRelationEditorOptions,
   loadCmsSectionDetail,
   loadCmsSectionRelations,
 } from "@/lib/cms/content"
@@ -23,18 +26,23 @@ export const metadata: Metadata = {
 
 type PonixSectionRecordPageProps = {
   params: Promise<{ id: string }>
+  searchParams?: Promise<Record<string, string | string[] | undefined>>
 }
 
 export default async function PonixSectionRecordPage({
   params,
+  searchParams,
 }: PonixSectionRecordPageProps) {
   const { id } = await params
 
   await requireCmsAdmin(`/ponix/sections/${id}`)
-  const [detail, relations] = await Promise.all([
+  const [detail, relations, options, search] = await Promise.all([
     loadCmsSectionDetail(id),
     loadCmsSectionRelations(id),
+    loadCmsRelationEditorOptions(),
+    searchParams,
   ])
+  const mutation = relationMutationState(search)
 
   if (!detail) {
     notFound()
@@ -54,6 +62,10 @@ export default async function PonixSectionRecordPage({
         </Link>
       }
     >
+      <RelationMutationNotice
+        message={mutation.message}
+        error={mutation.error}
+      />
       <PageSectionRelationsCard
         title="Page placements"
         description="Pages that include this section."
@@ -63,6 +75,10 @@ export default async function PonixSectionRecordPage({
         title="Curated entities"
         description="Entities attached to this section by slot and order."
         relations={relations.sectionEntities}
+        editable
+        editorOptions={options}
+        fixedSectionId={id}
+        redirectTo={`/ponix/sections/${id}`}
       />
     </CmsDetailPage>
   )
