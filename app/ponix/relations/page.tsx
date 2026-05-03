@@ -48,7 +48,12 @@ export default async function PonixRelationsPage({
           message={mutation.message}
           error={mutation.error}
         />
-        <PageSectionRelationsCard relationList={graph.pageSections} />
+        <PageSectionRelationsCard
+          relationList={graph.pageSections}
+          editable
+          editorOptions={options}
+          redirectTo="/ponix/relations"
+        />
         <SectionEntityRelationsCard
           relationList={graph.sectionEntities}
           editable

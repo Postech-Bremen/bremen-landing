@@ -8,6 +8,10 @@ import { PUBLIC_CONTENT_CACHE_TAG } from "@/lib/data/public-cache"
 import { createClient } from "@/lib/supabase/server"
 import type { Database, Json } from "@/lib/supabase/types"
 
+type PageSectionInsert =
+  Database["public"]["Tables"]["page_sections"]["Insert"]
+type PageSectionUpdate =
+  Database["public"]["Tables"]["page_sections"]["Update"]
 type SectionEntityInsert =
   Database["public"]["Tables"]["section_entities"]["Insert"]
 type SectionEntityUpdate =
@@ -108,11 +112,112 @@ function revalidateRelationSurfaces(paths: string[]) {
     "/history",
     "/ponix",
     "/ponix/relations",
+    "/ponix/pages",
     "/ponix/sections",
     "/ponix/entities",
     ...paths,
   ]) {
     revalidatePath(path)
+  }
+}
+
+export async function addPageSectionRelationAction(formData: FormData) {
+  const redirectTo = safeRedirectPath(formData)
+
+  try {
+    await requireCmsAdmin(redirectTo)
+    const supabase = await createClient()
+    const payload: PageSectionInsert = {
+      page_id: parseUuid(formData, "page_id", "Page"),
+      section_id: parseUuid(formData, "section_id", "Section"),
+      sort_order: parseSortOrder(formData),
+    }
+    const { error } = await supabase
+      .from("page_sections")
+      .upsert(payload, {
+        onConflict: "page_id,section_id",
+      })
+
+    if (error) throw new Error(error.message)
+
+    revalidateRelationSurfaces([
+      `/ponix/pages/${payload.page_id}`,
+      `/ponix/sections/${payload.section_id}`,
+    ])
+    relationSuccess(redirectTo, "Page section saved.")
+  } catch (error) {
+    relationError(redirectTo, error)
+  }
+}
+
+export async function updatePageSectionRelationAction(formData: FormData) {
+  const redirectTo = safeRedirectPath(formData)
+
+  try {
+    await requireCmsAdmin(redirectTo)
+    const supabase = await createClient()
+    const relationId = parseUuid(formData, "relation_id", "Relation")
+    const update: PageSectionUpdate = {
+      sort_order: parseSortOrder(formData),
+    }
+    const { data: relation, error: loadError } = await supabase
+      .from("page_sections")
+      .select("page_id, section_id")
+      .eq("id", relationId)
+      .maybeSingle()
+
+    if (loadError || !relation) {
+      throw new Error(loadError?.message ?? "Relation not found.")
+    }
+
+    const { error } = await supabase
+      .from("page_sections")
+      .update(update)
+      .eq("id", relationId)
+
+    if (error) throw new Error(error.message)
+
+    revalidateRelationSurfaces([
+      `/ponix/pages/${relation.page_id}`,
+      `/ponix/sections/${relation.section_id}`,
+    ])
+    relationSuccess(redirectTo, "Page section order saved.")
+  } catch (error) {
+    relationError(redirectTo, error)
+  }
+}
+
+export async function deletePageSectionRelationAction(formData: FormData) {
+  const redirectTo = safeRedirectPath(formData)
+
+  try {
+    await requireCmsAdmin(redirectTo)
+    const supabase = await createClient()
+    const relationId = parseUuid(formData, "relation_id", "Relation")
+    const { data: relation, error: loadError } = await supabase
+      .from("page_sections")
+      .select("page_id, section_id")
+      .eq("id", relationId)
+      .maybeSingle()
+
+    if (loadError || !relation) {
+      throw new Error(loadError?.message ?? "Relation not found.")
+    }
+
+    const { error } = await supabase
+      .from("page_sections")
+      .delete()
+      .eq("id", relationId)
+
+    if (error) throw new Error(error.message)
+
+    revalidateRelationSurfaces([
+      `/ponix/pages/${relation.page_id}`,
+      `/ponix/sections/${relation.section_id}`,
+    ])
+    relationSuccess(redirectTo, "Page section removed.")
+  } catch (error) {
+    relationError(redirectTo, error)
   }
 }
 
