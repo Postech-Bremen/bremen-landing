@@ -2,9 +2,17 @@ import type { Metadata } from "next"
 import { notFound } from "next/navigation"
 
 import { CmsDetailPage } from "@/app/ponix/_components/cms-detail"
-import { PageSectionRelationsCard } from "@/app/ponix/_components/cms-relations"
+import {
+  PageSectionRelationsCard,
+  RelationMutationNotice,
+  relationMutationState,
+} from "@/app/ponix/_components/cms-relations"
 import { requireCmsAdmin } from "@/lib/cms/auth"
-import { loadCmsPageDetail, loadCmsPageRelations } from "@/lib/cms/content"
+import {
+  loadCmsPageDetail,
+  loadCmsPageRelations,
+  loadCmsRelationEditorOptions,
+} from "@/lib/cms/content"
 
 export const metadata: Metadata = {
   title: "PONIX Page Detail | 브레멘 Bremen",
@@ -16,18 +24,23 @@ export const metadata: Metadata = {
 
 type PonixPageRecordPageProps = {
   params: Promise<{ id: string }>
+  searchParams?: Promise<Record<string, string | string[] | undefined>>
 }
 
 export default async function PonixPageRecordPage({
   params,
+  searchParams,
 }: PonixPageRecordPageProps) {
   const { id } = await params
 
   await requireCmsAdmin(`/ponix/pages/${id}`)
-  const [detail, relations] = await Promise.all([
+  const [detail, relations, options, search] = await Promise.all([
     loadCmsPageDetail(id),
     loadCmsPageRelations(id),
+    loadCmsRelationEditorOptions(),
+    searchParams,
   ])
+  const mutation = relationMutationState(search)
 
   if (!detail) {
     notFound()
@@ -39,10 +52,18 @@ export default async function PonixPageRecordPage({
       backHref="/ponix/pages"
       backLabel="All pages"
     >
+      <RelationMutationNotice
+        message={mutation.message}
+        error={mutation.error}
+      />
       <PageSectionRelationsCard
         title="Page structure"
         description="Sections attached to this page in render order."
         relations={relations.pageSections}
+        editable
+        editorOptions={options}
+        fixedPageId={id}
+        redirectTo={`/ponix/pages/${id}`}
       />
     </CmsDetailPage>
   )

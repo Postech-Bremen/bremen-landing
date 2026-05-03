@@ -170,6 +170,7 @@ export type CmsRelationGraph = {
 }
 
 export type CmsRelationEditorOptions = {
+  pages: CmsPageSummary[]
   sections: CmsSectionSummary[]
   entities: CmsEntitySummary[]
   entityCount: number | null
@@ -579,7 +580,11 @@ export async function loadCmsEntities(): Promise<CmsEntityList> {
 
 export async function loadCmsRelationEditorOptions(): Promise<CmsRelationEditorOptions> {
   const supabase = await createClient()
-  const [sectionsResult, entitiesResult] = await Promise.all([
+  const [pagesResult, sectionsResult, entitiesResult] = await Promise.all([
+    supabase
+      .from("pages")
+      .select("id, slug, title, subtitle, published, updated_at")
+      .order("slug", { ascending: true }),
     supabase
       .from("sections")
       .select("id, key, section_type, schema_key, title, subtitle, published, updated_at")
@@ -601,6 +606,12 @@ export async function loadCmsRelationEditorOptions(): Promise<CmsRelationEditorO
     )
   }
 
+  if (pagesResult.error) {
+    throw new Error(
+      `Failed to load CMS page options: ${pagesResult.error.message}`,
+    )
+  }
+
   if (entitiesResult.error) {
     throw new Error(
       `Failed to load CMS entity options: ${entitiesResult.error.message}`,
@@ -608,6 +619,15 @@ export async function loadCmsRelationEditorOptions(): Promise<CmsRelationEditorO
   }
 
   return {
+    pages: (pagesResult.data ?? []).map((page) => ({
+      ...schemaSummary("page/default/v1"),
+      id: page.id,
+      slug: page.slug,
+      title: page.title,
+      subtitle: page.subtitle,
+      published: page.published,
+      updatedAt: page.updated_at,
+    })),
     sections: (sectionsResult.data ?? []).map((section) => ({
       ...schemaSummary(section.schema_key),
       id: section.id,

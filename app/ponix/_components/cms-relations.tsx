@@ -3,9 +3,12 @@ import type { ReactNode } from "react"
 
 import {
   addEntityRelationAction,
+  addPageSectionRelationAction,
   addSectionEntityRelationAction,
   deleteEntityRelationAction,
+  deletePageSectionRelationAction,
   deleteSectionEntityRelationAction,
+  updatePageSectionRelationAction,
   updateEntityRelationAction,
   updateSectionEntityRelationAction,
 } from "@/app/ponix/relations/actions"
@@ -101,13 +104,26 @@ export function PageSectionRelationsCard({
   description = "Ordered section placement for pages.",
   relationList,
   relations,
+  editable = false,
+  editorOptions,
+  redirectTo = "/ponix/relations",
+  fixedPageId,
+  fixedSectionId,
 }: {
   title?: string
   description?: string
   relationList?: CmsRelationList<CmsPageSectionRelation>
   relations?: CmsPageSectionRelation[]
+  editable?: boolean
+  editorOptions?: CmsRelationEditorOptions
+  redirectTo?: string
+  fixedPageId?: string
+  fixedSectionId?: string
 }) {
   const rows = relationList?.relations ?? relations ?? []
+  const nextSortOrder = fixedPageId
+    ? Math.max(0, ...rows.map((relation) => relation.sortOrder)) + 10
+    : 0
 
   return (
     <RelationCard
@@ -117,7 +133,20 @@ export function PageSectionRelationsCard({
       count={relationList?.count ?? rows.length}
       limit={relationList?.limit}
     >
-      <PageSectionRelationsTable relations={rows} />
+      {editable && editorOptions && (
+        <PageSectionAddForm
+          options={editorOptions}
+          redirectTo={redirectTo}
+          fixedPageId={fixedPageId}
+          fixedSectionId={fixedSectionId}
+          defaultSortOrder={nextSortOrder}
+        />
+      )}
+      <PageSectionRelationsTable
+        relations={rows}
+        editable={editable}
+        redirectTo={redirectTo}
+      />
     </RelationCard>
   )
 }
@@ -217,6 +246,56 @@ export function EntityRelationsCard({
         redirectTo={redirectTo}
       />
     </RelationCard>
+  )
+}
+
+function PageSectionAddForm({
+  options,
+  redirectTo,
+  fixedPageId,
+  fixedSectionId,
+  defaultSortOrder = 0,
+}: {
+  options: CmsRelationEditorOptions
+  redirectTo: string
+  fixedPageId?: string
+  fixedSectionId?: string
+  defaultSortOrder?: number
+}) {
+  return (
+    <form
+      action={addPageSectionRelationAction}
+      className="grid gap-4 border-b bg-muted/20 px-6 py-6 lg:grid-cols-[minmax(12rem,0.9fr)_minmax(14rem,1.2fr)_7rem_auto]"
+    >
+      <input type="hidden" name="redirect_to" value={redirectTo} />
+      {fixedPageId ? (
+        <input type="hidden" name="page_id" value={fixedPageId} />
+      ) : (
+        <FieldGroup label="Page">
+          <PageSelect name="page_id" pages={options.pages} />
+        </FieldGroup>
+      )}
+      {fixedSectionId ? (
+        <input type="hidden" name="section_id" value={fixedSectionId} />
+      ) : (
+        <FieldGroup label="Section">
+          <SectionSelect name="section_id" sections={options.sections} />
+        </FieldGroup>
+      )}
+      <FieldGroup label="Order">
+        <Input
+          name="sort_order"
+          type="number"
+          defaultValue={defaultSortOrder}
+          className="h-10 bg-background/80"
+        />
+      </FieldGroup>
+      <div className="flex items-end">
+        <Button type="submit" className="w-full rounded-full">
+          Add
+        </Button>
+      </div>
+    </form>
   )
 }
 
@@ -375,6 +454,32 @@ function FieldGroup({
   )
 }
 
+function PageSelect({
+  name,
+  pages,
+}: {
+  name: string
+  pages: CmsRelationEditorOptions["pages"]
+}) {
+  return (
+    <select
+      name={name}
+      required
+      className={selectClassName}
+      defaultValue=""
+    >
+      <option value="" disabled>
+        Select page
+      </option>
+      {pages.map((page) => (
+        <option key={page.id} value={page.id}>
+          {page.slug} · {page.title}
+        </option>
+      ))}
+    </select>
+  )
+}
+
 function SectionSelect({
   name,
   sections,
@@ -466,8 +571,12 @@ function RelationCard({
 
 function PageSectionRelationsTable({
   relations,
+  editable = false,
+  redirectTo = "/ponix/relations",
 }: {
   relations: CmsPageSectionRelation[]
+  editable?: boolean
+  redirectTo?: string
 }) {
   if (relations.length === 0) {
     return <EmptyRelationRows message="No page-section relations." />
@@ -483,6 +592,7 @@ function PageSectionRelationsTable({
           <TableHead>Renderer</TableHead>
           <TableHead>Schema</TableHead>
           <TableHead>Status</TableHead>
+          {editable && <TableHead>Manage</TableHead>}
         </TableRow>
       </TableHeader>
       <TableBody>
@@ -516,6 +626,14 @@ function PageSectionRelationsTable({
             <TableCell>
               <PageSectionStatus relation={relation} />
             </TableCell>
+            {editable && (
+              <TableCell>
+                <PageSectionRelationActions
+                  relation={relation}
+                  redirectTo={redirectTo}
+                />
+              </TableCell>
+            )}
           </TableRow>
         ))}
       </TableBody>
@@ -649,6 +767,48 @@ function EntityRelationsTable({
         ))}
       </TableBody>
     </Table>
+  )
+}
+
+function PageSectionRelationActions({
+  relation,
+  redirectTo,
+}: {
+  relation: CmsPageSectionRelation
+  redirectTo: string
+}) {
+  return (
+    <div className="flex min-w-44 flex-col gap-2">
+      <form
+        action={updatePageSectionRelationAction}
+        className="flex items-center gap-2"
+      >
+        <input type="hidden" name="redirect_to" value={redirectTo} />
+        <input type="hidden" name="relation_id" value={relation.id} />
+        <Input
+          aria-label="Sort order"
+          name="sort_order"
+          type="number"
+          defaultValue={relation.sortOrder}
+          className="h-8 w-20 bg-background/80"
+        />
+        <Button type="submit" size="sm" variant="outline">
+          Save
+        </Button>
+      </form>
+      <form action={deletePageSectionRelationAction}>
+        <input type="hidden" name="redirect_to" value={redirectTo} />
+        <input type="hidden" name="relation_id" value={relation.id} />
+        <Button
+          type="submit"
+          size="sm"
+          variant="ghost"
+          className="h-8 px-2 text-destructive hover:text-destructive"
+        >
+          Remove from page
+        </Button>
+      </form>
+    </div>
   )
 }
 
