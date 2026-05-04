@@ -235,11 +235,28 @@ export async function addSectionEntityRelationAction(formData: FormData) {
       sort_order: parseSortOrder(formData),
       props: parseProps(formData),
     }
-    const { error } = await supabase
+    const { data: existing, error: existingError } = await supabase
       .from("section_entities")
-      .upsert(payload, {
-        onConflict: "section_id,entity_id,relation_type,slot",
-      })
+      .select("id")
+      .eq("section_id", payload.section_id)
+      .eq("entity_id", payload.entity_id)
+      .order("sort_order", { ascending: true })
+      .limit(1)
+      .maybeSingle()
+
+    if (existingError) throw new Error(existingError.message)
+
+    const { error } = existing
+      ? await supabase
+          .from("section_entities")
+          .update({
+            relation_type: payload.relation_type,
+            slot: payload.slot,
+            sort_order: payload.sort_order,
+            props: payload.props,
+          } satisfies SectionEntityUpdate)
+          .eq("id", existing.id)
+      : await supabase.from("section_entities").insert(payload)
 
     if (error) throw new Error(error.message)
 

@@ -179,7 +179,7 @@ export function CmsSectionLivePreview({
   sectionEntities,
   entityRelations,
 }: {
-  formId: string
+  formId?: string
   detail: CmsSectionDetail
   fields: CmsFieldDefinition[]
   sectionEntities: CmsSectionEntityRelation[]
@@ -193,6 +193,10 @@ export function CmsSectionLivePreview({
   const deferredSnapshot = useDeferredValue(snapshot)
 
   useEffect(() => {
+    if (!formId) {
+      return
+    }
+
     const form = document.getElementById(formId)
 
     if (!(form instanceof HTMLFormElement)) {

@@ -44,6 +44,7 @@ import type {
 } from "@/lib/cms/content"
 
 import { SchemaBadge } from "./cms-list"
+import { CmsEntityPicker } from "./cms-entity-picker"
 
 export function RelationCount({
   visible,
@@ -173,6 +174,10 @@ export function SectionEntityRelationsCard({
   fixedEntityId?: string
 }) {
   const rows = relationList?.relations ?? relations ?? []
+  const isSectionLocal = Boolean(fixedSectionId)
+  const nextSortOrder = fixedSectionId
+    ? Math.max(0, ...rows.map((relation) => relation.sortOrder)) + 10
+    : 0
 
   return (
     <RelationCard
@@ -188,12 +193,14 @@ export function SectionEntityRelationsCard({
           redirectTo={redirectTo}
           fixedSectionId={fixedSectionId}
           fixedEntityId={fixedEntityId}
+          defaultSortOrder={nextSortOrder}
         />
       )}
       <SectionEntityRelationsTable
         relations={rows}
         editable={editable}
         redirectTo={redirectTo}
+        hideSection={isSectionLocal}
       />
     </RelationCard>
   )
@@ -292,7 +299,7 @@ function PageSectionAddForm({
       </FieldGroup>
       <div className="flex items-end">
         <Button type="submit" className="w-full rounded-full">
-          Add
+          {fixedSectionId ? "Add to section" : "Add"}
         </Button>
       </div>
     </form>
@@ -304,16 +311,18 @@ function SectionEntityAddForm({
   redirectTo,
   fixedSectionId,
   fixedEntityId,
+  defaultSortOrder = 0,
 }: {
   options: CmsRelationEditorOptions
   redirectTo: string
   fixedSectionId?: string
   fixedEntityId?: string
+  defaultSortOrder?: number
 }) {
   return (
     <form
       action={addSectionEntityRelationAction}
-      className="grid gap-4 border-b bg-muted/20 px-6 py-6 lg:grid-cols-[minmax(12rem,0.9fr)_minmax(14rem,1.2fr)_9rem_9rem_7rem_auto]"
+      className="grid gap-4 border-b bg-muted/20 px-6 py-6 lg:grid-cols-[minmax(12rem,0.8fr)_minmax(22rem,1.5fr)_9rem_9rem_7rem_auto]"
     >
       <input type="hidden" name="redirect_to" value={redirectTo} />
       {fixedSectionId ? (
@@ -327,7 +336,12 @@ function SectionEntityAddForm({
         <input type="hidden" name="entity_id" value={fixedEntityId} />
       ) : (
         <FieldGroup label="Entity">
-          <EntitySelect name="entity_id" entities={options.entities} />
+          <CmsEntityPicker name="entity_id" entities={options.entities} />
+          {options.entityCount && options.entityCount > options.entityLimit ? (
+            <p className="text-xs text-muted-foreground">
+              Search covers the latest {options.entityLimit} entities.
+            </p>
+          ) : null}
         </FieldGroup>
       )}
       <FieldGroup label="Type">
@@ -350,7 +364,7 @@ function SectionEntityAddForm({
         <Input
           name="sort_order"
           type="number"
-          defaultValue="0"
+          defaultValue={defaultSortOrder}
           className="h-10 bg-background/80"
         />
       </FieldGroup>
@@ -645,20 +659,22 @@ function SectionEntityRelationsTable({
   relations,
   editable = false,
   redirectTo = "/ponix/relations",
+  hideSection = false,
 }: {
   relations: CmsSectionEntityRelation[]
   editable?: boolean
   redirectTo?: string
+  hideSection?: boolean
 }) {
   if (relations.length === 0) {
-    return <EmptyRelationRows message="No section-entity relations." />
+    return <EmptyRelationRows message="No entities in this section." />
   }
 
   return (
     <Table>
       <TableHeader>
         <TableRow>
-          <TableHead>Section</TableHead>
+          {!hideSection && <TableHead>Section</TableHead>}
           <TableHead>Slot</TableHead>
           <TableHead>Order</TableHead>
           <TableHead>Entity</TableHead>
@@ -670,12 +686,14 @@ function SectionEntityRelationsTable({
       <TableBody>
         {relations.map((relation) => (
           <TableRow key={relation.id}>
-            <TableCell>
-              <SectionLink
-                section={relation.section}
-                fallbackId={relation.sectionId}
-              />
-            </TableCell>
+            {!hideSection && (
+              <TableCell>
+                <SectionLink
+                  section={relation.section}
+                  fallbackId={relation.sectionId}
+                />
+              </TableCell>
+            )}
             <TableCell className="font-mono text-xs">{relation.slot}</TableCell>
             <TableCell className="font-mono text-xs">
               {relation.sortOrder}
@@ -847,7 +865,7 @@ function SectionEntityRelationActions({
           variant="ghost"
           className="h-8 px-2 text-destructive hover:text-destructive"
         >
-          Remove relation
+          Remove from section
         </Button>
       </form>
     </div>
