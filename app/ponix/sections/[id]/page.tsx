@@ -3,6 +3,7 @@ import Link from "next/link"
 import { notFound } from "next/navigation"
 
 import { CmsDetailPage } from "@/app/ponix/_components/cms-detail"
+import { CmsSectionLivePreview } from "@/app/ponix/_components/cms-live-preview"
 import {
   PageSectionRelationsCard,
   RelationMutationNotice,
@@ -15,6 +16,7 @@ import {
   loadCmsSectionDetail,
   loadCmsSectionRelations,
 } from "@/lib/cms/content"
+import { getEditableSectionFields } from "@/lib/cms/section-editor"
 
 export const metadata: Metadata = {
   title: "PONIX Section Detail | 브레멘 Bremen",
@@ -44,9 +46,11 @@ export default async function PonixSectionRecordPage({
   ])
   const mutation = relationMutationState(search)
 
-  if (!detail) {
+  if (!detail || detail.kind !== "section") {
     notFound()
   }
+
+  const editableFields = getEditableSectionFields(detail.schemaKey)
 
   return (
     <CmsDetailPage
@@ -73,12 +77,18 @@ export default async function PonixSectionRecordPage({
       />
       <SectionEntityRelationsCard
         title="Curated entities"
-        description="Entities attached to this section by slot and order."
+        description="Search existing entities, attach them here, and tune their order."
         relations={relations.sectionEntities}
         editable
         editorOptions={options}
         fixedSectionId={id}
         redirectTo={`/ponix/sections/${id}`}
+      />
+      <CmsSectionLivePreview
+        detail={detail}
+        fields={editableFields}
+        sectionEntities={relations.sectionEntities}
+        entityRelations={relations.entityRelations}
       />
     </CmsDetailPage>
   )
