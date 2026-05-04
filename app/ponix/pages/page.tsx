@@ -35,7 +35,7 @@ export default async function PonixPagesPage() {
     <CmsListPage
       eyebrow="PONIX / Pages"
       title="Pages"
-      description="Route-level content records. This view is read-only; edits and publish controls are intentionally not available yet."
+      description="Route-level records for page copy, publish state, and section composition."
     >
       <CmsTableCard title="Page records" meta={`${pages.length} records`}>
         <Table>
