@@ -34,6 +34,7 @@ type ParsedValue =
     }
 
 const maxThumbnailSize = 5 * 1024 * 1024
+const entityThumbnailBucket = "images"
 
 function stringField(formData: FormData, key: string) {
   const value = formData.get(key)
@@ -251,17 +252,6 @@ function extensionFromImage(file: File) {
   return "jpg"
 }
 
-function thumbnailBucket(entity: EntityRow) {
-  if (
-    entity.entity_type === "performance" ||
-    entity.schema_key.startsWith("performance/")
-  ) {
-    return "posters"
-  }
-
-  return "photos"
-}
-
 async function uploadThumbnailIfPresent({
   supabase,
   entity,
@@ -288,15 +278,17 @@ async function uploadThumbnailIfPresent({
     })
   }
 
-  const bucket = thumbnailBucket(entity)
   const extension = extensionFromImage(file)
   const safeKey = (entity.slug ?? entity.id).replace(/[^a-zA-Z0-9._-]+/g, "-")
-  const path = `entities/${entity.id}/${safeKey}-thumbnail-${Date.now()}.${extension}`
-  const { error } = await supabase.storage.from(bucket).upload(path, file, {
-    cacheControl: "3600",
-    contentType: file.type || `image/${extension}`,
-    upsert: true,
-  })
+  const safeType = entity.entity_type.replace(/[^a-zA-Z0-9._-]+/g, "-")
+  const path = `entities/${safeType}/${entity.id}/${safeKey}-thumbnail-${Date.now()}.${extension}`
+  const { error } = await supabase.storage
+    .from(entityThumbnailBucket)
+    .upload(path, file, {
+      cacheControl: "3600",
+      contentType: file.type || `image/${extension}`,
+      upsert: true,
+    })
 
   if (error) {
     redirectWithParams(editPath, {
@@ -304,7 +296,7 @@ async function uploadThumbnailIfPresent({
     })
   }
 
-  return supabase.storage.from(bucket).getPublicUrl(path).data.publicUrl
+  return supabase.storage.from(entityThumbnailBucket).getPublicUrl(path).data.publicUrl
 }
 
 export async function createCmsEntityAction(formData: FormData) {

@@ -134,8 +134,8 @@ function ThumbnailCard() {
           Thumbnail upload
         </CardTitle>
         <CardDescription>
-          An uploaded image is stored in Supabase Storage and saved as the
-          entity thumbnail URL.
+          An uploaded image is stored in the shared images bucket and saved as
+          the entity thumbnail URL.
         </CardDescription>
       </CardHeader>
       <CardContent className="px-6 py-6">
@@ -143,7 +143,8 @@ function ThumbnailCard() {
           <Label htmlFor="thumbnail_file">Upload image</Label>
           <ProfileImageInput id="thumbnail_file" name="thumbnail_file" />
           <p className="text-xs leading-relaxed text-muted-foreground">
-            You can also paste a URL in the thumbnail field below.
+            You can also paste a URL in the thumbnail field below for
+            already-hosted assets.
           </p>
         </div>
       </CardContent>
