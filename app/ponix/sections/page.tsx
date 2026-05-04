@@ -8,6 +8,7 @@ import {
   PublishBadge,
   SchemaBadge,
 } from "@/app/ponix/_components/cms-list"
+import { Button } from "@/components/ui/button"
 import {
   Table,
   TableBody,
@@ -35,7 +36,12 @@ export default async function PonixSectionsPage() {
     <CmsListPage
       eyebrow="PONIX / Sections"
       title="Sections"
-      description="Renderer-bound section records. Schema registry mapping is shown before any editable props form is introduced."
+      description="Renderer-bound section records that can be edited, placed into pages, and connected to reusable entities."
+      actions={
+        <Button asChild className="w-fit rounded-full">
+          <Link href="/ponix/sections/new">New section</Link>
+        </Button>
+      }
     >
       <CmsTableCard title="Section records" meta={`${sections.length} records`}>
         <Table>

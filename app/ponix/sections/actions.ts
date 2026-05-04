@@ -7,8 +7,10 @@ import { requireCmsAdmin } from "@/lib/cms/auth"
 import {
   cmsFieldInputName,
   getEditableSectionFields,
+  getSectionCreationSchema,
   getSectionEditorSchema,
   jsonObject,
+  sectionTypeFromSchemaKey,
   type CmsEditableSectionField,
   type CmsJsonObject,
 } from "@/lib/cms/section-editor"
@@ -17,6 +19,7 @@ import { createClient } from "@/lib/supabase/server"
 import type { Database, Json } from "@/lib/supabase/types"
 
 type SectionUpdate = Database["public"]["Tables"]["sections"]["Update"]
+type SectionInsert = Database["public"]["Tables"]["sections"]["Insert"]
 
 type ParsedValue =
   | {
@@ -35,8 +38,45 @@ function stringField(formData: FormData, key: string) {
 }
 
 function redirectWithParams(path: string, params: Record<string, string>): never {
-  const search = new URLSearchParams(params)
-  redirect(`${path}?${search.toString()}`)
+  const [pathname, currentSearch = ""] = path.split("?")
+  const search = new URLSearchParams(currentSearch)
+
+  for (const [key, value] of Object.entries(params)) {
+    search.set(key, value)
+  }
+
+  redirect(`${pathname}?${search.toString()}`)
+}
+
+function parseSectionKey(formData: FormData, path: string) {
+  const value = stringField(formData, "section_key")
+
+  if (!/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(value)) {
+    redirectWithParams(path, {
+      error: "Section key must use lowercase letters, numbers, and hyphens.",
+    })
+  }
+
+  return value
+}
+
+function revalidateSectionSurfaces(sectionId?: string) {
+  revalidatePath("/")
+  revalidatePath("/performances")
+  revalidatePath("/performances/updates")
+  revalidatePath("/videos")
+  revalidatePath("/photos")
+  revalidatePath("/history")
+  updateTag(PUBLIC_CONTENT_CACHE_TAG)
+  revalidatePath("/ponix")
+  revalidatePath("/ponix/sections")
+  revalidatePath("/ponix/sections/new")
+  revalidatePath("/ponix/relations")
+
+  if (sectionId) {
+    revalidatePath(`/ponix/sections/${sectionId}`)
+    revalidatePath(`/ponix/sections/${sectionId}/edit`)
+  }
 }
 
 function isSafeUrl(value: string) {
@@ -208,6 +248,91 @@ function updatePropsValue(
   props[field.key] = parsed.value
 }
 
+export async function createCmsSectionAction(formData: FormData) {
+  const schemaKey = stringField(formData, "schema_key")
+  const createPath = schemaKey
+    ? `/ponix/sections/new?schema=${encodeURIComponent(schemaKey)}`
+    : "/ponix/sections/new"
+  const admin = await requireCmsAdmin(createPath)
+
+  const schema = getSectionCreationSchema(schemaKey)
+  if (!schema) {
+    redirectWithParams("/ponix/sections/new", {
+      error: "Choose a section schema that can be created from CMS.",
+    })
+  }
+
+  const sectionType = sectionTypeFromSchemaKey(schema.schemaKey)
+  if (!sectionType) {
+    redirectWithParams(createPath, {
+      error: "This section schema has no registered renderer type.",
+    })
+  }
+
+  const fields = getEditableSectionFields(schema.schemaKey)
+  const props: CmsJsonObject = {}
+  const insert: SectionInsert = {
+    key: parseSectionKey(formData, createPath),
+    owner_member_id: admin.id,
+    props,
+    published: false,
+    schema_key: schema.schemaKey,
+    section_type: sectionType,
+  }
+
+  for (const field of fields) {
+    const parsed = parseFieldValue(formData, field)
+
+    if (!parsed.ok) {
+      redirectWithParams(createPath, {
+        error: parsed.error,
+      })
+    }
+
+    if (field.source === "props") {
+      updatePropsValue(props, field, parsed)
+      continue
+    }
+
+    if (field.key === "published") {
+      insert.published = Boolean(parsed.value)
+    }
+
+    if (field.key === "eyebrow") {
+      insert.eyebrow = parsed.value === null ? null : String(parsed.value)
+    }
+
+    if (field.key === "title") {
+      insert.title = parsed.value === null ? null : String(parsed.value)
+    }
+
+    if (field.key === "subtitle") {
+      insert.subtitle = parsed.value === null ? null : String(parsed.value)
+    }
+  }
+
+  const supabase = await createClient()
+  const { data: created, error: insertError } = await supabase
+    .from("sections")
+    .insert(insert)
+    .select("*")
+    .single()
+
+  if (insertError || !created) {
+    const code = (insertError as { code?: string } | null)?.code
+    redirectWithParams(createPath, {
+      error:
+        code === "23505"
+          ? "Section key is already in use."
+          : "Section creation failed.",
+    })
+  }
+
+  revalidateSectionSurfaces(created.id)
+
+  redirect(`/ponix/sections/${created.id}`)
+}
+
 export async function updateCmsSectionAction(formData: FormData) {
   const sectionId = stringField(formData, "section_id")
 
@@ -288,16 +413,7 @@ export async function updateCmsSectionAction(formData: FormData) {
     })
   }
 
-  revalidatePath("/")
-  revalidatePath("/performances")
-  revalidatePath("/videos")
-  revalidatePath("/photos")
-  revalidatePath("/history")
-  updateTag(PUBLIC_CONTENT_CACHE_TAG)
-  revalidatePath("/ponix")
-  revalidatePath("/ponix/sections")
-  revalidatePath(`/ponix/sections/${sectionId}`)
-  revalidatePath("/ponix/relations")
+  revalidateSectionSurfaces(sectionId)
 
   redirect(`/ponix/sections/${sectionId}`)
 }

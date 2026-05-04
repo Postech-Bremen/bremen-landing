@@ -228,7 +228,7 @@ function EditorField({
   )
 }
 
-function renderFieldInput({
+export function renderFieldInput({
   field,
   id,
   name,
