@@ -241,6 +241,24 @@ export type HistoryPageContent = {
   milestones: HistoryMilestoneItem[]
 }
 
+export type DraftPreviewPageContent =
+  | ({ kind: "performances" } & PerformancePageContent)
+  | ({ kind: "videos" } & VideoPageContent)
+  | ({ kind: "photos" } & PhotoPageContent)
+  | ({ kind: "history" } & HistoryPageContent)
+  | {
+      kind: "generic"
+      page: ContentPageConfig
+      sections: ContentSectionConfig[]
+      graph: GraphPage
+    }
+
+type GraphPageLoadOptions = {
+  id?: string
+  slug?: string
+  includeDrafts?: boolean
+}
+
 function hasSupabaseEnv() {
   return Boolean(
     process.env.NEXT_PUBLIC_SUPABASE_URL &&
@@ -453,17 +471,32 @@ function contentSectionFromGraph(section: GraphSection): ContentSectionConfig {
   }
 }
 
-async function loadGraphPageUncached(slug: string): Promise<GraphPage | null> {
+async function loadGraphPageUncached(
+  query: string | GraphPageLoadOptions,
+): Promise<GraphPage | null> {
   if (!hasSupabaseEnv()) return null
 
   try {
+    const options = typeof query === "string" ? { slug: query } : query
+    const includeDrafts = Boolean(options.includeDrafts)
     const supabase = createPublicClient()
-    const { data: page, error: pageError } = await supabase
+    let pageQuery = supabase
       .from("pages")
       .select("*")
-      .eq("slug", slug)
-      .eq("published", true)
-      .maybeSingle()
+
+    if (options.id) {
+      pageQuery = pageQuery.eq("id", options.id)
+    } else if (options.slug) {
+      pageQuery = pageQuery.eq("slug", options.slug)
+    } else {
+      return null
+    }
+
+    if (!includeDrafts) {
+      pageQuery = pageQuery.eq("published", true)
+    }
+
+    const { data: page, error: pageError } = await pageQuery.maybeSingle()
 
     if (pageError || !page) return null
 
@@ -478,11 +511,16 @@ async function loadGraphPageUncached(slug: string): Promise<GraphPage | null> {
     }
 
     const sectionIds = pageSections.map((pageSection) => pageSection.section_id)
-    const { data: sections, error: sectionsError } = await supabase
+    let sectionsQuery = supabase
       .from("sections")
       .select("*")
       .in("id", sectionIds)
-      .eq("published", true)
+
+    if (!includeDrafts) {
+      sectionsQuery = sectionsQuery.eq("published", true)
+    }
+
+    const { data: sections, error: sectionsError } = await sectionsQuery
 
     if (sectionsError || !sections?.length) {
       return { page, sections: [] }
@@ -496,13 +534,21 @@ async function loadGraphPageUncached(slug: string): Promise<GraphPage | null> {
     if (sectionEntitiesError) return { page, sections: [] }
 
     const entityIds = [...new Set((sectionEntities ?? []).map((item) => item.entity_id))]
-    const { data: entities, error: entitiesError } = entityIds.length
-      ? await supabase
-          .from("entities")
-          .select("*")
-          .in("id", entityIds)
-          .eq("published", true)
-      : { data: [], error: null }
+    let entitiesResult: {
+      data: EntityRow[] | null
+      error: { message: string } | null
+    } = { data: [], error: null }
+
+    if (entityIds.length) {
+      let entitiesQuery = supabase.from("entities").select("*").in("id", entityIds)
+
+      if (!includeDrafts) {
+        entitiesQuery = entitiesQuery.eq("published", true)
+      }
+
+      entitiesResult = await entitiesQuery
+    }
+    const { data: entities, error: entitiesError } = entitiesResult
 
     if (entitiesError) return { page, sections: [] }
 
@@ -864,8 +910,10 @@ function homeActivityFromSectionItem(
   }
 }
 
-async function loadPerformanceSlugsById() {
-  const page = await loadGraphPage("performances")
+async function loadPerformanceSlugsById(includeDrafts = false) {
+  const page = includeDrafts
+    ? await loadGraphPageUncached({ slug: "performances", includeDrafts: true })
+    : await loadGraphPage("performances")
   const entries = sectionItems(page, "performances-archive")
     .map((item) => item.entity)
     .filter((entity) => entity.entity_type === "performance")
@@ -915,7 +963,10 @@ async function loadHomeCurationUncached(): Promise<HomeCuration | null> {
   }
 }
 
-async function loadPerformancePlaylistsFromPage(page: GraphPage | null) {
+async function loadPerformancePlaylistsFromPage(
+  page: GraphPage | null,
+  options: { includeDrafts?: boolean } = {},
+) {
   const performanceEntities = sectionItems(page, "performances-archive")
     .map((item) => item.entity)
     .filter((entity) => entity.entity_type === "performance")
@@ -931,6 +982,7 @@ async function loadPerformancePlaylistsFromPage(page: GraphPage | null) {
   )
 
   try {
+    const includeDrafts = Boolean(options.includeDrafts)
     const supabase = createPublicClient()
     const performanceIds = performanceEntities.map((entity) => entity.id)
     const { data: relations, error: relationsError } = await supabase
@@ -944,13 +996,25 @@ async function loadPerformancePlaylistsFromPage(page: GraphPage | null) {
     const relatedIds = [
       ...new Set((relations ?? []).map((relation) => relation.to_entity_id)),
     ]
-    const { data: relatedEntities, error: relatedEntitiesError } = relatedIds.length
-      ? await supabase
-          .from("entities")
-          .select("*")
-          .in("id", relatedIds)
-          .eq("published", true)
-      : { data: [], error: null }
+    let relatedEntitiesResult: {
+      data: EntityRow[] | null
+      error: { message: string } | null
+    } = { data: [], error: null }
+
+    if (relatedIds.length) {
+      let relatedEntitiesQuery = supabase
+        .from("entities")
+        .select("*")
+        .in("id", relatedIds)
+
+      if (!includeDrafts) {
+        relatedEntitiesQuery = relatedEntitiesQuery.eq("published", true)
+      }
+
+      relatedEntitiesResult = await relatedEntitiesQuery
+    }
+    const { data: relatedEntities, error: relatedEntitiesError } =
+      relatedEntitiesResult
 
     if (relatedEntitiesError) return null
 
@@ -1098,6 +1162,85 @@ async function loadVideoPageUncached(): Promise<VideoPageContent | null> {
     featuredVideos,
     popularVideos,
     libraryVideos,
+  }
+}
+
+export async function loadDraftPreviewPage(
+  pageId: string,
+): Promise<DraftPreviewPageContent | null> {
+  const page = await loadGraphPageUncached({
+    id: pageId,
+    includeDrafts: true,
+  })
+
+  if (!page) return null
+
+  const contentPage = contentPageFromGraph(page.page)
+  const sections = page.sections.map((section) => contentSectionFromGraph(section))
+
+  if (page.page.slug === "performances") {
+    return {
+      kind: "performances",
+      page: contentPage,
+      sections,
+      playlists:
+        (await loadPerformancePlaylistsFromPage(page, { includeDrafts: true })) ??
+        [],
+    }
+  }
+
+  if (page.page.slug === "videos") {
+    const performanceSlugById = await loadPerformanceSlugsById(true)
+
+    return {
+      kind: "videos",
+      page: contentPage,
+      sections,
+      featuredVideos: videosFromSectionItems(
+        sectionItems(page, "videos-featured"),
+        performanceSlugById,
+      ),
+      popularVideos: videosFromSectionItems(
+        sectionItems(page, "videos-popular"),
+        performanceSlugById,
+      ),
+      libraryVideos: sortVideoArchive(
+        videosFromSectionItems(
+          sectionItems(page, "videos-library"),
+          performanceSlugById,
+        ),
+      ),
+    }
+  }
+
+  if (page.page.slug === "photos") {
+    return {
+      kind: "photos",
+      page: contentPage,
+      sections,
+      photos: sectionItems(page, "photos-gallery")
+        .map((item) => photoFromEntity(item.entity))
+        .filter((photo): photo is PhotoArchiveItem => Boolean(photo)),
+    }
+  }
+
+  if (page.page.slug === "history") {
+    return {
+      kind: "history",
+      page: contentPage,
+      sections,
+      milestones: sectionItems(page, "history-timeline")
+        .map((item) => historyFromEntity(item.entity))
+        .filter((item): item is HistoryMilestoneItem => Boolean(item))
+        .sort((left, right) => left.order - right.order),
+    }
+  }
+
+  return {
+    kind: "generic",
+    page: contentPage,
+    sections,
+    graph: page,
   }
 }
 

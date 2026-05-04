@@ -1,4 +1,5 @@
 import type { Metadata } from "next"
+import Link from "next/link"
 import { notFound } from "next/navigation"
 
 import { CmsDetailPage } from "@/app/ponix/_components/cms-detail"
@@ -51,6 +52,14 @@ export default async function PonixPageRecordPage({
       detail={detail}
       backHref="/ponix/pages"
       backLabel="All pages"
+      actions={
+        <Link
+          href={`/ponix/preview/pages/${id}`}
+          className="inline-flex h-9 items-center justify-center rounded-full bg-primary px-4 py-2 text-sm font-medium text-primary-foreground shadow-xs transition-colors hover:bg-primary/90"
+        >
+          Preview page
+        </Link>
+      }
     >
       <RelationMutationNotice
         message={mutation.message}
