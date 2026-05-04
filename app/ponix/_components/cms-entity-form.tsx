@@ -163,8 +163,8 @@ function ThumbnailCard({ detail }: { detail: CmsEntityDetail }) {
           Thumbnail upload
         </CardTitle>
         <CardDescription>
-          Uploading a new image stores it in Supabase Storage and replaces
-          <code> thumbnail_url</code>.
+          Uploading a new image stores it in the shared images bucket and
+          replaces <code>thumbnail_url</code>.
         </CardDescription>
       </CardHeader>
       <CardContent className="grid gap-5 px-6 py-6 md:grid-cols-[12rem_minmax(0,1fr)]">
@@ -187,7 +187,7 @@ function ThumbnailCard({ detail }: { detail: CmsEntityDetail }) {
           <ProfileImageInput id="thumbnail_file" name="thumbnail_file" />
           <p className="text-xs leading-relaxed text-muted-foreground">
             Leave empty to keep the current URL. Manual URL edits are available
-            in Entity fields.
+            in Entity fields for already-hosted assets.
           </p>
         </div>
       </CardContent>
