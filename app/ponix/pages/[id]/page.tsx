@@ -8,6 +8,7 @@ import {
   RelationMutationNotice,
   relationMutationState,
 } from "@/app/ponix/_components/cms-relations"
+import { loadCmsAuditEventsForTarget } from "@/lib/cms/audit"
 import { requireCmsAdmin } from "@/lib/cms/auth"
 import {
   loadCmsPageDetail,
@@ -35,10 +36,11 @@ export default async function PonixPageRecordPage({
   const { id } = await params
 
   await requireCmsAdmin(`/ponix/pages/${id}`)
-  const [detail, relations, options, search] = await Promise.all([
+  const [detail, relations, options, audit, search] = await Promise.all([
     loadCmsPageDetail(id),
     loadCmsPageRelations(id),
     loadCmsRelationEditorOptions(),
+    loadCmsAuditEventsForTarget({ targetTable: "pages", targetId: id }),
     searchParams,
   ])
   const mutation = relationMutationState(search)
@@ -52,6 +54,7 @@ export default async function PonixPageRecordPage({
       detail={detail}
       backHref="/ponix/pages"
       backLabel="All pages"
+      audit={audit}
       actions={
         <div className="flex flex-wrap gap-2">
           <Link
