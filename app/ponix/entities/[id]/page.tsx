@@ -9,6 +9,7 @@ import {
   relationMutationState,
   SectionEntityRelationsCard,
 } from "@/app/ponix/_components/cms-relations"
+import { loadCmsAuditEventsForTarget } from "@/lib/cms/audit"
 import { requireCmsAdmin } from "@/lib/cms/auth"
 import {
   loadCmsEntityDetail,
@@ -36,10 +37,11 @@ export default async function PonixEntityRecordPage({
   const { id } = await params
 
   await requireCmsAdmin(`/ponix/entities/${id}`)
-  const [detail, relations, options, search] = await Promise.all([
+  const [detail, relations, options, audit, search] = await Promise.all([
     loadCmsEntityDetail(id),
     loadCmsEntityRelations(id),
     loadCmsRelationEditorOptions(),
+    loadCmsAuditEventsForTarget({ targetTable: "entities", targetId: id }),
     searchParams,
   ])
   const mutation = relationMutationState(search)
@@ -53,6 +55,7 @@ export default async function PonixEntityRecordPage({
       detail={detail}
       backHref="/ponix/entities"
       backLabel="All entities"
+      audit={audit}
       actions={
         <Link
           href={`/ponix/entities/${id}/edit`}

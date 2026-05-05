@@ -19,6 +19,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table"
+import type { CmsAuditEventList } from "@/lib/cms/audit"
 import type { CmsContentDetail } from "@/lib/cms/content"
 import {
   getCmsSchema,
@@ -26,6 +27,7 @@ import {
   type CmsFieldSource,
 } from "@/lib/cms/schema-registry"
 
+import { CmsAuditTrailCard } from "./cms-audit-card"
 import { formatCmsDate, PublishBadge, SchemaBadge } from "./cms-list"
 
 const sourceLabels: Record<CmsFieldSource, string> = {
@@ -40,12 +42,14 @@ export function CmsDetailPage({
   backHref,
   backLabel,
   actions,
+  audit,
   children,
 }: {
   detail: CmsContentDetail
   backHref: string
   backLabel: string
   actions?: ReactNode
+  audit?: CmsAuditEventList
   children?: ReactNode
 }) {
   const schema = getCmsSchema(detail.schemaKey)
@@ -150,6 +154,15 @@ export function CmsDetailPage({
                 </dl>
               </CardContent>
             </Card>
+
+            {audit && (
+              <CmsAuditTrailCard
+                audit={audit}
+                title="Record audit"
+                description="Recent changes for this CMS record."
+                emptyMessage="No changes have been recorded for this record yet."
+              />
+            )}
 
             <Card className="rounded-md bg-card/95 shadow-xl">
               <CardHeader>
