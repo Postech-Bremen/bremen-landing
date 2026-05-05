@@ -112,6 +112,7 @@ Good names:
 - `update_home_join_copy`
 - `link_new_performance_recordings`
 - `tighten_member_profile_policy`
+- `add_cms_audit_events`
 
 Bad names:
 
@@ -159,6 +160,13 @@ pnpm dlx supabase db push
 ```
 
 Maintainers using Supabase MCP can apply the same migration SQL with `apply_migration`, but the migration file must still be committed.
+
+## CMS Audit Trail
+
+PONIX CMS write auditing is documented in `docs/cms-audit.md`.
+The audit table is append-only and migration-backed. Do not add restore or
+rollback controls without a separate issue that defines the exact recovery
+behavior and safety checks.
 
 ## Type Generation
 

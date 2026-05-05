@@ -4,6 +4,7 @@ import Link from "next/link"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { loadRecentCmsAuditEvents, type CmsAuditEvent } from "@/lib/cms/audit"
 import { requireCmsAdmin } from "@/lib/cms/auth"
 import {
   getCmsSchemaStats,
@@ -21,7 +22,10 @@ export const metadata: Metadata = {
 }
 
 export default async function PonixPage() {
-  const member = await requireCmsAdmin("/ponix")
+  const [member, audit] = await Promise.all([
+    requireCmsAdmin("/ponix"),
+    loadRecentCmsAuditEvents(),
+  ])
   const stats = getCmsSchemaStats()
   const schemaGroups: Array<{
     kind: CmsSchemaKind
@@ -147,7 +151,84 @@ export default async function PonixPage() {
             )
           })}
         </div>
+
+        <Card className="mt-5 rounded-md border bg-card/95 shadow-xl">
+          <CardHeader>
+            <div className="flex flex-col gap-2 md:flex-row md:items-end md:justify-between">
+              <div>
+                <CardTitle className="font-serif text-3xl italic">
+                  Recent audit trail
+                </CardTitle>
+                <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
+                  Append-only CMS changes recorded at the database boundary.
+                </p>
+              </div>
+              <Badge
+                variant={audit.available ? "outline" : "secondary"}
+                className="w-fit rounded-full"
+              >
+                {audit.available ? "Audit enabled" : "Migration pending"}
+              </Badge>
+            </div>
+          </CardHeader>
+          <CardContent>
+            {audit.events.length > 0 ? (
+              <div className="divide-y rounded-md border">
+                {audit.events.map((event) => (
+                  <AuditEventRow key={event.id} event={event} />
+                ))}
+              </div>
+            ) : (
+              <p className="rounded-md border bg-background/60 p-4 text-sm leading-relaxed text-muted-foreground">
+                {audit.available
+                  ? "No CMS changes have been recorded yet."
+                  : "The audit migration has not been applied to this database yet. PONIX remains usable; audit events will appear after the migration is applied."}
+              </p>
+            )}
+          </CardContent>
+        </Card>
       </section>
     </main>
   )
+}
+
+function AuditEventRow({ event }: { event: CmsAuditEvent }) {
+  return (
+    <div className="grid gap-3 bg-background/50 p-4 md:grid-cols-[10rem_minmax(0,1fr)_12rem] md:items-center">
+      <div>
+        <Badge variant="outline" className="rounded-full">
+          {event.action}
+        </Badge>
+        <p className="mt-2 text-xs text-muted-foreground">
+          {formatAuditTime(event.createdAt)}
+        </p>
+      </div>
+      <div className="min-w-0">
+        <p className="font-medium">
+          {event.targetTable}
+          {event.targetId && (
+            <span className="ml-2 font-mono text-xs text-muted-foreground">
+              {event.targetId.slice(0, 8)}
+            </span>
+          )}
+        </p>
+        <p className="mt-1 truncate text-xs text-muted-foreground">
+          {event.changedKeys.length > 0
+            ? event.changedKeys.join(", ")
+            : "No top-level field diff"}
+        </p>
+      </div>
+      <p className="font-mono text-xs text-muted-foreground md:text-right">
+        {event.actorMemberId ? event.actorMemberId.slice(0, 8) : "system"}
+      </p>
+    </div>
+  )
+}
+
+function formatAuditTime(value: string) {
+  return new Intl.DateTimeFormat("ko-KR", {
+    dateStyle: "short",
+    timeStyle: "short",
+    timeZone: "Asia/Seoul",
+  }).format(new Date(value))
 }
