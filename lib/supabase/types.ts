@@ -17,6 +17,53 @@ export type Database = {
   }
   public: {
     Tables: {
+      cms_audit_events: {
+        Row: {
+          action: string
+          actor_member_id: string | null
+          after_data: Json | null
+          before_data: Json | null
+          changed_keys: string[]
+          created_at: string
+          id: string
+          metadata: Json
+          target_id: string | null
+          target_table: string
+        }
+        Insert: {
+          action: string
+          actor_member_id?: string | null
+          after_data?: Json | null
+          before_data?: Json | null
+          changed_keys?: string[]
+          created_at?: string
+          id?: string
+          metadata?: Json
+          target_id?: string | null
+          target_table: string
+        }
+        Update: {
+          action?: string
+          actor_member_id?: string | null
+          after_data?: Json | null
+          before_data?: Json | null
+          changed_keys?: string[]
+          created_at?: string
+          id?: string
+          metadata?: Json
+          target_id?: string | null
+          target_table?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cms_audit_events_actor_member_id_fkey"
+            columns: ["actor_member_id"]
+            isOneToOne: false
+            referencedRelation: "members"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       entities: {
         Row: {
           created_at: string
