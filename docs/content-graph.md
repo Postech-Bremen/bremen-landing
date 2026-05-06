@@ -1,6 +1,6 @@
 # Content Graph
 
-The site is built around a CMS-friendly graph:
+The site is currently built around a CMS-friendly graph:
 
 ```txt
 pages
@@ -10,10 +10,24 @@ pages
         -> entities
 ```
 
+The target model is a smaller entity graph:
+
+```txt
+entity_schemas
+  -> entities
+    -> entity_relations
+      -> entities
+```
+
+`pages`, `sections`, `page_sections`, and `section_entities` remain in use during
+the transition. New CMS architecture work should avoid deepening those special
+tables unless the change is explicitly about preserving the bridge.
+
 ## Tables
 
 | Table | Purpose |
 | --- | --- |
+| `entity_schemas` | DB-backed schema registry for page, section, entity, and relation records. This is the long-term source for CMS form metadata and validation. |
 | `pages` | Routable page records such as `home`, `performances`, `videos`, `photos`, `history`, and `site`. |
 | `sections` | Renderer blocks with `section_type`, copy, and renderer props. |
 | `page_sections` | Ordered section placement on pages. |
@@ -46,14 +60,57 @@ Required DB content should fail visibly when missing. Do not reintroduce mock fa
 
 CMS forms should not infer editable fields directly from arbitrary JSONB.
 
-Use `lib/cms/schema-registry.ts` as the code-level contract for:
+There are now two layers:
+
+- `entity_schemas` is the DB-backed registry foundation. It stores stable
+  `schema_key`, `kind`, version, label, renderer hint, relation slots, and future
+  JSON field/validation definitions.
+- `lib/cms/schema-registry.ts` is still the active code-level field contract for
+  PONIX forms until the DB-backed registry is fully populated and wired into the
+  editor.
+
+Use the registry contract for:
 
 - `sections.props`
 - `entities.data`
 - `section_entities.props`
 - `entity_relations.props`
 
-Each registry entry defines the schema key, field source, field type, required/read-only status, and select options. Future CMS editor screens should render fields from this registry before adding write actions.
+Each registry entry defines the schema key, field source, field type,
+required/read-only status, and select options. Future CMS editor screens should
+prefer `entity_schemas` as the metadata source, with the code registry as the
+reviewed renderer/field fallback.
+
+## Entity Schema Direction
+
+The long-term content contract is:
+
+```txt
+entity_schemas
+- what kind of content this is
+- which fields are editable
+- how the data should be validated
+- which renderer key may display it
+
+entities
+- shared identity and display columns
+- schema_id / schema_key
+- flexible data jsonb
+
+entity_relations
+- ordered links between entities
+- schema_id / schema_key
+- slot, relation_type, sort_order
+- relation props as relation-specific data
+```
+
+For now, `entities.schema_key` remains the public compatibility key and
+`entities.schema_id` resolves it to `entity_schemas`. `entity_relations` also has
+a default relation schema. Do not remove the text `schema_key` fields until all
+loaders, CMS forms, migrations, and production data have moved to schema IDs.
+
+Renderer implementations remain in React code. Database schemas may name a
+`renderer_key`, but they must not define executable UI behavior.
 
 ## Where Data Belongs
 

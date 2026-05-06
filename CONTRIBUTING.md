@@ -113,6 +113,7 @@ Use migrations for durable changes. Direct dashboard edits are acceptable for em
 
 Good Supabase changes:
 
+- Add/update `entity_schemas` through reviewed migrations when introducing a durable CMS content shape
 - Add/update `entities`
 - Update `sections` copy, props, renderer metadata, or publish status
 - Link content with `section_entities`
