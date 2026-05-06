@@ -28,6 +28,22 @@ function redirectWithError(path: string, message: string): never {
   redirect(`${path}?error=${encodeURIComponent(message)}`)
 }
 
+function redirectWithParams(path: string, params: Record<string, string>): never {
+  const [pathname, currentSearch = ""] = path.split("?")
+  const search = new URLSearchParams(currentSearch)
+
+  for (const [key, value] of Object.entries(params)) {
+    search.set(key, value)
+  }
+
+  redirect(`${pathname}?${search.toString()}`)
+}
+
+function safeRedirectPath(formData: FormData, fallback: string) {
+  const value = stringField(formData, "redirect_to")
+  return value.startsWith("/ponix") && !value.startsWith("//") ? value : fallback
+}
+
 function parseStudentYear(value: string) {
   if (!value) return null
 
@@ -56,6 +72,7 @@ export async function updateCmsMemberAction(formData: FormData) {
   }
 
   const editPath = `/ponix/members/${memberId}/edit`
+  const redirectTo = safeRedirectPath(formData, editPath)
   const admin = await requireCmsAdmin(editPath)
   const roleValue = stringField(formData, "role")
   const statusValue = stringField(formData, "status")
@@ -131,5 +148,7 @@ export async function updateCmsMemberAction(formData: FormData) {
   revalidatePath(editPath)
   revalidatePath("/mypage")
 
-  redirect("/ponix/members?updated=member")
+  redirectWithParams(redirectTo, {
+    saved: "member",
+  })
 }

@@ -1,6 +1,10 @@
 import Link from "next/link"
 
 import { updateCmsPageAction } from "@/app/ponix/pages/actions"
+import {
+  CmsSaveNotice,
+  CmsSubmitButton,
+} from "@/app/ponix/_components/cms-save-controls"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -29,9 +33,11 @@ type CmsPageDetail = Extract<CmsContentDetail, { kind: "page" }>
 export function CmsPageEditorPage({
   detail,
   error,
+  saved,
 }: {
   detail: CmsPageDetail
   error?: string
+  saved?: boolean
 }) {
   const schema = getPageEditorSchema()
   const editableFields = getEditablePageFields()
@@ -79,13 +85,17 @@ export function CmsPageEditorPage({
         ) : (
           <form action={updateCmsPageAction} className="space-y-6">
             <input type="hidden" name="page_id" value={detail.row.id} />
+            <input
+              type="hidden"
+              name="redirect_to"
+              value={`/ponix/pages/${detail.row.id}/edit`}
+            />
 
-            {error && (
-              <Alert variant="destructive">
-                <AlertTitle>Save failed</AlertTitle>
-                <AlertDescription>{error}</AlertDescription>
-              </Alert>
-            )}
+            <CmsSaveNotice
+              saved={saved}
+              error={error}
+              savedDescription="페이지 기본 정보가 저장되었습니다."
+            />
 
             <Card className="rounded-md bg-card/95 shadow-xl">
               <CardHeader className="border-b">
@@ -126,9 +136,9 @@ export function CmsPageEditorPage({
                 <Button asChild type="button" variant="outline">
                   <Link href={`/ponix/pages/${detail.row.id}`}>Cancel</Link>
                 </Button>
-                <Button type="submit">Save page</Button>
+                  <CmsSubmitButton>페이지 저장</CmsSubmitButton>
+                </div>
               </div>
-            </div>
           </form>
         )}
       </section>

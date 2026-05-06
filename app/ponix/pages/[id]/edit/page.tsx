@@ -35,6 +35,7 @@ export default async function PonixEditPageRecordPage({
   }
 
   const error = typeof search?.error === "string" ? search.error : undefined
+  const saved = search?.saved === "page"
 
-  return <CmsPageEditorPage detail={detail} error={error} />
+  return <CmsPageEditorPage detail={detail} error={error} saved={saved} />
 }

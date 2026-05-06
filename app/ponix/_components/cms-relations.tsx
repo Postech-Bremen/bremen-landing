@@ -336,7 +336,11 @@ function SectionEntityAddForm({
         <input type="hidden" name="entity_id" value={fixedEntityId} />
       ) : (
         <FieldGroup label="Entity">
-          <CmsEntityPicker name="entity_id" entities={options.entities} />
+          <CmsEntityPicker
+            name="entity_id"
+            entities={options.entities}
+            showSchemaFilter
+          />
           {options.entityCount && options.entityCount > options.entityLimit ? (
             <p className="text-xs text-muted-foreground">
               Search covers the latest {options.entityLimit} entities.

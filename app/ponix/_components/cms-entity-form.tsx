@@ -1,5 +1,9 @@
 import Link from "next/link"
 
+import {
+  CmsSaveNotice,
+  CmsSubmitButton,
+} from "@/app/ponix/_components/cms-save-controls"
 import { updateCmsEntityAction } from "@/app/ponix/entities/actions"
 import { ProfileImageInput } from "@/components/profile-image-input"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
@@ -32,9 +36,11 @@ type CmsEntityDetail = Extract<CmsContentDetail, { kind: "entity" }>
 export function CmsEntityEditorPage({
   detail,
   error,
+  saved,
 }: {
   detail: CmsEntityDetail
   error?: string
+  saved?: boolean
 }) {
   const schema = getEntityEditorSchema(detail.schemaKey)
   const editableFields = getEditableEntityFields(detail.schemaKey)
@@ -88,14 +94,18 @@ export function CmsEntityEditorPage({
             className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_26rem]"
           >
             <input type="hidden" name="entity_id" value={detail.row.id} />
+            <input
+              type="hidden"
+              name="redirect_to"
+              value={`/ponix/entities/${detail.row.id}/edit`}
+            />
 
             <div className="space-y-6">
-              {error && (
-                <Alert variant="destructive">
-                  <AlertTitle>Save failed</AlertTitle>
-                  <AlertDescription>{error}</AlertDescription>
-                </Alert>
-              )}
+              <CmsSaveNotice
+                saved={saved}
+                error={error}
+                savedDescription="데이터 항목이 저장되었습니다."
+              />
 
               <Card className="rounded-md bg-card/95 shadow-xl">
                 <CardHeader className="border-b">
@@ -138,7 +148,7 @@ export function CmsEntityEditorPage({
                   <Button asChild type="button" variant="outline">
                     <Link href={`/ponix/entities/${detail.row.id}`}>Cancel</Link>
                   </Button>
-                  <Button type="submit">Save entity</Button>
+                  <CmsSubmitButton>데이터 저장</CmsSubmitButton>
                 </div>
               </div>
             </div>

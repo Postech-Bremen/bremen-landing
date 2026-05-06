@@ -2,6 +2,10 @@ import type { Metadata } from "next"
 import Link from "next/link"
 import { notFound } from "next/navigation"
 
+import {
+  CmsSaveNotice,
+  CmsSubmitButton,
+} from "@/app/ponix/_components/cms-save-controls"
 import { updateCmsMemberAction } from "@/app/ponix/members/actions"
 import { Button } from "@/components/ui/button"
 import {
@@ -52,6 +56,7 @@ export default async function PonixMemberEditPage({
   }
 
   const error = typeof search?.error === "string" ? search.error : undefined
+  const saved = search?.saved === "member"
 
   return (
     <section className="mx-auto flex w-full max-w-5xl flex-col gap-6">
@@ -65,14 +70,19 @@ export default async function PonixMemberEditPage({
         </p>
       </div>
 
-      {error && (
-        <div className="rounded-xl border border-destructive/35 bg-destructive/10 px-4 py-3 text-sm text-destructive">
-          {error}
-        </div>
-      )}
+      <CmsSaveNotice
+        saved={saved}
+        error={error}
+        savedDescription="멤버 권한과 프로필 정보가 저장되었습니다."
+      />
 
       <form action={updateCmsMemberAction}>
         <input type="hidden" name="member_id" value={member.id} />
+        <input
+          type="hidden"
+          name="redirect_to"
+          value={`/ponix/members/${member.id}/edit`}
+        />
 
         <Card className="overflow-hidden rounded-xl bg-card/95 shadow-sm">
           <CardHeader className="border-b bg-muted/20">
@@ -176,9 +186,7 @@ export default async function PonixMemberEditPage({
           <Button asChild variant="outline" className="rounded-full">
             <Link href="/ponix/members">취소</Link>
           </Button>
-          <Button type="submit" className="rounded-full">
-            저장
-          </Button>
+          <CmsSubmitButton className="rounded-full">저장</CmsSubmitButton>
         </div>
       </form>
     </section>

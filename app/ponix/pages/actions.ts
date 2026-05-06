@@ -45,6 +45,11 @@ function redirectWithParams(path: string, params: Record<string, string>): never
   redirect(`${pathname}?${search.toString()}`)
 }
 
+function safeRedirectPath(formData: FormData, fallback: string) {
+  const value = stringField(formData, "redirect_to")
+  return value.startsWith("/ponix") && !value.startsWith("//") ? value : fallback
+}
+
 function revalidatePageSurfaces(pageId: string, slug?: string) {
   revalidatePath("/")
   revalidatePath("/performances")
@@ -155,6 +160,7 @@ export async function updateCmsPageAction(formData: FormData) {
   }
 
   const editPath = `/ponix/pages/${pageId}/edit`
+  const redirectTo = safeRedirectPath(formData, editPath)
   await requireCmsAdmin(editPath)
 
   const schema = getPageEditorSchema()
@@ -227,5 +233,7 @@ export async function updateCmsPageAction(formData: FormData) {
 
   revalidatePageSurfaces(pageId, page.slug)
 
-  redirect(`/ponix/pages/${pageId}`)
+  redirectWithParams(redirectTo, {
+    saved: "page",
+  })
 }

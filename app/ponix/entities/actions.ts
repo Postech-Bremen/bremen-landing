@@ -52,6 +52,11 @@ function redirectWithParams(path: string, params: Record<string, string>): never
   redirect(`${pathname}?${search.toString()}`)
 }
 
+function safeRedirectPath(formData: FormData, fallback: string) {
+  const value = stringField(formData, "redirect_to")
+  return value.startsWith("/ponix") && !value.startsWith("//") ? value : fallback
+}
+
 function revalidateEntitySurfaces(entityId?: string) {
   revalidatePath("/")
   revalidatePath("/performances")
@@ -417,6 +422,7 @@ export async function updateCmsEntityAction(formData: FormData) {
   }
 
   const editPath = `/ponix/entities/${entityId}/edit`
+  const redirectTo = safeRedirectPath(formData, editPath)
   await requireCmsAdmin(editPath)
 
   const supabase = await createClient()
@@ -512,5 +518,7 @@ export async function updateCmsEntityAction(formData: FormData) {
 
   revalidateEntitySurfaces(entityId)
 
-  redirect(`/ponix/entities/${entityId}`)
+  redirectWithParams(redirectTo, {
+    saved: "entity",
+  })
 }

@@ -3,6 +3,14 @@ import Link from "next/link"
 import { notFound } from "next/navigation"
 import { ArrowUpRight, Database, Layers3, PencilLine } from "lucide-react"
 
+import { CmsEntityPicker } from "@/app/ponix/_components/cms-entity-picker"
+import { renderFieldInput } from "@/app/ponix/_components/cms-section-form"
+import {
+  CmsSaveNotice,
+  CmsSubmitButton,
+} from "@/app/ponix/_components/cms-save-controls"
+import { addSectionEntityRelationAction } from "@/app/ponix/relations/actions"
+import { updateCmsSectionAction } from "@/app/ponix/sections/actions"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import {
@@ -14,7 +22,22 @@ import {
 } from "@/components/ui/card"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { Separator } from "@/components/ui/separator"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
 import { requireCmsAdmin } from "@/lib/cms/auth"
+import {
+  loadCmsRelationEditorOptions,
+  loadCmsSectionDetail,
+  loadCmsSectionRelations,
+  type CmsContentDetail,
+  type CmsRelationEditorOptions,
+  type CmsSectionRelationContext,
+} from "@/lib/cms/content"
+import {
+  cmsFieldInputName,
+  getEditableSectionFields,
+  getSectionFieldValue,
+} from "@/lib/cms/section-editor"
 import { loadDraftPreviewPage } from "@/lib/data/content-graph"
 import type { GraphSection } from "@/lib/data/content-graph"
 
@@ -50,6 +73,14 @@ export default async function PonixPageComposerPage({
     preview.graph.sections[0] ??
     null
   const selectedKey = selectedSection?.key ?? null
+  const [sectionDetail, sectionRelations, relationOptions] = selectedSection
+    ? await Promise.all([
+        loadCmsSectionDetail(selectedSection.id),
+        loadCmsSectionRelations(selectedSection.id),
+        loadCmsRelationEditorOptions(),
+      ])
+    : [null, null, null]
+  const composeUrl = selectedKey ? composeHref(id, selectedKey) : `/ponix/pages/${id}/compose`
 
   return (
     <section className="mx-auto flex w-full max-w-[104rem] flex-col gap-5">
@@ -97,8 +128,18 @@ export default async function PonixPageComposerPage({
         </Card>
 
         <SectionInspector
+          pageId={id}
           pageSlug={preview.page.slug}
           section={selectedSection}
+          sectionDetail={
+            sectionDetail?.kind === "section" ? sectionDetail : null
+          }
+          relations={sectionRelations}
+          relationOptions={relationOptions}
+          redirectTo={composeUrl}
+          saved={search?.saved === "section"}
+          relationMessage={searchValue(search?.relation_message) ?? undefined}
+          relationError={searchValue(search?.relation_error) ?? undefined}
         />
       </div>
     </section>
@@ -193,22 +234,50 @@ function SectionRail({
 }
 
 function SectionInspector({
+  pageId,
   pageSlug,
   section,
+  sectionDetail,
+  relations,
+  relationOptions,
+  redirectTo,
+  saved,
+  relationMessage,
+  relationError,
 }: {
+  pageId: string
   pageSlug: string
   section: GraphSection | null
+  sectionDetail: (Extract<CmsContentDetail, { kind: "section" }>) | null
+  relations: CmsSectionRelationContext | null
+  relationOptions: CmsRelationEditorOptions | null
+  redirectTo: string
+  saved: boolean
+  relationMessage?: string
+  relationError?: string
 }) {
   return (
-    <aside className="xl:sticky xl:top-40 xl:self-start">
+    <aside className="space-y-4 xl:sticky xl:top-40 xl:max-h-[calc(100svh-10rem)] xl:overflow-auto xl:pr-1">
+      <CmsSaveNotice
+        saved={saved}
+        error={relationError}
+        savedDescription="선택한 섹션 정보가 저장되었습니다."
+      />
+      {relationMessage && (
+        <CmsSaveNotice
+          saved
+          savedTitle="연결을 반영했습니다"
+          savedDescription={relationMessage}
+        />
+      )}
       <Card className="overflow-hidden rounded-xl bg-card/95 shadow-sm">
         <CardHeader className="border-b bg-muted/20">
-          <p className="caps text-muted-foreground">Inspector</p>
+          <p className="caps text-muted-foreground">선택한 섹션</p>
           <CardTitle className="font-serif text-3xl italic">
-            {section ? (section.title ?? section.key) : "No section"}
+            {section ? (section.title ?? section.key) : "섹션 없음"}
           </CardTitle>
           <CardDescription>
-            선택한 섹션의 renderer, schema, 연결 엔티티를 확인하고 편집 화면으로 이동합니다.
+            이 패널에서 섹션 문구를 바로 수정하고, 노출할 데이터를 연결합니다.
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-5 p-5">
@@ -238,76 +307,200 @@ function SectionInspector({
               </div>
 
               <div className="flex flex-wrap gap-2">
-                <Button asChild className="rounded-full">
+                <Button asChild variant="outline" className="rounded-full">
                   <Link href={`/ponix/sections/${section.id}/edit`}>
                     <PencilLine className="size-4" />
-                    Edit section
+                    전체 편집
                   </Link>
                 </Button>
                 <Button asChild variant="outline" className="rounded-full">
-                  <Link href={`/ponix/sections/${section.id}`}>Open record</Link>
+                  <Link href={`/ponix/pages/${pageId}`}>구성 관계 보기</Link>
                 </Button>
-              </div>
-
-              <Separator />
-
-              <div>
-                <div className="mb-3 flex items-center gap-2">
-                  <Database className="size-4 text-muted-foreground" />
-                  <h2 className="font-medium">Section entities</h2>
-                </div>
-                {section.items.length ? (
-                  <ul className="space-y-2">
-                    {section.items.map((item) => (
-                      <li
-                        key={`${item.entity.id}:${item.slot}:${item.sortOrder}`}
-                        className="rounded-md border bg-background/70 p-3"
-                      >
-                        <div className="mb-2 flex items-start justify-between gap-3">
-                          <div className="min-w-0">
-                            <Link
-                              href={`/ponix/entities/${item.entity.id}`}
-                              className="line-clamp-1 text-sm font-medium underline-offset-4 hover:underline"
-                            >
-                              {item.entity.title}
-                            </Link>
-                            <p className="font-mono text-xs text-muted-foreground">
-                              {item.entity.schema_key}
-                            </p>
-                          </div>
-                          <Badge variant="outline" className="rounded-full">
-                            {item.slot}
-                          </Badge>
-                        </div>
-                        <p className="line-clamp-2 text-xs text-muted-foreground">
-                          {item.entity.subtitle ?? item.entity.summary ?? item.entity.entity_type}
-                        </p>
-                      </li>
-                    ))}
-                  </ul>
-                ) : (
-                  <p className="rounded-md border bg-muted/30 p-4 text-sm text-muted-foreground">
-                    이 섹션에 연결된 엔티티가 없습니다.
-                  </p>
-                )}
-              </div>
-
-              <Separator />
-
-              <div>
-                <div className="mb-3 flex items-center gap-2">
-                  <Layers3 className="size-4 text-muted-foreground" />
-                  <h2 className="font-medium">Props</h2>
-                </div>
-                <pre className="max-h-72 overflow-auto rounded-md border bg-muted/40 p-3 text-xs leading-relaxed">
-                  {JSON.stringify(section.props, null, 2)}
-                </pre>
               </div>
             </>
           )}
         </CardContent>
       </Card>
+
+      {sectionDetail && (
+        <SectionQuickEditCard detail={sectionDetail} redirectTo={redirectTo} />
+      )}
+
+      {section && relations && relationOptions && (
+        <SectionEntityWorkspace
+          section={section}
+          relations={relations}
+          options={relationOptions}
+          redirectTo={redirectTo}
+        />
+      )}
     </aside>
+  )
+}
+
+function SectionQuickEditCard({
+  detail,
+  redirectTo,
+}: {
+  detail: Extract<CmsContentDetail, { kind: "section" }>
+  redirectTo: string
+}) {
+  const fields = getEditableSectionFields(detail.schemaKey)
+
+  return (
+    <Card className="overflow-hidden rounded-xl bg-card/95 shadow-sm">
+      <CardHeader className="border-b bg-muted/20">
+        <CardTitle className="font-serif text-2xl italic">섹션 정보 수정</CardTitle>
+        <CardDescription>
+          제목, 보조 문구, 버튼처럼 화면에 보이는 정보를 바로 저장합니다.
+        </CardDescription>
+      </CardHeader>
+      <CardContent className="p-5">
+        <form action={updateCmsSectionAction} className="space-y-4">
+          <input type="hidden" name="section_id" value={detail.row.id} />
+          <input type="hidden" name="redirect_to" value={redirectTo} />
+          <div className="max-h-[32rem] space-y-4 overflow-auto pr-1">
+            {fields.map((field) => {
+              const id = `composer-section-${field.source}-${field.key}`
+              const name = cmsFieldInputName(field)
+              const value = getSectionFieldValue(detail.row, field)
+              return (
+                <div key={`${field.source}:${field.key}`} className="space-y-2">
+                  <Label htmlFor={id}>{field.label}</Label>
+                  {renderFieldInput({ field, id, name, value })}
+                  {field.description && (
+                    <p className="text-xs leading-relaxed text-muted-foreground">
+                      {field.description}
+                    </p>
+                  )}
+                </div>
+              )
+            })}
+          </div>
+          <CmsSubmitButton className="w-full rounded-full">
+            섹션 저장
+          </CmsSubmitButton>
+        </form>
+      </CardContent>
+    </Card>
+  )
+}
+
+function SectionEntityWorkspace({
+  section,
+  relations,
+  options,
+  redirectTo,
+}: {
+  section: GraphSection
+  relations: CmsSectionRelationContext
+  options: CmsRelationEditorOptions
+  redirectTo: string
+}) {
+  const nextSortOrder =
+    Math.max(0, ...relations.sectionEntities.map((relation) => relation.sortOrder)) +
+    10
+
+  return (
+    <Card className="overflow-hidden rounded-xl bg-card/95 shadow-sm">
+      <CardHeader className="border-b bg-muted/20">
+        <div className="flex items-center gap-2">
+          <Database className="size-4 text-muted-foreground" />
+          <CardTitle className="font-serif text-2xl italic">데이터 연결</CardTitle>
+        </div>
+        <CardDescription>
+          먼저 데이터 종류를 고른 뒤, 이 섹션에 노출할 항목을 연결합니다.
+        </CardDescription>
+      </CardHeader>
+      <CardContent className="space-y-5 p-5">
+        <form action={addSectionEntityRelationAction} className="space-y-4">
+          <input type="hidden" name="redirect_to" value={redirectTo} />
+          <input type="hidden" name="section_id" value={section.id} />
+          <CmsEntityPicker
+            name="entity_id"
+            entities={options.entities}
+            showSchemaFilter
+          />
+          <div className="grid grid-cols-3 gap-2">
+            <div className="space-y-2">
+              <Label htmlFor="composer-relation-type">관계</Label>
+              <Input
+                id="composer-relation-type"
+                name="relation_type"
+                defaultValue="item"
+                className="h-10 bg-background/80"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="composer-slot">슬롯</Label>
+              <Input
+                id="composer-slot"
+                name="slot"
+                defaultValue="default"
+                className="h-10 bg-background/80"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="composer-sort-order">순서</Label>
+              <Input
+                id="composer-sort-order"
+                name="sort_order"
+                type="number"
+                defaultValue={nextSortOrder}
+                className="h-10 bg-background/80"
+              />
+            </div>
+          </div>
+          <CmsSubmitButton className="w-full rounded-full">
+            데이터 연결
+          </CmsSubmitButton>
+        </form>
+
+        <Separator />
+
+        {relations.sectionEntities.length ? (
+          <ul className="space-y-2">
+            {relations.sectionEntities.map((relation) => (
+              <li key={relation.id} className="rounded-md border bg-background/70 p-3">
+                <div className="mb-2 flex items-start justify-between gap-3">
+                  <div className="min-w-0">
+                    <Link
+                      href={`/ponix/entities/${relation.entityId}`}
+                      className="line-clamp-1 text-sm font-medium underline-offset-4 hover:underline"
+                    >
+                      {relation.entity?.title ?? relation.entityId}
+                    </Link>
+                    <p className="font-mono text-xs text-muted-foreground">
+                      {relation.entity?.schemaKey ?? "schema"}
+                    </p>
+                  </div>
+                  <Badge variant="outline" className="rounded-full">
+                    {relation.slot}
+                  </Badge>
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  {relation.relationType} · order {relation.sortOrder}
+                </p>
+              </li>
+            ))}
+          </ul>
+        ) : (
+          <p className="rounded-md border bg-muted/30 p-4 text-sm text-muted-foreground">
+            아직 연결된 데이터가 없습니다.
+          </p>
+        )}
+
+        <div>
+          <div className="mb-3 flex items-center gap-2">
+            <Layers3 className="size-4 text-muted-foreground" />
+            <h2 className="font-medium">Props</h2>
+          </div>
+          <pre className="max-h-56 overflow-auto rounded-md border bg-muted/40 p-3 text-xs leading-relaxed">
+            {JSON.stringify(section.props, null, 2)}
+          </pre>
+        </div>
+      </CardContent>
+    </Card>
   )
 }
 

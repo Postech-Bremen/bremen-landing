@@ -48,6 +48,11 @@ function redirectWithParams(path: string, params: Record<string, string>): never
   redirect(`${pathname}?${search.toString()}`)
 }
 
+function safeRedirectPath(formData: FormData, fallback: string) {
+  const value = stringField(formData, "redirect_to")
+  return value.startsWith("/ponix") && !value.startsWith("//") ? value : fallback
+}
+
 function parseSectionKey(formData: FormData, path: string) {
   const value = stringField(formData, "section_key")
 
@@ -343,6 +348,7 @@ export async function updateCmsSectionAction(formData: FormData) {
   }
 
   const editPath = `/ponix/sections/${sectionId}/edit`
+  const redirectTo = safeRedirectPath(formData, editPath)
   await requireCmsAdmin(editPath)
 
   const supabase = await createClient()
@@ -415,5 +421,7 @@ export async function updateCmsSectionAction(formData: FormData) {
 
   revalidateSectionSurfaces(sectionId)
 
-  redirect(`/ponix/sections/${sectionId}`)
+  redirectWithParams(redirectTo, {
+    saved: "section",
+  })
 }
