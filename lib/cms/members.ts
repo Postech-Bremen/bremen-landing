@@ -35,6 +35,8 @@ export type CmsMemberList = {
   stats: CmsMemberStats
 }
 
+export type CmsMemberDetail = MemberRow
+
 export async function loadCmsMembers(): Promise<CmsMemberList> {
   const supabase = await createClient()
   const { data, error } = await supabase
@@ -63,4 +65,21 @@ export async function loadCmsMembers(): Promise<CmsMemberList> {
       unset: members.filter((member) => member.status === null).length,
     },
   }
+}
+
+export async function loadCmsMemberDetail(
+  memberId: string,
+): Promise<CmsMemberDetail | null> {
+  const supabase = await createClient()
+  const { data, error } = await supabase
+    .from("members")
+    .select("*")
+    .eq("id", memberId)
+    .maybeSingle()
+
+  if (error) {
+    throw new Error(`Failed to load CMS member detail: ${error.message}`)
+  }
+
+  return data
 }

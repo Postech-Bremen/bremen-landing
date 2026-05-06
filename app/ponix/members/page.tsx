@@ -1,5 +1,6 @@
 import type { Metadata } from "next"
 import Link from "next/link"
+import { PencilLine } from "lucide-react"
 
 import {
   CmsListPage,
@@ -44,28 +45,28 @@ export default async function PonixMembersPage() {
 
   return (
     <CmsListPage
-      eyebrow="PONIX / Members"
-      title="Members"
-      description="가입 연결, 승인 상태, 공개 프로필 상태를 한 곳에서 점검합니다."
+      eyebrow="PONIX / 멤버"
+      title="멤버 관리"
+      description="가입 승인, 관리자 권한, 활동 상태와 멤버 페이지에 보이는 정보를 관리합니다."
     >
       <div className="grid gap-3 md:grid-cols-4">
-        <StatCard label="Total" value={stats.total} detail="roster rows" />
-        <StatCard label="Signed" value={stats.linkedAuth} detail="auth linked" />
-        <StatCard label="Approved" value={stats.approved} detail="member access" />
-        <StatCard label="Active" value={stats.active} detail="public status" />
+        <StatCard label="전체" value={stats.total} detail="등록된 멤버" />
+        <StatCard label="계정 연결" value={stats.linkedAuth} detail="로그인 가능 계정" />
+        <StatCard label="승인" value={stats.approved} detail="멤버 공간 접근" />
+        <StatCard label="활동" value={stats.active} detail="현재 활동 상태" />
       </div>
 
-      <CmsTableCard title="Member records" meta={`${members.length} records`}>
+      <CmsTableCard title="멤버 목록" meta={`${members.length}명`}>
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>Member</TableHead>
-              <TableHead>Session</TableHead>
-              <TableHead>Status</TableHead>
-              <TableHead>Role</TableHead>
-              <TableHead>Auth</TableHead>
-              <TableHead>Email</TableHead>
-              <TableHead>Updated</TableHead>
+              <TableHead>멤버</TableHead>
+              <TableHead>학번</TableHead>
+              <TableHead>상태</TableHead>
+              <TableHead>권한/직책</TableHead>
+              <TableHead>가입</TableHead>
+              <TableHead>이메일</TableHead>
+              <TableHead>수정</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -79,7 +80,7 @@ export default async function PonixMembersPage() {
                     {member.name}
                   </Link>
                   <div className="text-xs text-muted-foreground">
-                    {member.english_name ?? member.instrument ?? "profile"}
+                    {member.english_name ?? member.instrument ?? "프로필"}
                   </div>
                 </TableCell>
                 <TableCell className="text-sm">
@@ -96,7 +97,7 @@ export default async function PonixMembersPage() {
                 <TableCell>
                   <div className="flex flex-wrap gap-1.5">
                     <Badge variant="outline" className="rounded-full">
-                      {member.role}
+                      {member.role === "admin" ? "관리자" : "멤버"}
                     </Badge>
                     {member.position && (
                       <Badge variant="secondary" className="rounded-full">
@@ -111,21 +112,28 @@ export default async function PonixMembersPage() {
                       variant={member.auth_user_id ? "default" : "outline"}
                       className="rounded-full"
                     >
-                      {member.auth_user_id ? "linked" : "not linked"}
+                      {member.auth_user_id ? "계정 연결" : "계정 없음"}
                     </Badge>
                     <Badge
                       variant={member.approved_at ? "secondary" : "outline"}
                       className="rounded-full"
                     >
-                      {member.approved_at ? "approved" : "pending"}
+                      {member.approved_at ? "승인" : "미승인"}
                     </Badge>
                   </div>
                 </TableCell>
                 <TableCell className="max-w-[16rem] truncate text-xs text-muted-foreground">
-                  {member.email ?? "empty"}
+                  {member.email ?? "비어 있음"}
                 </TableCell>
-                <TableCell className="text-xs text-muted-foreground">
-                  {formatCmsDate(member.updated_at)}
+                <TableCell>
+                  <Link
+                    href={`/ponix/members/${member.id}/edit`}
+                    className="inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-medium transition-colors hover:bg-accent hover:text-accent-foreground"
+                    title={`최근 수정 ${formatCmsDate(member.updated_at)}`}
+                  >
+                    <PencilLine className="size-3.5" />
+                    수정
+                  </Link>
                 </TableCell>
               </TableRow>
             ))}

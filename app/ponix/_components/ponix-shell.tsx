@@ -8,7 +8,6 @@ import {
   Archive,
   FileText,
   GitBranch,
-  LayoutDashboard,
   Music2,
   Users,
 } from "lucide-react"
@@ -41,52 +40,41 @@ type PonixShellProps = {
 
 const navGroups = [
   {
-    label: "Workspace",
-    items: [
-      {
-        href: "/ponix",
-        label: "Overview",
-        description: "Audit, registry, status",
-        icon: LayoutDashboard,
-      },
-    ],
-  },
-  {
-    label: "Content",
+    label: "페이지와 콘텐츠",
     items: [
       {
         href: "/ponix/pages",
-        label: "Pages",
-        description: "Routes and page sections",
+        label: "페이지 구성",
+        description: "실제 화면을 보며 섹션을 배치하고 수정",
         icon: FileText,
       },
       {
         href: "/ponix/sections",
-        label: "Sections",
-        description: "Renderers and copy",
+        label: "섹션 문구",
+        description: "제목, 설명, 버튼, 노출 설정",
         icon: Archive,
       },
       {
         href: "/ponix/entities",
-        label: "Entities",
-        description: "Videos, photos, posts",
+        label: "데이터",
+        description: "영상, 사진, 공연, 히스토리 기록",
         icon: Music2,
       },
       {
         href: "/ponix/relations",
-        label: "Relations",
-        description: "Graph links",
+        label: "연결 관리",
+        description: "섹션과 데이터의 노출 순서",
         icon: GitBranch,
       },
     ],
   },
   {
-    label: "People",
+    label: "멤버",
     items: [
       {
         href: "/ponix/members",
-        label: "Members",
-        description: "Roster and access state",
+        label: "멤버 관리",
+        description: "가입 승인, 권한, 활동 상태",
         icon: Users,
       },
     ],
@@ -130,7 +118,7 @@ export function PonixShell({ memberName, children }: PonixShellProps) {
                       PONIX
                     </div>
                     <div className="caps mt-1 text-sidebar-foreground/60">
-                      Admin workspace
+                      운영 워크스페이스
                     </div>
                   </div>
                 </Link>
@@ -182,7 +170,7 @@ export function PonixShell({ memberName, children }: PonixShellProps) {
         <SidebarSeparator />
         <SidebarFooter className="p-3">
           <div className="rounded-md border bg-sidebar-accent/50 p-3 group-data-[collapsible=icon]:hidden">
-            <p className="caps text-sidebar-foreground/60">Signed in</p>
+            <p className="caps text-sidebar-foreground/60">접속 계정</p>
             <p className="mt-1 truncate text-sm font-medium">{memberName}</p>
           </div>
         </SidebarFooter>
@@ -194,12 +182,13 @@ export function PonixShell({ memberName, children }: PonixShellProps) {
           <SidebarTrigger className="size-8 md:hidden" />
           <div className="min-w-0 flex-1">
             <p className="caps text-muted-foreground">Bremen Admin</p>
+            <p className="text-sm font-medium">브레멘 운영 관리</p>
           </div>
           <Badge variant="outline" className="rounded-full">
             {memberName}
           </Badge>
           <Button asChild size="sm" variant="outline" className="rounded-full">
-            <Link href="/">Public site</Link>
+            <Link href="/">사이트 보기</Link>
           </Button>
         </div>
 
