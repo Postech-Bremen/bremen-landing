@@ -4,6 +4,11 @@ import {
   PUBLIC_CONTENT_CACHE_TAG,
   PUBLIC_CONTENT_REVALIDATE_SECONDS,
 } from "@/lib/data/public-cache"
+import {
+  buildHomeOverview,
+  loadMemberStats,
+} from "@/lib/data/home-overview"
+import type { HomeOverview } from "@/components/home-section"
 import type { Database, Json } from "@/lib/supabase/types"
 import { createPublicClient } from "@/lib/supabase/public"
 import {
@@ -242,6 +247,13 @@ export type HistoryPageContent = {
 }
 
 export type DraftPreviewPageContent =
+  | {
+      kind: "home"
+      page: ContentPageConfig
+      sections: ContentSectionConfig[]
+      graph: GraphPage
+      overview: HomeOverview
+    }
   | ({ kind: "performances"; graph: GraphPage } & PerformancePageContent)
   | ({ kind: "videos"; graph: GraphPage } & VideoPageContent)
   | ({ kind: "photos"; graph: GraphPage } & PhotoPageContent)
@@ -925,8 +937,17 @@ async function loadHomeCurationUncached(): Promise<HomeCuration | null> {
   const page = await loadGraphPage("home")
   if (!page) return null
 
+  return homeCurationFromGraph(page)
+}
+
+async function homeCurationFromGraph(
+  page: GraphPage,
+  options: { includeDrafts?: boolean } = {},
+): Promise<HomeCuration | null> {
   const sections = page.sections.map((section) => contentSectionFromGraph(section))
-  const performanceSlugById = await loadPerformanceSlugsById()
+  const performanceSlugById = await loadPerformanceSlugsById(
+    Boolean(options.includeDrafts),
+  )
   const heroVideo =
     sectionItems(page, "home-hero")
       .map((item) => homeVideoFromSectionItem(item, performanceSlugById))
@@ -1177,6 +1198,34 @@ export async function loadDraftPreviewPage(
 
   const contentPage = contentPageFromGraph(page.page)
   const sections = page.sections.map((section) => contentSectionFromGraph(section))
+
+  if (page.page.slug === "home") {
+    const [videos, performances, photos, memberStats, homeCuration] =
+      await Promise.all([
+        loadVideoArchiveUncached(),
+        loadPerformancePlaylistsUncached(),
+        loadPhotoArchiveUncached(),
+        loadMemberStats(),
+        homeCurationFromGraph(page, { includeDrafts: true }),
+      ])
+    const overview = buildHomeOverview({
+      videos,
+      performances,
+      photos,
+      memberStats,
+      homeCuration,
+    })
+
+    if (overview) {
+      return {
+        kind: "home",
+        graph: page,
+        page: contentPage,
+        sections,
+        overview,
+      }
+    }
+  }
 
   if (page.page.slug === "performances") {
     return {

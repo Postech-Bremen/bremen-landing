@@ -1,4 +1,5 @@
 import { HistorySection } from "@/components/history-section"
+import { HomeSection } from "@/components/home-section"
 import { PerformancesSection } from "@/components/performances-section"
 import { PhotosSection } from "@/components/photos-section"
 import { AdminSectionFrame } from "@/components/admin-section-frame"
@@ -28,6 +29,15 @@ export function PonixPagePreviewRenderer({
         page={preview.page}
         sections={preview.sections}
         playlists={preview.playlists}
+        adminSectionControl={adminSectionControl}
+      />
+    )
+  }
+
+  if (preview.kind === "home") {
+    return (
+      <HomeSection
+        overview={preview.overview}
         adminSectionControl={adminSectionControl}
       />
     )
