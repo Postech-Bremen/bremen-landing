@@ -1,4 +1,6 @@
 import type { ReactNode } from "react"
+import Link from "next/link"
+import { ArrowUpRight } from "lucide-react"
 
 import { Badge } from "@/components/ui/badge"
 import {
@@ -24,14 +26,15 @@ export function CmsListPage({
 }) {
   return (
     <section className="mx-auto flex w-full max-w-[96rem] flex-col gap-6">
-      <div className="rounded-xl border bg-card/90 p-5 shadow-sm md:p-6">
-        <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
+      <div className="relative overflow-hidden rounded-2xl border bg-card/95 p-5 shadow-sm md:p-7">
+        <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_12%_0%,color-mix(in_oklch,var(--accent)_12%,transparent),transparent_34%),linear-gradient(135deg,color-mix(in_oklch,var(--muted)_90%,transparent),transparent_42%)]" />
+        <div className="relative flex flex-col gap-5 md:flex-row md:items-start md:justify-between">
           <div className="min-w-0">
             <p className="caps mb-3 text-muted-foreground">{eyebrow}</p>
-            <h1 className="font-serif text-[clamp(2.75rem,6vw,5rem)] italic leading-[0.9] tracking-tight">
+            <h1 className="font-serif text-[clamp(3rem,6vw,5.5rem)] italic leading-[0.86] tracking-tight">
               {title}
             </h1>
-            <p className="mt-3 max-w-3xl text-sm leading-relaxed text-muted-foreground md:text-base">
+            <p className="mt-4 max-w-3xl text-sm leading-relaxed text-muted-foreground md:text-base">
               {description}
             </p>
           </div>
@@ -57,7 +60,7 @@ export function CmsTableCard({
   children: ReactNode
 }) {
   return (
-    <Card className="overflow-hidden rounded-xl border bg-card/95 shadow-sm">
+    <Card className="overflow-hidden rounded-2xl border bg-card/95 shadow-sm">
       <CardHeader className="border-b bg-muted/20">
         <div className="flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
           <CardTitle className="font-serif text-2xl italic md:text-3xl">
@@ -68,6 +71,104 @@ export function CmsTableCard({
       </CardHeader>
       <CardContent className="p-0">{children}</CardContent>
     </Card>
+  )
+}
+
+export function CmsStatGrid({ children }: { children: ReactNode }) {
+  return <div className="grid gap-3 md:grid-cols-4">{children}</div>
+}
+
+export function CmsStatTile({
+  label,
+  value,
+  detail,
+  accent = false,
+}: {
+  label: string
+  value: string | number
+  detail: string
+  accent?: boolean
+}) {
+  return (
+    <Card
+      className={cn(
+        "rounded-2xl border bg-card/95 shadow-sm",
+        accent && "border-transparent bg-primary text-primary-foreground",
+      )}
+    >
+      <CardHeader className="pb-2">
+        <p className={cn("caps", accent && "text-primary-foreground/65")}>
+          {label}
+        </p>
+        <CardTitle className="font-serif text-5xl italic leading-none">
+          {value}
+        </CardTitle>
+      </CardHeader>
+      <CardContent
+        className={cn(
+          "text-sm text-muted-foreground",
+          accent && "text-primary-foreground/75",
+        )}
+      >
+        {detail}
+      </CardContent>
+    </Card>
+  )
+}
+
+export function CmsRecordGrid({ children }: { children: ReactNode }) {
+  return <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">{children}</div>
+}
+
+export function CmsRecordCard({
+  href,
+  eyebrow,
+  title,
+  description,
+  badges,
+  meta,
+  actionLabel = "Open",
+  media,
+}: {
+  href: string
+  eyebrow: string
+  title: string
+  description?: string | null
+  badges?: ReactNode
+  meta?: ReactNode
+  actionLabel?: string
+  media?: ReactNode
+}) {
+  return (
+    <Link
+      href={href}
+      className="group flex min-h-56 flex-col overflow-hidden rounded-2xl border bg-card/95 shadow-sm outline-none transition-all hover:-translate-y-0.5 hover:border-accent/35 hover:shadow-xl focus-visible:ring-[3px] focus-visible:ring-ring/50"
+    >
+      {media && (
+        <div className="relative h-28 overflow-hidden border-b bg-muted/40">
+          {media}
+        </div>
+      )}
+      <div className="flex flex-1 flex-col p-5">
+        <div className="mb-4 flex items-start justify-between gap-3">
+          <p className="caps min-w-0 truncate text-muted-foreground">{eyebrow}</p>
+          <ArrowUpRight className="size-4 shrink-0 text-muted-foreground transition-transform group-hover:-translate-y-0.5 group-hover:translate-x-0.5 group-hover:text-accent" />
+        </div>
+        <h2 className="font-serif-kr text-2xl leading-tight">{title}</h2>
+        {description && (
+          <p className="mt-3 line-clamp-2 text-sm leading-relaxed text-muted-foreground">
+            {description}
+          </p>
+        )}
+        {badges && <div className="mt-5 flex flex-wrap gap-2">{badges}</div>}
+        <div className="mt-auto flex items-end justify-between gap-4 pt-6">
+          <div className="min-w-0 text-xs text-muted-foreground">{meta}</div>
+          <span className="rounded-full border px-3 py-1.5 text-xs font-medium transition-colors group-hover:border-accent/40 group-hover:bg-accent group-hover:text-accent-foreground">
+            {actionLabel}
+          </span>
+        </div>
+      </div>
+    </Link>
   )
 }
 

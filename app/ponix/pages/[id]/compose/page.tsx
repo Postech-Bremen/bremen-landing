@@ -92,17 +92,17 @@ export default async function PonixPageComposerPage({
         sectionCount={preview.graph.sections.length}
       />
 
-      <div className="grid min-h-[calc(100svh-13rem)] gap-5 xl:grid-cols-[minmax(0,1fr)_24rem]">
-        <Card className="overflow-hidden rounded-xl bg-card/95 shadow-sm">
-          <CardHeader className="border-b bg-muted/20">
+      <div className="grid min-h-[calc(100svh-13rem)] gap-5 xl:grid-cols-[minmax(0,1fr)_25rem]">
+        <Card className="overflow-hidden rounded-2xl bg-card/95 shadow-sm">
+          <CardHeader className="border-b bg-muted/20 px-5 py-5 md:px-6">
             <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
               <div>
-                <p className="caps text-muted-foreground">Page canvas</p>
+                <p className="caps text-muted-foreground">Live canvas</p>
                 <CardTitle className="font-serif text-3xl italic md:text-4xl">
-                  Live composition
+                  Edit in context
                 </CardTitle>
                 <CardDescription>
-                  공개 페이지와 같은 root layout에서 렌더한 canvas를 그대로 불러옵니다.
+                  실제 사이트 화면을 보며 섹션을 고르고, 오른쪽에서 바로 정리합니다.
                 </CardDescription>
               </div>
               <Button asChild variant="outline" className="w-fit rounded-full">
@@ -160,11 +160,12 @@ function ComposerHeader({
   sectionCount: number
 }) {
   return (
-    <div className="rounded-xl border bg-card/90 p-5 shadow-sm md:p-6">
-      <div className="flex flex-col gap-5 lg:flex-row lg:items-start lg:justify-between">
+    <div className="relative overflow-hidden rounded-2xl border bg-card/95 p-5 shadow-sm md:p-7">
+      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_8%_0%,color-mix(in_oklch,var(--accent)_12%,transparent),transparent_34%),linear-gradient(135deg,color-mix(in_oklch,var(--secondary)_84%,transparent),transparent_42%)]" />
+      <div className="relative flex flex-col gap-5 lg:flex-row lg:items-start lg:justify-between">
         <div>
           <p className="caps mb-3 text-muted-foreground">PONIX / Composer</p>
-          <h1 className="font-serif text-[clamp(2.75rem,6vw,5rem)] italic leading-[0.9] tracking-tight">
+          <h1 className="font-serif text-[clamp(3rem,6vw,5.5rem)] italic leading-[0.86] tracking-tight">
             {title}
           </h1>
           <div className="mt-4 flex flex-wrap items-center gap-2">
@@ -184,7 +185,7 @@ function ComposerHeader({
             <Link href={`/ponix/pages/${pageId}`}>Record</Link>
           </Button>
           <Button asChild className="rounded-full">
-            <Link href={`/ponix/pages/${pageId}/edit`}>Edit page</Link>
+            <Link href={`/ponix/pages/${pageId}/edit`}>Page settings</Link>
           </Button>
         </div>
       </div>
@@ -270,14 +271,14 @@ function SectionInspector({
           savedDescription={relationMessage}
         />
       )}
-      <Card className="overflow-hidden rounded-xl bg-card/95 shadow-sm">
+      <Card className="overflow-hidden rounded-2xl bg-card/95 shadow-sm">
         <CardHeader className="border-b bg-muted/20">
           <p className="caps text-muted-foreground">선택한 섹션</p>
           <CardTitle className="font-serif text-3xl italic">
             {section ? (section.title ?? section.key) : "섹션 없음"}
           </CardTitle>
           <CardDescription>
-            이 패널에서 섹션 문구를 바로 수정하고, 노출할 데이터를 연결합니다.
+            화면에서 고른 블록의 문구와 연결 데이터를 여기서 정리합니다.
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-5 p-5">
@@ -348,11 +349,11 @@ function SectionQuickEditCard({
   const fields = getEditableSectionFields(detail.schemaKey)
 
   return (
-    <Card className="overflow-hidden rounded-xl bg-card/95 shadow-sm">
+    <Card className="overflow-hidden rounded-2xl bg-card/95 shadow-sm">
       <CardHeader className="border-b bg-muted/20">
-        <CardTitle className="font-serif text-2xl italic">섹션 정보 수정</CardTitle>
+        <CardTitle className="font-serif text-2xl italic">Copy & buttons</CardTitle>
         <CardDescription>
-          제목, 보조 문구, 버튼처럼 화면에 보이는 정보를 바로 저장합니다.
+          방문자가 보는 제목, 설명, 버튼 문구를 수정합니다.
         </CardDescription>
       </CardHeader>
       <CardContent className="p-5">
@@ -402,14 +403,14 @@ function SectionEntityWorkspace({
     10
 
   return (
-    <Card className="overflow-hidden rounded-xl bg-card/95 shadow-sm">
+    <Card className="overflow-hidden rounded-2xl bg-card/95 shadow-sm">
       <CardHeader className="border-b bg-muted/20">
         <div className="flex items-center gap-2">
           <Database className="size-4 text-muted-foreground" />
-          <CardTitle className="font-serif text-2xl italic">데이터 연결</CardTitle>
+          <CardTitle className="font-serif text-2xl italic">Shown data</CardTitle>
         </div>
         <CardDescription>
-          먼저 데이터 종류를 고른 뒤, 이 섹션에 노출할 항목을 연결합니다.
+          이 섹션에 노출할 영상, 사진, 공연, 기록을 연결합니다.
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-5 p-5">

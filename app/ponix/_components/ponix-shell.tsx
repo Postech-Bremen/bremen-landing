@@ -5,14 +5,16 @@ import { usePathname } from "next/navigation"
 import type { CSSProperties, ReactNode } from "react"
 import {
   Activity,
+  ArrowUpRight,
   Archive,
+  CheckCircle2,
   FileText,
   GitBranch,
+  LayoutDashboard,
   Music2,
   Users,
 } from "lucide-react"
 
-import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import {
   Sidebar,
@@ -23,7 +25,6 @@ import {
   SidebarGroupLabel,
   SidebarHeader,
   SidebarMenu,
-  SidebarMenuBadge,
   SidebarMenuButton,
   SidebarMenuItem,
   SidebarProvider,
@@ -100,25 +101,26 @@ export function PonixShell({ memberName, children }: PonixShellProps) {
       }
       className="min-h-[calc(100vh-5rem)] bg-[#f7f1e8]"
     >
+      <div className="pointer-events-none fixed inset-0 -z-10 bg-[radial-gradient(circle_at_18%_10%,color-mix(in_oklch,var(--accent)_13%,transparent),transparent_32%),linear-gradient(135deg,color-mix(in_oklch,var(--secondary)_82%,transparent),transparent_46%)]" />
       <Sidebar
-        variant="inset"
+        variant="floating"
         collapsible="icon"
-        className="top-20 h-[calc(100svh-5rem)]"
+        className="top-20 h-[calc(100svh-5rem)] border-r-0"
       >
-        <SidebarHeader className="border-b border-sidebar-border/80 p-3">
+        <SidebarHeader className="p-3">
           <SidebarMenu>
             <SidebarMenuItem>
               <SidebarMenuButton asChild size="lg" tooltip="PONIX">
                 <Link href="/ponix">
-                  <div className="flex size-9 items-center justify-center rounded-md bg-sidebar-primary text-sidebar-primary-foreground">
+                  <div className="flex size-10 items-center justify-center rounded-xl bg-sidebar-primary text-sidebar-primary-foreground shadow-sm">
                     <Activity className="size-4" />
                   </div>
                   <div className="min-w-0">
                     <div className="font-serif text-xl italic leading-none">
                       PONIX
                     </div>
-                    <div className="caps mt-1 text-sidebar-foreground/60">
-                      운영 워크스페이스
+                    <div className="mt-1 text-[11px] font-medium text-sidebar-foreground/55">
+                      Bremen operations
                     </div>
                   </div>
                 </Link>
@@ -127,7 +129,21 @@ export function PonixShell({ memberName, children }: PonixShellProps) {
           </SidebarMenu>
         </SidebarHeader>
 
-        <SidebarContent className="px-1 py-3">
+        <SidebarContent className="px-2 py-2">
+          <div className="mx-1 mb-3 rounded-2xl border bg-sidebar-accent/45 p-3 group-data-[collapsible=icon]:hidden">
+            <div className="mb-3 flex items-center justify-between">
+              <p className="caps text-sidebar-foreground/55">Workspace</p>
+              <CheckCircle2 className="size-4 text-emerald-700" />
+            </div>
+            <p className="text-sm font-medium leading-snug">
+              실제 화면과 데이터를 한 곳에서 관리합니다.
+            </p>
+            <div className="mt-3 grid grid-cols-2 gap-2 text-xs text-sidebar-foreground/60">
+              <span className="rounded-lg bg-sidebar/70 px-2 py-1">Canvas</span>
+              <span className="rounded-lg bg-sidebar/70 px-2 py-1">Content graph</span>
+            </div>
+          </div>
+
           {navGroups.map((group) => (
             <SidebarGroup key={group.label}>
               <SidebarGroupLabel>{group.label}</SidebarGroupLabel>
@@ -143,18 +159,16 @@ export function PonixShell({ memberName, children }: PonixShellProps) {
                           asChild
                           isActive={active}
                           tooltip={item.label}
-                          className={cn(active && "shadow-xs")}
+                          className={cn(
+                            "h-11 rounded-xl",
+                            active && "bg-sidebar-primary text-sidebar-primary-foreground shadow-sm hover:bg-sidebar-primary hover:text-sidebar-primary-foreground",
+                          )}
                         >
                           <Link href={item.href}>
                             <Icon className="size-4" />
                             <span>{item.label}</span>
                           </Link>
                         </SidebarMenuButton>
-                        {active && (
-                          <SidebarMenuBadge className="text-[10px]">
-                            ON
-                          </SidebarMenuBadge>
-                        )}
                         <p className="ml-8 mt-0.5 hidden text-xs leading-snug text-sidebar-foreground/50 group-data-[collapsible=icon]:hidden md:block">
                           {item.description}
                         </p>
@@ -169,7 +183,7 @@ export function PonixShell({ memberName, children }: PonixShellProps) {
 
         <SidebarSeparator />
         <SidebarFooter className="p-3">
-          <div className="rounded-md border bg-sidebar-accent/50 p-3 group-data-[collapsible=icon]:hidden">
+          <div className="rounded-2xl border bg-sidebar-accent/50 p-3 group-data-[collapsible=icon]:hidden">
             <p className="caps text-sidebar-foreground/60">접속 계정</p>
             <p className="mt-1 truncate text-sm font-medium">{memberName}</p>
           </div>
@@ -178,17 +192,22 @@ export function PonixShell({ memberName, children }: PonixShellProps) {
       </Sidebar>
 
       <div className="flex min-w-0 flex-1 flex-col">
-        <div className="sticky top-16 z-20 flex h-14 items-center gap-3 border-b bg-background/85 px-4 backdrop-blur md:top-20 md:px-6">
+        <div className="sticky top-16 z-20 flex h-16 items-center gap-3 border-b bg-background/80 px-4 backdrop-blur-xl md:top-20 md:px-6">
           <SidebarTrigger className="size-8 md:hidden" />
-          <div className="min-w-0 flex-1">
-            <p className="caps text-muted-foreground">Bremen Admin</p>
-            <p className="text-sm font-medium">브레멘 운영 관리</p>
+          <div className="hidden size-9 items-center justify-center rounded-xl border bg-card shadow-sm md:flex">
+            <LayoutDashboard className="size-4" />
           </div>
-          <Badge variant="outline" className="rounded-full">
-            {memberName}
-          </Badge>
+          <div className="min-w-0 flex-1">
+            <p className="caps text-muted-foreground">Command center</p>
+            <p className="truncate text-sm font-medium">
+              페이지 구성, 데이터, 멤버 운영을 한 화면에서 이어갑니다.
+            </p>
+          </div>
           <Button asChild size="sm" variant="outline" className="rounded-full">
-            <Link href="/">사이트 보기</Link>
+            <Link href="/">
+              사이트 보기
+              <ArrowUpRight className="size-3.5" />
+            </Link>
           </Button>
         </div>
 

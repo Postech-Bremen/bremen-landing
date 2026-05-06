@@ -57,13 +57,14 @@ export function CmsDetailPage({
 
   return (
     <section className="mx-auto flex w-full max-w-[96rem] flex-col gap-6">
-      <div className="rounded-xl border bg-card/90 p-5 shadow-sm md:p-6">
-        <div className="flex flex-col gap-5 md:flex-row md:items-start md:justify-between">
+      <div className="relative overflow-hidden rounded-2xl border bg-card/95 p-5 shadow-sm md:p-7">
+        <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_10%_0%,color-mix(in_oklch,var(--accent)_11%,transparent),transparent_34%),linear-gradient(135deg,color-mix(in_oklch,var(--muted)_88%,transparent),transparent_42%)]" />
+        <div className="relative flex flex-col gap-5 md:flex-row md:items-start md:justify-between">
           <div className="min-w-0">
             <p className="caps mb-3 text-muted-foreground">
               PONIX / {detail.table}
             </p>
-            <h1 className="font-serif text-[clamp(2.75rem,6vw,5rem)] italic leading-[0.9] tracking-tight">
+            <h1 className="font-serif text-[clamp(3rem,6vw,5.5rem)] italic leading-[0.86] tracking-tight">
               {detail.title}
             </h1>
             {detail.subtitle && (
@@ -92,25 +93,25 @@ export function CmsDetailPage({
       </div>
 
       {!schema && (
-        <Alert variant="destructive">
-          <AlertTitle>Schema is not registered</AlertTitle>
+        <Alert variant="destructive" className="rounded-2xl">
+          <AlertTitle>수정 화면을 만들 스키마가 없습니다</AlertTitle>
           <AlertDescription>
-            This record exists in the database, but PONIX does not know how to
-            render editable fields for <code>{detail.schemaKey}</code> yet.
+            데이터는 존재하지만 <code>{detail.schemaKey}</code> 형태를 PONIX가
+            아직 해석하지 못합니다.
           </AlertDescription>
         </Alert>
       )}
 
       <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_22rem]">
-        <Card className="overflow-hidden rounded-xl bg-card/95 shadow-sm">
+        <Card className="overflow-hidden rounded-2xl bg-card/95 shadow-sm">
           <CardHeader className="border-b bg-muted/20">
             <div className="flex flex-col gap-2 md:flex-row md:items-end md:justify-between">
               <div>
                 <CardTitle className="font-serif text-2xl italic md:text-3xl">
-                  Registered fields
+                  Editable fields
                 </CardTitle>
                 <CardDescription>
-                  Values are resolved from the schema registry sources.
+                  PONIX가 알고 있는 항목과 현재 저장된 값을 확인합니다.
                 </CardDescription>
               </div>
               <p className="caps text-muted-foreground">{fieldCount} fields</p>
@@ -121,20 +122,20 @@ export function CmsDetailPage({
               <FieldTable detail={detail} fields={schema.fields} />
             ) : (
               <div className="px-6 py-10 text-sm text-muted-foreground">
-                No field definition is available for this schema key.
+                이 데이터 형태에 대한 편집 항목이 아직 없습니다.
               </div>
             )}
           </CardContent>
         </Card>
 
         <div className="space-y-6">
-          <Card className="rounded-xl bg-card/95 shadow-sm">
+          <Card className="rounded-2xl bg-card/95 shadow-sm">
             <CardHeader>
               <CardTitle className="font-serif text-2xl italic md:text-3xl">
                 Record
               </CardTitle>
               <CardDescription>
-                Stable identifiers for CMS routing and audits.
+                이 항목을 찾고 추적하는 데 쓰는 기본 정보입니다.
               </CardDescription>
             </CardHeader>
             <CardContent>
@@ -154,22 +155,22 @@ export function CmsDetailPage({
             </CardContent>
           </Card>
 
-            {audit && (
-              <CmsAuditTrailCard
-                audit={audit}
-                title="Record audit"
-                description="Recent changes for this CMS record."
-                emptyMessage="No changes have been recorded for this record yet."
-              />
-            )}
+          {audit && (
+            <CmsAuditTrailCard
+              audit={audit}
+              title="Record audit"
+              description="Recent changes for this CMS record."
+              emptyMessage="No changes have been recorded for this record yet."
+            />
+          )}
 
-          <Card className="rounded-xl bg-card/95 shadow-sm">
+          <Card className="rounded-2xl bg-card/95 shadow-sm">
             <CardHeader>
               <CardTitle className="font-serif text-2xl italic md:text-3xl">
                 Raw data
               </CardTitle>
               <CardDescription>
-                Full row payload for schema backfill checks.
+                문제가 있을 때 확인하는 원본 저장값입니다.
               </CardDescription>
             </CardHeader>
             <CardContent>

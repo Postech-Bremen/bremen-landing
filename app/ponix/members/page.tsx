@@ -4,16 +4,12 @@ import { PencilLine } from "lucide-react"
 
 import {
   CmsListPage,
+  CmsStatGrid,
+  CmsStatTile,
   CmsTableCard,
   formatCmsDate,
 } from "@/app/ponix/_components/cms-list"
 import { Badge } from "@/components/ui/badge"
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card"
 import {
   Table,
   TableBody,
@@ -46,17 +42,17 @@ export default async function PonixMembersPage() {
   return (
     <CmsListPage
       eyebrow="PONIX / 멤버"
-      title="멤버 관리"
-      description="가입 승인, 관리자 권한, 활동 상태와 멤버 페이지에 보이는 정보를 관리합니다."
+      title="Member Ops"
+      description="가입 승인, 관리자 권한, 활동 상태와 공개 멤버 카드에 보이는 정보를 관리합니다."
     >
-      <div className="grid gap-3 md:grid-cols-4">
-        <StatCard label="전체" value={stats.total} detail="등록된 멤버" />
-        <StatCard label="계정 연결" value={stats.linkedAuth} detail="로그인 가능 계정" />
-        <StatCard label="승인" value={stats.approved} detail="멤버 공간 접근" />
-        <StatCard label="활동" value={stats.active} detail="현재 활동 상태" />
-      </div>
+      <CmsStatGrid>
+        <CmsStatTile label="Members" value={stats.total} detail="등록된 멤버" accent />
+        <CmsStatTile label="Accounts" value={stats.linkedAuth} detail="로그인 가능 계정" />
+        <CmsStatTile label="Approved" value={stats.approved} detail="멤버 공간 접근" />
+        <CmsStatTile label="Active" value={stats.active} detail="현재 활동 상태" />
+      </CmsStatGrid>
 
-      <CmsTableCard title="멤버 목록" meta={`${members.length}명`}>
+      <CmsTableCard title="Roster control" meta={`${members.length}명`}>
         <Table>
           <TableHeader>
             <TableRow>
@@ -141,28 +137,6 @@ export default async function PonixMembersPage() {
         </Table>
       </CmsTableCard>
     </CmsListPage>
-  )
-}
-
-function StatCard({
-  label,
-  value,
-  detail,
-}: {
-  label: string
-  value: number
-  detail: string
-}) {
-  return (
-    <Card className="rounded-xl bg-card/95 shadow-sm">
-      <CardHeader className="pb-2">
-        <p className="caps text-muted-foreground">{label}</p>
-        <CardTitle className="font-serif text-5xl italic leading-none">
-          {value}
-        </CardTitle>
-      </CardHeader>
-      <CardContent className="text-sm text-muted-foreground">{detail}</CardContent>
-    </Card>
   )
 }
 
