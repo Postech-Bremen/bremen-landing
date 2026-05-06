@@ -3,7 +3,6 @@ import Link from "next/link"
 import { notFound } from "next/navigation"
 import { ArrowUpRight, Database, Layers3, PencilLine } from "lucide-react"
 
-import { PonixPagePreviewRenderer } from "@/app/ponix/_components/page-preview-renderer"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import {
@@ -72,7 +71,7 @@ export default async function PonixPageComposerPage({
                   Live composition
                 </CardTitle>
                 <CardDescription>
-                  실제 공개 페이지 renderer에 PONIX 섹션 선택 레이어만 얹은 화면입니다.
+                  공개 페이지와 같은 root layout에서 렌더한 canvas를 그대로 불러옵니다.
                 </CardDescription>
               </div>
               <Button asChild variant="outline" className="w-fit rounded-full">
@@ -89,13 +88,11 @@ export default async function PonixPageComposerPage({
             />
           </CardHeader>
           <CardContent className="bg-[#f7f1e8] p-0">
-            <div className="max-h-[calc(100svh-18rem)] overflow-auto">
-              <PonixPagePreviewRenderer
-                preview={preview}
-                pageId={id}
-                selectedSectionKey={selectedKey}
-              />
-            </div>
+            <iframe
+              title={`${preview.page.title} live canvas`}
+              src={canvasHref(id, selectedKey)}
+              className="h-[calc(100svh-18rem)] min-h-[42rem] w-full border-0 bg-background"
+            />
           </CardContent>
         </Card>
 
@@ -335,6 +332,14 @@ function MetaRow({
 
 function composeHref(pageId: string, sectionKey: string) {
   return `/ponix/pages/${pageId}/compose?section=${encodeURIComponent(sectionKey)}`
+}
+
+function canvasHref(pageId: string, sectionKey: string | null) {
+  const params = sectionKey
+    ? `?section=${encodeURIComponent(sectionKey)}`
+    : ""
+
+  return `/ponix-canvas/pages/${pageId}${params}`
 }
 
 function searchValue(value: string | string[] | undefined) {

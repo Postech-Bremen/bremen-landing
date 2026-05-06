@@ -52,6 +52,11 @@ export function AdminSectionFrame({
       return
     }
 
+    if (window.parent && window.parent !== window) {
+      window.parent.location.href = href
+      return
+    }
+
     router.push(href)
   }
 
