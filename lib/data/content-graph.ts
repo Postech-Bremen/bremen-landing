@@ -265,6 +265,12 @@ export type DraftPreviewPageContent =
       graph: GraphPage
     }
 
+export type DraftCompositionPageContent = {
+  kind: DraftPreviewPageContent["kind"]
+  page: ContentPageConfig
+  graph: GraphPage
+}
+
 type GraphPageLoadOptions = {
   id?: string
   slug?: string
@@ -1293,6 +1299,34 @@ export async function loadDraftPreviewPage(
     kind: "generic",
     page: contentPage,
     sections,
+    graph: page,
+  }
+}
+
+export async function loadDraftCompositionPage(
+  pageId: string,
+): Promise<DraftCompositionPageContent | null> {
+  const page = await loadGraphPageUncached({
+    id: pageId,
+    includeDrafts: true,
+  })
+
+  if (!page) return null
+
+  const typedSlugs = new Set<DraftPreviewPageContent["kind"]>([
+    "home",
+    "performances",
+    "videos",
+    "photos",
+    "history",
+  ])
+  const kind = typedSlugs.has(page.page.slug as DraftPreviewPageContent["kind"])
+    ? (page.page.slug as DraftPreviewPageContent["kind"])
+    : "generic"
+
+  return {
+    kind,
+    page: contentPageFromGraph(page.page),
     graph: page,
   }
 }

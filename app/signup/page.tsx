@@ -3,7 +3,7 @@ import Link from "next/link"
 import { redirect } from "next/navigation"
 
 import { signUpAction } from "@/app/auth/actions"
-import { Button } from "@/components/ui/button"
+import { FormSubmitButton } from "@/components/form-submit-button"
 import {
   Card,
   CardContent,
@@ -144,9 +144,13 @@ export default async function SignupPage({ searchParams }: SignupPageProps) {
                   </p>
                 )}
 
-                <Button type="submit" size="lg" className="mt-7 w-full">
+                <FormSubmitButton
+                  size="lg"
+                  className="mt-7 w-full"
+                  pendingLabel="Sending confirmation..."
+                >
                   Find my profile
-                </Button>
+                </FormSubmitButton>
               </form>
 
               <div className="mt-6 rounded-md bg-muted/45 p-4 text-sm leading-relaxed text-muted-foreground">

@@ -1,10 +1,6 @@
 import type { Metadata } from "next"
 import { MembersSection } from "@/components/members-section"
-import {
-  memberPublicSelect,
-  sortPublicMembers,
-  type MemberRecord,
-} from "@/lib/data/members"
+import { loadPublicMembers } from "@/lib/data/members"
 import { createClient } from "@/lib/supabase/server"
 
 export const metadata: Metadata = {
@@ -12,45 +8,25 @@ export const metadata: Metadata = {
   description: "브레멘의 활동 부원과 졸업생 리스트입니다.",
 }
 
-async function loadMembers(): Promise<MemberRecord[]> {
+async function canViewMemberDetails() {
   if (
     !process.env.NEXT_PUBLIC_SUPABASE_URL ||
     !process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
   ) {
-    return []
+    return false
   }
 
-  try {
-    const supabase = await createClient()
-    const { data, error } = await supabase
-      .from("members")
-      .select(memberPublicSelect)
-      .not("student_year", "is", null)
-
-    if (error || !data?.length) {
-      return []
-    }
-
-    return sortPublicMembers(data)
-  } catch {
-    return []
-  }
+  const supabase = await createClient()
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+  return Boolean(user)
 }
 
 export default async function MembersPage() {
-  const members = await loadMembers()
-  let canViewDetails = false
-
-  if (
-    process.env.NEXT_PUBLIC_SUPABASE_URL &&
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
-  ) {
-    const supabase = await createClient()
-    const {
-      data: { user },
-    } = await supabase.auth.getUser()
-    canViewDetails = Boolean(user)
-  }
-
+  const [members, canViewDetails] = await Promise.all([
+    loadPublicMembers(),
+    canViewMemberDetails(),
+  ])
   return <MembersSection members={members} canViewDetails={canViewDetails} />
 }

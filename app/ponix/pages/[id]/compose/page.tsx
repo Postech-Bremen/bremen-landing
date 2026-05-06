@@ -38,7 +38,7 @@ import {
   getEditableSectionFields,
   getSectionFieldValue,
 } from "@/lib/cms/section-editor"
-import { loadDraftPreviewPage } from "@/lib/data/content-graph"
+import { loadDraftCompositionPage } from "@/lib/data/content-graph"
 import type { GraphSection } from "@/lib/data/content-graph"
 
 export const metadata: Metadata = {
@@ -61,7 +61,7 @@ export default async function PonixPageComposerPage({
   const [{ id }, search] = await Promise.all([params, searchParams])
 
   await requireCmsAdmin(`/ponix/pages/${id}/compose`)
-  const preview = await loadDraftPreviewPage(id)
+  const preview = await loadDraftCompositionPage(id)
 
   if (!preview) {
     notFound()
