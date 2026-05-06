@@ -53,7 +53,7 @@ export default async function PonixPagesPage() {
               <TableRow key={page.id}>
                 <TableCell className="font-mono text-xs">
                   <Link
-                    href={`/ponix/pages/${page.id}`}
+                    href={`/ponix/pages/${page.id}/compose`}
                     className="underline-offset-4 hover:underline"
                   >
                     {page.slug}
@@ -61,7 +61,7 @@ export default async function PonixPagesPage() {
                 </TableCell>
                 <TableCell>
                   <Link
-                    href={`/ponix/pages/${page.id}`}
+                    href={`/ponix/pages/${page.id}/compose`}
                     className="font-medium underline-offset-4 hover:underline"
                   >
                     {page.title}

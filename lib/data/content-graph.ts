@@ -242,10 +242,10 @@ export type HistoryPageContent = {
 }
 
 export type DraftPreviewPageContent =
-  | ({ kind: "performances" } & PerformancePageContent)
-  | ({ kind: "videos" } & VideoPageContent)
-  | ({ kind: "photos" } & PhotoPageContent)
-  | ({ kind: "history" } & HistoryPageContent)
+  | ({ kind: "performances"; graph: GraphPage } & PerformancePageContent)
+  | ({ kind: "videos"; graph: GraphPage } & VideoPageContent)
+  | ({ kind: "photos"; graph: GraphPage } & PhotoPageContent)
+  | ({ kind: "history"; graph: GraphPage } & HistoryPageContent)
   | {
       kind: "generic"
       page: ContentPageConfig
@@ -1181,6 +1181,7 @@ export async function loadDraftPreviewPage(
   if (page.page.slug === "performances") {
     return {
       kind: "performances",
+      graph: page,
       page: contentPage,
       sections,
       playlists:
@@ -1194,6 +1195,7 @@ export async function loadDraftPreviewPage(
 
     return {
       kind: "videos",
+      graph: page,
       page: contentPage,
       sections,
       featuredVideos: videosFromSectionItems(
@@ -1216,6 +1218,7 @@ export async function loadDraftPreviewPage(
   if (page.page.slug === "photos") {
     return {
       kind: "photos",
+      graph: page,
       page: contentPage,
       sections,
       photos: sectionItems(page, "photos-gallery")
@@ -1227,6 +1230,7 @@ export async function loadDraftPreviewPage(
   if (page.page.slug === "history") {
     return {
       kind: "history",
+      graph: page,
       page: contentPage,
       sections,
       milestones: sectionItems(page, "history-timeline")

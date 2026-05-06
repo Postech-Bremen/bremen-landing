@@ -61,102 +61,95 @@ export default async function PonixPage() {
   ]
 
   return (
-    <main className="relative min-h-[calc(100vh-5rem)] overflow-hidden">
-      <div className="pointer-events-none absolute inset-0 -z-10">
-        <div className="absolute right-[-10rem] top-10 h-96 w-96 rounded-full bg-accent/10 blur-3xl" />
-        <div className="absolute left-[-8rem] bottom-0 h-80 w-80 rounded-full bg-muted blur-3xl" />
-      </div>
-
-      <section className="mx-auto max-w-6xl px-6 py-20 md:px-8 md:py-28">
-        <div className="mb-10 flex flex-col gap-5 md:flex-row md:items-end md:justify-between">
-          <div>
-            <p className="caps mb-5">Bremen CMS</p>
-            <h1 className="font-serif text-[clamp(4rem,12vw,8rem)] italic leading-[0.82] tracking-tight">
+    <section className="mx-auto flex w-full max-w-[96rem] flex-col gap-6">
+      <div className="rounded-xl border bg-card/90 p-5 shadow-sm md:p-6">
+        <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
+          <div className="min-w-0">
+            <p className="caps mb-3 text-muted-foreground">Bremen Admin</p>
+            <h1 className="font-serif text-[clamp(3rem,7vw,5.5rem)] italic leading-[0.9] tracking-tight">
               PONIX
             </h1>
-            <p className="mt-5 max-w-2xl font-serif italic text-3xl leading-tight text-muted-foreground md:text-4xl">
-              Content graph control surface.
+            <p className="mt-3 max-w-3xl text-sm leading-relaxed text-muted-foreground md:text-base">
+              Content graph, member operations, and audit visibility for Bremen.
             </p>
           </div>
           <Badge variant="outline" className="w-fit rounded-full px-4 py-2">
             Signed in as {member.name}
           </Badge>
         </div>
+      </div>
 
-        <Card className="mb-5 rounded-md border bg-card/95 shadow-xl">
-          <CardHeader>
-            <CardTitle className="font-serif text-3xl italic">
-              Schema registry
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-2 gap-3 md:grid-cols-5">
-              {[
-                ["Total", stats.total],
-                ["Pages", stats.pages],
-                ["Sections", stats.sections],
-                ["Entities", stats.entities],
-                ["Relations", stats.relations],
-              ].map(([label, value]) => (
-                <div key={label} className="rounded-md border bg-background/60 p-4">
-                  <p className="caps mb-2">{label}</p>
-                  <p className="font-serif text-4xl italic">{value}</p>
+      <Card className="overflow-hidden rounded-xl border bg-card/95 shadow-sm">
+        <CardHeader className="border-b bg-muted/20">
+          <CardTitle className="font-serif text-2xl italic md:text-3xl">
+            Schema registry
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="p-5 md:p-6">
+          <div className="grid grid-cols-2 gap-3 md:grid-cols-5">
+            {[
+              ["Total", stats.total],
+              ["Pages", stats.pages],
+              ["Sections", stats.sections],
+              ["Entities", stats.entities],
+              ["Relations", stats.relations],
+            ].map(([label, value]) => (
+              <div key={label} className="rounded-lg border bg-background/60 p-4">
+                <p className="caps mb-2 text-muted-foreground">{label}</p>
+                <p className="font-serif text-4xl italic">{value}</p>
+              </div>
+            ))}
+          </div>
+        </CardContent>
+      </Card>
+
+      <div className="grid grid-cols-1 gap-4 xl:grid-cols-2">
+        {schemaGroups.map((group) => {
+          const schemas = getCmsSchemasByKind(group.kind)
+
+          return (
+            <Card
+              key={group.kind}
+              className="overflow-hidden rounded-xl border bg-card/95 shadow-sm"
+            >
+              <CardHeader className="border-b bg-muted/20">
+                <CardTitle className="font-serif text-2xl italic md:text-3xl">
+                  {group.title}
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="p-5 md:p-6">
+                <p className="text-sm leading-relaxed text-muted-foreground">
+                  {group.body}
+                </p>
+                <div className="mt-5 flex flex-wrap gap-2">
+                  {schemas.map((schema) => (
+                    <Badge
+                      key={schema.schemaKey}
+                      variant="secondary"
+                      className="rounded-full"
+                    >
+                      {schema.label}
+                    </Badge>
+                  ))}
                 </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
+                <div className="mt-6">
+                  {group.href ? (
+                    <Button asChild variant="outline" className="rounded-full">
+                      <Link href={group.href}>Open {group.title}</Link>
+                    </Button>
+                  ) : (
+                    <Badge variant="outline" className="rounded-full">
+                      Planned
+                    </Badge>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+          )
+        })}
+      </div>
 
-        <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
-          {schemaGroups.map((group) => {
-            const schemas = getCmsSchemasByKind(group.kind)
-
-            return (
-              <Card
-                key={group.kind}
-                className="rounded-md border bg-card/95 shadow-xl"
-              >
-                <CardHeader>
-                  <CardTitle className="font-serif text-3xl italic">
-                    {group.title}
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <p className="text-sm leading-relaxed text-muted-foreground">
-                    {group.body}
-                  </p>
-                  <div className="mt-5 flex flex-wrap gap-2">
-                    {schemas.map((schema) => (
-                      <Badge
-                        key={schema.schemaKey}
-                        variant="secondary"
-                        className="rounded-full"
-                      >
-                        {schema.label}
-                      </Badge>
-                    ))}
-                  </div>
-                  <div className="mt-6">
-                    {group.href ? (
-                      <Button asChild variant="outline" className="rounded-full">
-                        <Link href={group.href}>Open {group.title}</Link>
-                      </Button>
-                    ) : (
-                      <Badge variant="outline" className="rounded-full">
-                        Planned
-                      </Badge>
-                    )}
-                  </div>
-                </CardContent>
-              </Card>
-            )
-          })}
-        </div>
-
-        <div className="mt-5">
-          <CmsAuditTrailCard audit={audit} title="Recent audit trail" />
-        </div>
-      </section>
-    </main>
+      <CmsAuditTrailCard audit={audit} title="Recent audit trail" />
+    </section>
   )
 }

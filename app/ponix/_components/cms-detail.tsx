@@ -56,25 +56,22 @@ export function CmsDetailPage({
   const fieldCount = schema?.fields.length ?? 0
 
   return (
-    <main className="relative min-h-[calc(100vh-5rem)] overflow-hidden">
-      <div className="pointer-events-none absolute inset-0 -z-10">
-        <div className="absolute right-[-10rem] top-10 h-96 w-96 rounded-full bg-accent/10 blur-3xl" />
-        <div className="absolute left-[-8rem] bottom-0 h-80 w-80 rounded-full bg-muted blur-3xl" />
-      </div>
-
-      <section className="mx-auto max-w-7xl px-6 py-16 md:px-8 md:py-24">
-        <div className="mb-10 flex flex-col gap-6 md:flex-row md:items-start md:justify-between">
-          <div>
-            <p className="caps mb-5">PONIX / {detail.table}</p>
-            <h1 className="font-serif text-[clamp(3.25rem,8vw,6.5rem)] italic leading-[0.84] tracking-tight">
+    <section className="mx-auto flex w-full max-w-[96rem] flex-col gap-6">
+      <div className="rounded-xl border bg-card/90 p-5 shadow-sm md:p-6">
+        <div className="flex flex-col gap-5 md:flex-row md:items-start md:justify-between">
+          <div className="min-w-0">
+            <p className="caps mb-3 text-muted-foreground">
+              PONIX / {detail.table}
+            </p>
+            <h1 className="font-serif text-[clamp(2.75rem,6vw,5rem)] italic leading-[0.9] tracking-tight">
               {detail.title}
             </h1>
             {detail.subtitle && (
-              <p className="mt-5 max-w-2xl text-sm leading-relaxed text-muted-foreground md:text-base">
+              <p className="mt-3 max-w-3xl text-sm leading-relaxed text-muted-foreground md:text-base">
                 {detail.subtitle}
               </p>
             )}
-            <div className="mt-6 flex flex-wrap items-center gap-2">
+            <div className="mt-5 flex flex-wrap items-center gap-2">
               <PublishBadge published={detail.published} />
               <SchemaBadge
                 label={detail.schemaLabel}
@@ -85,75 +82,77 @@ export function CmsDetailPage({
               </Badge>
             </div>
           </div>
-          <div className="flex flex-wrap gap-2">
+          <div className="flex shrink-0 flex-wrap gap-2">
             <Button asChild variant="outline" className="w-fit rounded-full">
               <Link href={backHref}>{backLabel}</Link>
             </Button>
             {actions}
           </div>
         </div>
+      </div>
 
-        {!schema && (
-          <Alert variant="destructive" className="mb-8">
-            <AlertTitle>Schema is not registered</AlertTitle>
-            <AlertDescription>
-              This record exists in the database, but PONIX does not know how to
-              render editable fields for <code>{detail.schemaKey}</code> yet.
-            </AlertDescription>
-          </Alert>
-        )}
+      {!schema && (
+        <Alert variant="destructive">
+          <AlertTitle>Schema is not registered</AlertTitle>
+          <AlertDescription>
+            This record exists in the database, but PONIX does not know how to
+            render editable fields for <code>{detail.schemaKey}</code> yet.
+          </AlertDescription>
+        </Alert>
+      )}
 
-        <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_22rem]">
-          <Card className="rounded-md bg-card/95 shadow-xl">
-            <CardHeader className="border-b">
-              <div className="flex flex-col gap-2 md:flex-row md:items-end md:justify-between">
-                <div>
-                  <CardTitle className="font-serif text-3xl italic">
-                    Registered fields
-                  </CardTitle>
-                  <CardDescription>
-                    Values are resolved from the schema registry sources.
-                  </CardDescription>
-                </div>
-                <p className="caps text-muted-foreground">
-                  {fieldCount} fields
-                </p>
-              </div>
-            </CardHeader>
-            <CardContent className="p-0">
-              {schema ? (
-                <FieldTable detail={detail} fields={schema.fields} />
-              ) : (
-                <div className="px-6 py-10 text-sm text-muted-foreground">
-                  No field definition is available for this schema key.
-                </div>
-              )}
-            </CardContent>
-          </Card>
-
-          <div className="space-y-6">
-            <Card className="rounded-md bg-card/95 shadow-xl">
-              <CardHeader>
-                <CardTitle className="font-serif text-3xl italic">
-                  Record
+      <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_22rem]">
+        <Card className="overflow-hidden rounded-xl bg-card/95 shadow-sm">
+          <CardHeader className="border-b bg-muted/20">
+            <div className="flex flex-col gap-2 md:flex-row md:items-end md:justify-between">
+              <div>
+                <CardTitle className="font-serif text-2xl italic md:text-3xl">
+                  Registered fields
                 </CardTitle>
                 <CardDescription>
-                  Stable identifiers for CMS routing and audits.
+                  Values are resolved from the schema registry sources.
                 </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <dl className="space-y-4 text-sm">
-                  <MetaRow label="ID" value={detail.row.id} mono />
-                  <MetaRow label="Table" value={detail.table} mono />
-                  <MetaRow label="Schema" value={detail.schemaKey} mono />
-                  <MetaRow label="Updated" value={formatCmsDate(detail.updatedAt)} />
-                  <MetaRow
-                    label="Created"
-                    value={formatCmsDate(detail.row.created_at)}
-                  />
-                </dl>
-              </CardContent>
-            </Card>
+              </div>
+              <p className="caps text-muted-foreground">{fieldCount} fields</p>
+            </div>
+          </CardHeader>
+          <CardContent className="p-0">
+            {schema ? (
+              <FieldTable detail={detail} fields={schema.fields} />
+            ) : (
+              <div className="px-6 py-10 text-sm text-muted-foreground">
+                No field definition is available for this schema key.
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
+        <div className="space-y-6">
+          <Card className="rounded-xl bg-card/95 shadow-sm">
+            <CardHeader>
+              <CardTitle className="font-serif text-2xl italic md:text-3xl">
+                Record
+              </CardTitle>
+              <CardDescription>
+                Stable identifiers for CMS routing and audits.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <dl className="space-y-4 text-sm">
+                <MetaRow label="ID" value={detail.row.id} mono />
+                <MetaRow label="Table" value={detail.table} mono />
+                <MetaRow label="Schema" value={detail.schemaKey} mono />
+                <MetaRow
+                  label="Updated"
+                  value={formatCmsDate(detail.updatedAt)}
+                />
+                <MetaRow
+                  label="Created"
+                  value={formatCmsDate(detail.row.created_at)}
+                />
+              </dl>
+            </CardContent>
+          </Card>
 
             {audit && (
               <CmsAuditTrailCard
@@ -164,27 +163,26 @@ export function CmsDetailPage({
               />
             )}
 
-            <Card className="rounded-md bg-card/95 shadow-xl">
-              <CardHeader>
-                <CardTitle className="font-serif text-3xl italic">
-                  Raw data
-                </CardTitle>
-                <CardDescription>
-                  Full row payload for schema backfill checks.
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <pre className="max-h-[32rem] overflow-auto rounded-md border bg-muted/40 p-4 text-xs leading-relaxed">
-                  {stringify(detail.row)}
-                </pre>
-              </CardContent>
-            </Card>
-          </div>
+          <Card className="rounded-xl bg-card/95 shadow-sm">
+            <CardHeader>
+              <CardTitle className="font-serif text-2xl italic md:text-3xl">
+                Raw data
+              </CardTitle>
+              <CardDescription>
+                Full row payload for schema backfill checks.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <pre className="max-h-[32rem] overflow-auto rounded-md border bg-muted/40 p-4 text-xs leading-relaxed">
+                {stringify(detail.row)}
+              </pre>
+            </CardContent>
+          </Card>
         </div>
+      </div>
 
-        {children && <div className="mt-6 space-y-6">{children}</div>}
-      </section>
-    </main>
+      {children && <div className="space-y-6">{children}</div>}
+    </section>
   )
 }
 

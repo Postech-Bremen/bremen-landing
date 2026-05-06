@@ -1,4 +1,8 @@
 import { ArrowUpRight } from "@phosphor-icons/react/dist/ssr"
+import {
+  AdminSectionFrame,
+  type AdminSectionControl,
+} from "@/components/admin-section-frame"
 import { Reveal } from "@/components/reveal"
 import { EditorialSectionHead, PageHero, PageSection } from "@/components/editorial"
 import type {
@@ -11,6 +15,7 @@ type HistorySectionProps = {
   page: ContentPageConfig
   sections: ContentSectionConfig[]
   milestones: HistoryMilestoneItem[]
+  adminSectionControl?: AdminSectionControl
 }
 
 export function HistoryTimelineSurface({
@@ -65,6 +70,7 @@ export function HistorySection({
   page,
   sections,
   milestones,
+  adminSectionControl,
 }: HistorySectionProps) {
   const items = milestones
   const firstYear = items[0]?.year ?? ""
@@ -91,10 +97,23 @@ export function HistorySection({
         }
       />
 
-      <HistoryTimelineSurface
-        timelineSection={timelineSection}
-        milestones={items}
-      />
+      {timelineSection ? (
+        <AdminSectionFrame
+          sectionKey={timelineSection.key}
+          sectionTitle={timelineSection.title}
+          control={adminSectionControl}
+        >
+          <HistoryTimelineSurface
+            timelineSection={timelineSection}
+            milestones={items}
+          />
+        </AdminSectionFrame>
+      ) : (
+        <HistoryTimelineSurface
+          timelineSection={timelineSection}
+          milestones={items}
+        />
+      )}
     </div>
   )
 }

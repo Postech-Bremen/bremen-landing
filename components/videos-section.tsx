@@ -13,6 +13,10 @@ import {
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import {
+  AdminSectionFrame,
+  type AdminSectionControl,
+} from "@/components/admin-section-frame"
+import {
   Command,
   CommandEmpty,
   CommandGroup,
@@ -468,6 +472,7 @@ type VideosSectionProps = {
   videos: Video[]
   featuredVideos: Video[]
   popularVideos: Video[]
+  adminSectionControl?: AdminSectionControl
 }
 
 export function FeaturedVideosSurface({
@@ -704,6 +709,7 @@ export function VideosSection({
   videos,
   featuredVideos,
   popularVideos,
+  adminSectionControl,
 }: VideosSectionProps) {
   const sourceVideos = videos
   const featuredSection = sections.find((section) => section.key === "videos-featured")
@@ -741,19 +747,53 @@ export function VideosSection({
         }
       />
 
-      <FeaturedVideosSurface
-        featuredSection={featuredSection}
-        popularSection={popularSection}
-        featured={featured}
-        picks={picks}
-      />
-
-      <Suspense fallback={<VideoLibrarySurface section={librarySection} videos={library} />}>
-        <VideoLibrarySurfaceWithSearchParams
-          section={librarySection}
-          videos={library}
+      {featuredSection ? (
+        <AdminSectionFrame
+          sectionKey={featuredSection.key}
+          sectionTitle={featuredSection.title}
+          control={adminSectionControl}
+        >
+          <FeaturedVideosSurface
+            featuredSection={featuredSection}
+            popularSection={popularSection}
+            featured={featured}
+            picks={picks}
+          />
+        </AdminSectionFrame>
+      ) : (
+        <FeaturedVideosSurface
+          featuredSection={featuredSection}
+          popularSection={popularSection}
+          featured={featured}
+          picks={picks}
         />
-      </Suspense>
+      )}
+
+      {librarySection ? (
+        <AdminSectionFrame
+          sectionKey={librarySection.key}
+          sectionTitle={librarySection.title}
+          control={adminSectionControl}
+        >
+          <Suspense
+            fallback={
+              <VideoLibrarySurface section={librarySection} videos={library} />
+            }
+          >
+            <VideoLibrarySurfaceWithSearchParams
+              section={librarySection}
+              videos={library}
+            />
+          </Suspense>
+        </AdminSectionFrame>
+      ) : (
+        <Suspense fallback={<VideoLibrarySurface section={librarySection} videos={library} />}>
+          <VideoLibrarySurfaceWithSearchParams
+            section={librarySection}
+            videos={library}
+          />
+        </Suspense>
+      )}
     </div>
   )
 }

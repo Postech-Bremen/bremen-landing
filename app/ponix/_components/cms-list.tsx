@@ -1,8 +1,6 @@
-import Link from "next/link"
 import type { ReactNode } from "react"
 
 import { Badge } from "@/components/ui/badge"
-import { Button } from "@/components/ui/button"
 import {
   Card,
   CardContent,
@@ -25,33 +23,27 @@ export function CmsListPage({
   children: ReactNode
 }) {
   return (
-    <main className="relative min-h-[calc(100vh-5rem)] overflow-hidden">
-      <div className="pointer-events-none absolute inset-0 -z-10">
-        <div className="absolute right-[-10rem] top-10 h-96 w-96 rounded-full bg-accent/10 blur-3xl" />
-        <div className="absolute left-[-8rem] bottom-0 h-80 w-80 rounded-full bg-muted blur-3xl" />
-      </div>
-
-      <section className="mx-auto max-w-7xl px-6 py-16 md:px-8 md:py-24">
-        <div className="mb-10 flex flex-col gap-5 md:flex-row md:items-end md:justify-between">
-          <div>
-            <p className="caps mb-5">{eyebrow}</p>
-            <h1 className="font-serif text-[clamp(3.5rem,10vw,7rem)] italic leading-[0.82] tracking-tight">
+    <section className="mx-auto flex w-full max-w-[96rem] flex-col gap-6">
+      <div className="rounded-xl border bg-card/90 p-5 shadow-sm md:p-6">
+        <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
+          <div className="min-w-0">
+            <p className="caps mb-3 text-muted-foreground">{eyebrow}</p>
+            <h1 className="font-serif text-[clamp(2.75rem,6vw,5rem)] italic leading-[0.9] tracking-tight">
               {title}
             </h1>
-            <p className="mt-5 max-w-2xl text-sm leading-relaxed text-muted-foreground md:text-base">
+            <p className="mt-3 max-w-3xl text-sm leading-relaxed text-muted-foreground md:text-base">
               {description}
             </p>
           </div>
-          <div className="flex flex-wrap items-center gap-2">
-            {actions}
-            <Button asChild variant="outline" className="w-fit rounded-full">
-              <Link href="/ponix">PONIX Home</Link>
-            </Button>
-          </div>
+          {actions && (
+            <div className="flex shrink-0 flex-wrap items-center gap-2">
+              {actions}
+            </div>
+          )}
         </div>
-        {children}
-      </section>
-    </main>
+      </div>
+      {children}
+    </section>
   )
 }
 
@@ -65,10 +57,12 @@ export function CmsTableCard({
   children: ReactNode
 }) {
   return (
-    <Card className="rounded-md border bg-card/95 shadow-xl">
-      <CardHeader className="border-b">
+    <Card className="overflow-hidden rounded-xl border bg-card/95 shadow-sm">
+      <CardHeader className="border-b bg-muted/20">
         <div className="flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
-          <CardTitle className="font-serif text-3xl italic">{title}</CardTitle>
+          <CardTitle className="font-serif text-2xl italic md:text-3xl">
+            {title}
+          </CardTitle>
           <p className="caps text-muted-foreground">{meta}</p>
         </div>
       </CardHeader>
