@@ -64,6 +64,57 @@ export type Database = {
           },
         ]
       }
+      entity_schemas: {
+        Row: {
+          active: boolean
+          created_at: string
+          description: string
+          fields: Json
+          id: string
+          kind: string
+          label: string
+          relation_slots: string[]
+          renderer_key: string | null
+          schema_key: string
+          table_name: string
+          updated_at: string
+          validation: Json
+          version: number
+        }
+        Insert: {
+          active?: boolean
+          created_at?: string
+          description?: string
+          fields?: Json
+          id?: string
+          kind: string
+          label: string
+          relation_slots?: string[]
+          renderer_key?: string | null
+          schema_key: string
+          table_name: string
+          updated_at?: string
+          validation?: Json
+          version?: number
+        }
+        Update: {
+          active?: boolean
+          created_at?: string
+          description?: string
+          fields?: Json
+          id?: string
+          kind?: string
+          label?: string
+          relation_slots?: string[]
+          renderer_key?: string | null
+          schema_key?: string
+          table_name?: string
+          updated_at?: string
+          validation?: Json
+          version?: number
+        }
+        Relationships: []
+      }
       entities: {
         Row: {
           created_at: string
@@ -72,6 +123,7 @@ export type Database = {
           id: string
           owner_member_id: string | null
           published: boolean
+          schema_id: string | null
           schema_key: string
           slug: string | null
           sort_at: string
@@ -88,6 +140,7 @@ export type Database = {
           id?: string
           owner_member_id?: string | null
           published?: boolean
+          schema_id?: string | null
           schema_key?: string
           slug?: string | null
           sort_at?: string
@@ -104,6 +157,7 @@ export type Database = {
           id?: string
           owner_member_id?: string | null
           published?: boolean
+          schema_id?: string | null
           schema_key?: string
           slug?: string | null
           sort_at?: string
@@ -121,6 +175,13 @@ export type Database = {
             referencedRelation: "members"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "entities_schema_id_fkey"
+            columns: ["schema_id"]
+            isOneToOne: false
+            referencedRelation: "entity_schemas"
+            referencedColumns: ["id"]
+          },
         ]
       }
       entity_relations: {
@@ -131,6 +192,8 @@ export type Database = {
           id: string
           props: Json
           relation_type: string
+          schema_id: string | null
+          schema_key: string
           slot: string
           sort_order: number
           to_entity_id: string
@@ -143,6 +206,8 @@ export type Database = {
           id?: string
           props?: Json
           relation_type: string
+          schema_id?: string | null
+          schema_key?: string
           slot?: string
           sort_order?: number
           to_entity_id: string
@@ -155,6 +220,8 @@ export type Database = {
           id?: string
           props?: Json
           relation_type?: string
+          schema_id?: string | null
+          schema_key?: string
           slot?: string
           sort_order?: number
           to_entity_id?: string
@@ -173,6 +240,13 @@ export type Database = {
             columns: ["from_entity_id"]
             isOneToOne: false
             referencedRelation: "entities"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "entity_relations_schema_id_fkey"
+            columns: ["schema_id"]
+            isOneToOne: false
+            referencedRelation: "entity_schemas"
             referencedColumns: ["id"]
           },
           {

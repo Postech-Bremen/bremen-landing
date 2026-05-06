@@ -161,6 +161,30 @@ pnpm dlx supabase db push
 
 Maintainers using Supabase MCP can apply the same migration SQL with `apply_migration`, but the migration file must still be committed.
 
+## Entity Schema Registry
+
+`entity_schemas` is the durable DB registry for CMS content shapes. Change it
+through migrations, not one-off dashboard edits, because schema changes affect
+editor forms, validation, renderer compatibility, and future content migrations.
+
+Safe pattern:
+
+1. Add or update a versioned `schema_key`, such as `video/youtube/v1`.
+2. Keep existing schema keys active until all rows and renderers have migrated.
+3. Keep the text `schema_key` compatibility columns until all loaders and PONIX
+   forms use `schema_id`.
+4. Keep renderer code reviewed in the app. DB rows may store a `renderer_key`,
+   but must not define executable React behavior.
+5. Apply production schema registry migrations only after review.
+
+Avoid:
+
+- Renaming or deactivating schema keys while rows still reference them.
+- Making `fields` or `validation` incompatible with the deployed PONIX editor.
+- Using the schema registry to bypass RLS, ownership, or member-specific tables.
+- Moving `members` into generic entities; member auth/profile data remains
+  domain-specific.
+
 ## CMS Audit Trail
 
 PONIX CMS write auditing is documented in `docs/cms-audit.md`.
