@@ -585,14 +585,14 @@ function BridgeHealthNotice({ health }: { health: CmsBridgeHealth }) {
     return (
       <div className="mt-3 flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
         <Badge variant="outline" className="rounded-full">
-          읽기: entity_relations
+          읽기: 그래프 미러
         </Badge>
         <Badge variant="outline" className="rounded-full">
-          저장: source row
+          저장: 원본 관계 행
         </Badge>
         <span>
           {health.mirrored}
-          {health.expected !== null ? ` / ${health.expected}` : ""} mirror rows
+          {health.expected !== null ? ` / ${health.expected}` : ""}개 동기화
         </span>
       </div>
     )
@@ -601,9 +601,9 @@ function BridgeHealthNotice({ health }: { health: CmsBridgeHealth }) {
   return (
     <Alert variant="destructive" className="mt-3 rounded-md">
       <AlertDescription>
-        Entity graph mirror is out of sync: {health.mirrored}
-        {health.expected !== null ? ` / ${health.expected}` : ""} rows available.
-        Use the legacy relation actions only after the bridge catches up.
+        그래프 미러 동기화가 아직 맞지 않습니다: {health.mirrored}
+        {health.expected !== null ? ` / ${health.expected}` : ""}개 행이
+        확인되었습니다. 동기화가 끝난 뒤 관계를 수정하세요.
       </AlertDescription>
     </Alert>
   )
@@ -907,8 +907,8 @@ function BridgeSourceHint({
 }) {
   return (
     <div className="mt-1 space-y-0.5 text-[10px] leading-tight text-muted-foreground">
-      <div>source: {shortId(relation.sourceId)}</div>
-      <div>graph: {shortId(relation.graphRelationId)}</div>
+      <div>저장 행: {shortId(relation.sourceId)}</div>
+      <div>그래프 행: {shortId(relation.graphRelationId)}</div>
     </div>
   )
 }

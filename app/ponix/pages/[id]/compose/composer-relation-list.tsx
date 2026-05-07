@@ -79,16 +79,18 @@ export function ComposerRelationList({
   slotOptions: string[]
 }) {
   const [orderedRelations, setOrderedRelations] = useState(relations)
-  const [draggingId, setDraggingId] = useState<string | null>(null)
-  const [dropTargetId, setDropTargetId] = useState<string | null>(null)
+  const [draggingSourceId, setDraggingSourceId] = useState<string | null>(null)
+  const [dropTargetSourceId, setDropTargetSourceId] = useState<string | null>(
+    null,
+  )
   const [saveState, setSaveState] = useState<SaveState>({ status: "idle" })
   const [isPending, startTransition] = useTransition()
 
-  function moveRelation(sourceId: string, targetId: string) {
-    if (sourceId === targetId) return
+  function moveRelation(sourceRowId: string, targetSourceRowId: string) {
+    if (sourceRowId === targetSourceRowId) return
 
     const previous = orderedRelations
-    const next = reorderById(previous, sourceId, targetId)
+    const next = reorderBySourceId(previous, sourceRowId, targetSourceRowId)
     if (next === previous) return
 
     setOrderedRelations(next)
@@ -151,26 +153,29 @@ export function ComposerRelationList({
             redirectTo={redirectTo}
             typeOptions={typeOptions}
             slotOptions={slotOptions}
-            dragging={draggingId === relation.id}
-            dropTarget={dropTargetId === relation.id}
-            onDragStart={() => setDraggingId(relation.id)}
+            dragging={draggingSourceId === relation.sourceId}
+            dropTarget={dropTargetSourceId === relation.sourceId}
+            onDragStart={() => setDraggingSourceId(relation.sourceId)}
             onDragEnd={() => {
-              setDraggingId(null)
-              setDropTargetId(null)
+              setDraggingSourceId(null)
+              setDropTargetSourceId(null)
             }}
             onDragOver={(event) => {
               event.preventDefault()
-              if (draggingId && draggingId !== relation.id) {
-                setDropTargetId(relation.id)
+              if (
+                draggingSourceId &&
+                draggingSourceId !== relation.sourceId
+              ) {
+                setDropTargetSourceId(relation.sourceId)
               }
             }}
             onDrop={(event) => {
               event.preventDefault()
-              if (draggingId) {
-                moveRelation(draggingId, relation.id)
+              if (draggingSourceId) {
+                moveRelation(draggingSourceId, relation.sourceId)
               }
-              setDraggingId(null)
-              setDropTargetId(null)
+              setDraggingSourceId(null)
+              setDropTargetSourceId(null)
             }}
           />
         ))}
@@ -245,10 +250,10 @@ function SectionEntityRelationEditor({
             draggable
             aria-label="순서 끌어서 변경"
             className="grid size-9 shrink-0 cursor-grab place-items-center self-center rounded-full border bg-muted/40 text-muted-foreground transition hover:border-accent hover:text-foreground active:cursor-grabbing"
-            data-composer-drag-handle={relation.id}
+            data-composer-drag-handle={relation.sourceId}
             onDragStart={(event) => {
               event.dataTransfer.effectAllowed = "move"
-              event.dataTransfer.setData("text/plain", relation.id)
+              event.dataTransfer.setData("text/plain", relation.sourceId)
               onDragStart()
             }}
             onDragEnd={onDragEnd}
@@ -871,9 +876,17 @@ function RelationDatalists({
   )
 }
 
-function reorderById(relations: Relation[], sourceId: string, targetId: string) {
-  const sourceIndex = relations.findIndex((relation) => relation.id === sourceId)
-  const targetIndex = relations.findIndex((relation) => relation.id === targetId)
+function reorderBySourceId(
+  relations: Relation[],
+  sourceRowId: string,
+  targetSourceRowId: string,
+) {
+  const sourceIndex = relations.findIndex(
+    (relation) => relation.sourceId === sourceRowId,
+  )
+  const targetIndex = relations.findIndex(
+    (relation) => relation.sourceId === targetSourceRowId,
+  )
 
   if (sourceIndex < 0 || targetIndex < 0) {
     return relations

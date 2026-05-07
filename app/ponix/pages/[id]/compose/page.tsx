@@ -504,14 +504,14 @@ function ComposerBridgeHealth({
     return (
       <div className="mt-3 flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
         <Badge variant="outline" className="rounded-full">
-          읽기: entity_relations
+          읽기: 그래프 미러
         </Badge>
         <Badge variant="outline" className="rounded-full">
-          저장: section_entities
+          저장: 섹션 원본 행
         </Badge>
         <span>
           {health.mirrored}
-          {health.expected !== null ? ` / ${health.expected}` : ""} mirror rows
+          {health.expected !== null ? ` / ${health.expected}` : ""}개 동기화
         </span>
       </div>
     )
