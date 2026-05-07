@@ -1,6 +1,5 @@
 "use client"
 
-import Image from "next/image"
 import { useSearchParams } from "next/navigation"
 import { Suspense, useDeferredValue, useState, type CSSProperties } from "react"
 import {
@@ -16,6 +15,7 @@ import {
   AdminSectionFrame,
   type AdminSectionControl,
 } from "@/components/admin-section-frame"
+import { ContentImage } from "@/components/content-image"
 import {
   Command,
   CommandEmpty,
@@ -157,7 +157,7 @@ function VideoCard({
         className="lift-card group flex h-full flex-col overflow-hidden rounded-md border bg-card shadow-sm hover:shadow-xl"
       >
         <div className="relative aspect-video overflow-hidden bg-muted">
-          <Image
+          <ContentImage
             src={videoThumbnailUrl(video, "mq")}
             alt={video.raw_title}
             fill
@@ -216,7 +216,7 @@ function FeaturedVideoCard({ video }: { video: Video }) {
         className="tilt-card group flex h-full flex-col overflow-hidden rounded-md border bg-card shadow-sm hover:shadow-xl"
       >
         <div className="relative aspect-[16/10] overflow-hidden bg-muted">
-          <Image
+          <ContentImage
             src={videoThumbnailUrl(video, "max")}
             alt={video.raw_title}
             fill
@@ -266,7 +266,7 @@ function PickRow({ video, index }: { video: Video; index: number }) {
         className="group flex items-start gap-4 border-b py-4 transition-colors hover:border-foreground"
       >
         <div className="relative h-20 w-32 shrink-0 overflow-hidden rounded-sm bg-muted">
-          <Image
+          <ContentImage
             src={videoThumbnailUrl(video, "mq")}
             alt={video.raw_title}
             fill

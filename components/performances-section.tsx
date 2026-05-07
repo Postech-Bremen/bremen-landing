@@ -1,5 +1,4 @@
 import type { ElementType } from "react"
-import Image from "next/image"
 import Link from "next/link"
 import {
   ArrowRight,
@@ -11,6 +10,7 @@ import {
   AdminSectionFrame,
   type AdminSectionControl,
 } from "@/components/admin-section-frame"
+import { ContentImage } from "@/components/content-image"
 import {
   Carousel,
   CarouselContent,
@@ -80,7 +80,7 @@ function PlaylistCard({
     <article className="lift-card group flex h-full flex-col overflow-hidden rounded-md border bg-card shadow-sm hover:shadow-xl">
       <div className="relative aspect-video bg-muted">
         {playlist.coverUrl ? (
-          <Image
+          <ContentImage
             src={playlist.coverUrl}
             alt={playlist.title}
             fill
@@ -297,7 +297,7 @@ export function StageMoments({
             >
               <div className="relative aspect-[3/4] bg-muted">
                 {photo.thumbnailUrl && (
-                  <Image
+                  <ContentImage
                     src={photo.thumbnailUrl}
                     alt={photo.title}
                     fill
@@ -331,7 +331,7 @@ export function PerformanceUpdateCard({
     <article className="lift-card group grid h-full grid-cols-1 overflow-hidden rounded-md border bg-card shadow-sm hover:shadow-xl sm:grid-cols-[10rem_1fr]">
       <div className="relative min-h-52 bg-muted sm:min-h-full">
         {update.thumbnailUrl ? (
-          <Image
+          <ContentImage
             src={update.thumbnailUrl}
             alt={update.title}
             fill

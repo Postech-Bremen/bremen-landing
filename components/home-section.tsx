@@ -1,12 +1,12 @@
 "use client"
 
-import Image from "next/image"
 import Link from "next/link"
 import type { CSSProperties, ReactNode } from "react"
 import {
   AdminSectionFrame,
   type AdminSectionControl,
 } from "@/components/admin-section-frame"
+import { ContentImage } from "@/components/content-image"
 import { Reveal } from "@/components/reveal"
 import {
   CalendarBlank,
@@ -170,7 +170,7 @@ function StatCardView({ card }: { card: HomeStatCard }) {
     >
       <div className="relative basis-[55%] grow-0 shrink-0 bg-muted overflow-hidden">
         {imageSrc && (
-          <Image
+          <ContentImage
             src={imageSrc}
             alt={card.label}
             fill
@@ -303,7 +303,7 @@ export function HomeSection({
             className="col-span-12 md:col-span-7 group flex flex-col gap-4 animate-in fade-in-0 slide-in-from-bottom-3 duration-700 delay-100"
           >
             <div className="relative aspect-video overflow-hidden border bg-muted rounded-md">
-              <Image
+              <ContentImage
                 src={homeFeaturedVideo.thumbnailUrl ?? thumbnailUrl(homeFeaturedVideo.id, "max")}
                 alt={homeFeaturedVideo.title}
                 fill
@@ -387,7 +387,7 @@ export function HomeSection({
                 className="group flex flex-col gap-3"
               >
                 <div className="relative aspect-video overflow-hidden border bg-muted rounded-md">
-                  <Image
+                  <ContentImage
                     src={v.thumbnailUrl ?? thumbnailUrl(v.id, "max")}
                     alt={`${v.artist ?? "Bremen"} - ${v.song ?? v.title}`}
                     fill
