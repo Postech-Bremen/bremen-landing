@@ -879,7 +879,6 @@ async function loadPageSectionRelationsFromEntityGraph({
   let query = supabase
     .from("entity_relations")
     .select(ENTITY_RELATION_SELECT, { count: "exact" })
-    .is("source_table", null)
     .eq("source_table", "page_sections")
 
   if (pageShadowId) query = query.eq("from_entity_id", pageShadowId)
@@ -1040,6 +1039,7 @@ async function loadEntityRelations({
   let query = supabase
     .from("entity_relations")
     .select(ENTITY_RELATION_SELECT, { count: "exact" })
+    .is("source_table", null)
 
   if (fromEntityId) {
     query = query.eq("from_entity_id", fromEntityId)
