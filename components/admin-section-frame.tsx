@@ -41,9 +41,7 @@ export function AdminSectionFrame({
 
       if (event.data.sectionKey === sectionKey) {
         requestAnimationFrame(() => {
-          document
-            .querySelector(`[data-ponix-section="${CSS.escape(sectionKey)}"]`)
-            ?.scrollIntoView({ block: "center", behavior: "smooth" })
+          scrollSectionIntoCanvasView(sectionKey)
         })
       }
     }
@@ -140,6 +138,25 @@ export function AdminSectionFrame({
       {children}
     </div>
   )
+}
+
+function scrollSectionIntoCanvasView(sectionKey: string) {
+  const section = document.querySelector<HTMLElement>(
+    `[data-ponix-section="${CSS.escape(sectionKey)}"]`,
+  )
+
+  if (!section) return
+
+  const rect = section.getBoundingClientRect()
+  const top =
+    window.scrollY +
+    rect.top -
+    Math.max(24, (window.innerHeight - rect.height) / 2)
+
+  window.scrollTo({
+    top: Math.max(0, top),
+    behavior: "smooth",
+  })
 }
 
 function isSectionMessage(
