@@ -337,6 +337,65 @@ export async function updateSectionEntityRelationAction(formData: FormData) {
   }
 }
 
+export async function updateSectionEntityRelationInlineAction(
+  formData: FormData,
+): Promise<ActionResult> {
+  try {
+    await requireCmsAdmin("/ponix/relations")
+    const supabase = await createClient()
+    const relationId = parseUuid(formData, "relation_id", "Relation")
+    const update: SectionEntityUpdate = {
+      sort_order: parseSortOrder(formData),
+    }
+
+    if (hasField(formData, "relation_type")) {
+      update.relation_type = parseText(
+        formData,
+        "relation_type",
+        "Relation type",
+      )
+    }
+
+    if (hasField(formData, "slot")) {
+      update.slot = stringField(formData, "slot") || "default"
+    }
+
+    if (hasField(formData, "props")) {
+      update.props = parseProps(formData)
+    }
+
+    const { data: relation, error: loadError } = await supabase
+      .from("section_entities")
+      .select("section_id, entity_id")
+      .eq("id", relationId)
+      .maybeSingle()
+
+    if (loadError || !relation) {
+      throw new Error(loadError?.message ?? "Relation not found.")
+    }
+
+    const { error } = await supabase
+      .from("section_entities")
+      .update(update)
+      .eq("id", relationId)
+
+    if (error) throw new Error(error.message)
+
+    revalidateRelationSurfaces([
+      `/ponix/sections/${relation.section_id}`,
+      `/ponix/entities/${relation.entity_id}`,
+    ])
+
+    return { ok: true }
+  } catch (error) {
+    return {
+      ok: false,
+      error:
+        error instanceof Error ? error.message : "Section relation save failed.",
+    }
+  }
+}
+
 export async function reorderSectionEntityRelationsAction({
   sectionId,
   relationIds,

@@ -11,12 +11,11 @@ import {
   PencilLine,
 } from "lucide-react"
 
-import { CmsSubmitButton } from "@/app/ponix/_components/cms-save-controls"
 import { updateCmsEntityInlineAction } from "@/app/ponix/entities/actions"
 import {
   deleteSectionEntityRelationAction,
   reorderSectionEntityRelationsAction,
-  updateSectionEntityRelationAction,
+  updateSectionEntityRelationInlineAction,
 } from "@/app/ponix/relations/actions"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -126,7 +125,8 @@ export function ComposerRelationList({
         data-composer-order-status={saveState.status}
       >
         <span>{orderStatusText(saveState, isPending)}</span>
-        {saveState.status === "saving" || isPending ? (
+        {saveState.status === "saving" ||
+        (isPending && saveState.status === "idle") ? (
           <Loader2 className="size-3.5 animate-spin" />
         ) : saveState.status === "saved" ? (
           <Check className="size-3.5 text-emerald-600" />
@@ -198,6 +198,23 @@ function SectionEntityRelationEditor({
 }) {
   const typeListId = `relation-types-${relation.id}`
   const slotListId = `relation-slots-${relation.id}`
+  const [saveState, setSaveState] = useState<SaveState>({ status: "idle" })
+  const [isPending, startTransition] = useTransition()
+
+  function saveRelation(formData: FormData) {
+    setSaveState({ status: "saving" })
+    startTransition(() => {
+      void updateSectionEntityRelationInlineAction(formData).then((result) => {
+        if (!result.ok) {
+          setSaveState({ status: "error", message: result.error })
+          return
+        }
+
+        setSaveState({ status: "saved" })
+        window.dispatchEvent(new CustomEvent("ponix:reload-canvas"))
+      })
+    })
+  }
 
   return (
     <div
@@ -344,9 +361,14 @@ function SectionEntityRelationEditor({
 
             <div className="flex-1 overflow-auto px-5 py-5">
               <form
-                action={updateSectionEntityRelationAction}
-                className="grid gap-4"
+                action={saveRelation}
+                className="grid gap-5"
                 data-composer-track-dirty
+                onChange={() => {
+                  if (saveState.status !== "idle") {
+                    setSaveState({ status: "idle" })
+                  }
+                }}
               >
                 <input type="hidden" name="redirect_to" value={redirectTo} />
                 <input type="hidden" name="relation_id" value={relation.id} />
@@ -403,12 +425,17 @@ function SectionEntityRelationEditor({
                   typeListId={typeListId}
                   slotListId={slotListId}
                 />
-                <CmsSubmitButton
-                  className="w-full rounded-full"
-                  pendingLabel="반영 중..."
-                >
-                  연결 정보 저장
-                </CmsSubmitButton>
+                <SaveFeedbackBar
+                  state={saveState}
+                  pending={isPending}
+                  idleText="섹션 안에서의 노출 방식과 순서를 조정합니다."
+                  savingText="연결 정보를 저장하는 중입니다."
+                  savedText="연결 정보가 저장되었습니다. 미리보기를 갱신했습니다."
+                  buttonLabel="연결 정보 저장"
+                  pendingButtonLabel="반영 중..."
+                  statusAttr="data-composer-relation-save-status"
+                  messageAttr="data-composer-relation-save-message"
+                />
               </form>
             </div>
           </div>
@@ -522,31 +549,21 @@ function EntityEditDrawer({ relation }: { relation: Relation }) {
               </div>
               <div
                 className={cn(
-                  "flex flex-col gap-3 border-t bg-background px-5 py-4 sm:flex-row sm:items-center sm:justify-between",
+                  "border-t bg-background px-5 py-4",
                   saveState.status === "error" && "bg-destructive/5",
                 )}
-                data-composer-inline-entity-status={saveState.status}
               >
-                <p
-                  className={cn(
-                    "text-xs text-muted-foreground",
-                    saveState.status === "error" && "text-destructive",
-                  )}
-                >
-                  {inlineStatusText(saveState, isPending)}
-                </p>
-                <Button
-                  type="submit"
-                  disabled={isPending || saveState.status === "saving"}
-                  className="rounded-full"
-                >
-                  {saveState.status === "saving" || isPending ? (
-                    <Loader2 className="size-4 animate-spin" />
-                  ) : (
-                    <Check className="size-4" />
-                  )}
-                  데이터 저장
-                </Button>
+                <SaveFeedbackBar
+                  state={saveState}
+                  pending={isPending}
+                  idleText="저장해도 composer 화면을 떠나지 않습니다."
+                  savingText="데이터를 저장하는 중입니다."
+                  savedText="데이터가 저장되었습니다. 미리보기를 갱신했습니다."
+                  buttonLabel="데이터 저장"
+                  pendingButtonLabel="저장 중..."
+                  statusAttr="data-composer-inline-entity-status"
+                  messageAttr="data-composer-inline-entity-message"
+                />
               </div>
             </form>
           ) : (
@@ -565,6 +582,73 @@ function EntityEditDrawer({ relation }: { relation: Relation }) {
         </div>
       </DrawerContent>
     </DrawerNested>
+  )
+}
+
+function SaveFeedbackBar({
+  state,
+  pending,
+  idleText,
+  savingText,
+  savedText,
+  buttonLabel,
+  pendingButtonLabel,
+  statusAttr,
+  messageAttr,
+}: {
+  state: SaveState
+  pending: boolean
+  idleText: string
+  savingText: string
+  savedText: string
+  buttonLabel: string
+  pendingButtonLabel: string
+  statusAttr: string
+  messageAttr: string
+}) {
+  const saving = state.status === "saving" || (pending && state.status === "idle")
+  const message =
+    state.status === "error"
+      ? state.message
+      : saving
+        ? savingText
+        : state.status === "saved"
+          ? savedText
+          : idleText
+
+  return (
+    <div
+      className={cn(
+        "flex flex-col gap-3 rounded-xl border bg-card/70 p-3 sm:flex-row sm:items-center sm:justify-between",
+        state.status === "saved" && "border-emerald-300 bg-emerald-50",
+        state.status === "error" && "border-destructive/40 bg-destructive/10",
+      )}
+      {...{ [statusAttr]: state.status }}
+    >
+      <p
+        className={cn(
+          "text-xs leading-relaxed text-muted-foreground",
+          state.status === "saved" && "text-emerald-800",
+          state.status === "error" && "text-destructive",
+        )}
+        aria-live="polite"
+        {...{ [messageAttr]: "" }}
+      >
+        {message}
+      </p>
+      <Button
+        type="submit"
+        disabled={saving}
+        className="rounded-full sm:min-w-36"
+      >
+        {saving ? (
+          <Loader2 className="size-4 animate-spin" />
+        ) : state.status === "saved" ? (
+          <Check className="size-4" />
+        ) : null}
+        {saving ? pendingButtonLabel : buttonLabel}
+      </Button>
+    </div>
   )
 }
 
@@ -778,10 +862,6 @@ function inlineFieldDefaultText(
 }
 
 function orderStatusText(saveState: SaveState, isPending: boolean) {
-  if (saveState.status === "saving" || isPending) {
-    return "순서를 저장하는 중입니다."
-  }
-
   if (saveState.status === "saved") {
     return "순서가 저장되었습니다."
   }
@@ -790,21 +870,9 @@ function orderStatusText(saveState: SaveState, isPending: boolean) {
     return saveState.message
   }
 
-  return "핸들을 끌어서 노출 순서를 바꿉니다."
-}
-
-function inlineStatusText(saveState: SaveState, isPending: boolean) {
   if (saveState.status === "saving" || isPending) {
-    return "데이터를 저장하는 중입니다."
+    return "순서를 저장하는 중입니다."
   }
 
-  if (saveState.status === "saved") {
-    return "데이터가 저장되었습니다. 화면 반영을 위해 미리보기를 갱신했습니다."
-  }
-
-  if (saveState.status === "error") {
-    return saveState.message
-  }
-
-  return "저장해도 composer 화면을 떠나지 않습니다."
+  return "핸들을 끌어서 노출 순서를 바꿉니다."
 }
