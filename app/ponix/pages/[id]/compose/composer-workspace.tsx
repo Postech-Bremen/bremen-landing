@@ -39,7 +39,9 @@ export function PonixComposerWorkspace({
 }) {
   const iframeRef = useRef<HTMLIFrameElement>(null)
   const panelsRef = useRef<HTMLDivElement>(null)
+  const dirtyRef = useRef(false)
   const [selectedKey, setSelectedKey] = useState(initialSelectedKey)
+  const [selectedEntityId, setSelectedEntityId] = useState<string | null>(null)
   const selectedSection = useMemo(
     () => sections.find((section) => section.key === selectedKey) ?? null,
     [sections, selectedKey],
@@ -69,6 +71,93 @@ export function PonixComposerWorkspace({
   }, [selectedKey])
 
   useEffect(() => {
+    const delays = [0, 150, 500, 1000]
+    const timers = delays.map((delay) =>
+      window.setTimeout(() => {
+        highlightEntityInFrame(iframeRef.current, selectedEntityId)
+        iframeRef.current?.contentWindow?.postMessage(
+          { type: "ponix:set-selected-entity", entityId: selectedEntityId },
+          window.location.origin,
+        )
+      }, delay),
+    )
+
+    return () => {
+      timers.forEach((timer) => window.clearTimeout(timer))
+    }
+  }, [selectedEntityId])
+
+  useEffect(() => {
+    const root = panelsRef.current
+    if (!root) return
+
+    root
+      .querySelectorAll<HTMLElement>("[data-composer-entity-id]")
+      .forEach((row) => {
+        const selected = row.dataset.composerEntityId === selectedEntityId
+        row.dataset.composerEntityState = selected ? "selected" : "idle"
+      })
+  }, [selectedEntityId])
+
+  useEffect(() => {
+    const root = panelsRef.current
+    if (!root) return
+    const panelRoot = root
+
+    function markDirty(event: Event) {
+      const target = event.target
+      if (!(target instanceof HTMLElement)) return
+      if (!target.closest("[data-composer-track-dirty]")) return
+
+      dirtyRef.current = true
+      panelRoot.dataset.composerDirty = "true"
+    }
+
+    function clearDirty(event: Event) {
+      const target = event.target
+      if (!(target instanceof HTMLElement)) return
+      if (!target.closest("[data-composer-track-dirty]")) return
+
+      dirtyRef.current = false
+      delete panelRoot.dataset.composerDirty
+    }
+
+    function selectEntity(event: Event) {
+      const target = event.target
+      if (!(target instanceof HTMLElement)) return
+
+      const row = target.closest<HTMLElement>("[data-composer-entity-id]")
+      const entityId = row?.dataset.composerEntityId
+      if (!entityId) return
+
+      setSelectedEntityId(entityId)
+    }
+
+    function handleBeforeUnload(event: BeforeUnloadEvent) {
+      if (!dirtyRef.current) return
+
+      event.preventDefault()
+      event.returnValue = ""
+    }
+
+    root.addEventListener("input", markDirty)
+    root.addEventListener("change", markDirty)
+    root.addEventListener("submit", clearDirty)
+    root.addEventListener("click", selectEntity)
+    root.addEventListener("focusin", selectEntity)
+    window.addEventListener("beforeunload", handleBeforeUnload)
+
+    return () => {
+      root.removeEventListener("input", markDirty)
+      root.removeEventListener("change", markDirty)
+      root.removeEventListener("submit", clearDirty)
+      root.removeEventListener("click", selectEntity)
+      root.removeEventListener("focusin", selectEntity)
+      window.removeEventListener("beforeunload", handleBeforeUnload)
+    }
+  }, [])
+
+  useEffect(() => {
     function handleMessage(event: MessageEvent) {
       if (event.origin !== window.location.origin) return
       if (!isSectionMessage(event.data, "ponix:select-section")) return
@@ -82,9 +171,41 @@ export function PonixComposerWorkspace({
 
   function selectSection(sectionKey: string) {
     if (!sections.some((section) => section.key === sectionKey)) return
+    if (
+      dirtyRef.current &&
+      !window.confirm("저장하지 않은 변경사항이 있습니다. 섹션을 이동할까요?")
+    ) {
+      return
+    }
 
+    dirtyRef.current = false
+    delete panelsRef.current?.dataset.composerDirty
+    highlightEntityInFrame(iframeRef.current, null)
+    iframeRef.current?.contentWindow?.postMessage(
+      { type: "ponix:set-selected-entity", entityId: null },
+      window.location.origin,
+    )
     setSelectedKey(sectionKey)
+    setSelectedEntityId(null)
     window.history.replaceState(null, "", composeHref(pageId, sectionKey))
+  }
+
+  function syncCanvasFrame() {
+    const target = iframeRef.current?.contentWindow
+    if (!target) return
+
+    if (selectedKey) {
+      target.postMessage(
+        { type: "ponix:set-selected-section", sectionKey: selectedKey },
+        window.location.origin,
+      )
+    }
+
+    highlightEntityInFrame(iframeRef.current, selectedEntityId)
+    target.postMessage(
+      { type: "ponix:set-selected-entity", entityId: selectedEntityId },
+      window.location.origin,
+    )
   }
 
   return (
@@ -129,12 +250,15 @@ export function PonixComposerWorkspace({
               ref={iframeRef}
               title={`${title} live canvas`}
               src={canvasHref(pageId, initialSelectedKey)}
+              onLoad={syncCanvasFrame}
               className="h-[calc(100svh-18rem)] min-h-[42rem] w-full border-0 bg-background"
             />
           </CardContent>
         </Card>
 
-        <div ref={panelsRef}>{children}</div>
+        <div ref={panelsRef} data-composer-panels>
+          {children}
+        </div>
       </div>
     </>
   )
@@ -242,6 +366,41 @@ function canvasHref(pageId: string, sectionKey: string | null) {
 
 function composeHref(pageId: string, sectionKey: string) {
   return `/ponix/pages/${pageId}/compose?section=${encodeURIComponent(sectionKey)}`
+}
+
+function highlightEntityInFrame(
+  frame: HTMLIFrameElement | null,
+  entityId: string | null,
+) {
+  const frameWindow = frame?.contentWindow
+  const frameDocument = frame?.contentDocument
+  if (!frameWindow || !frameDocument) return
+
+  const nodes =
+    frameDocument.querySelectorAll<HTMLElement>("[data-ponix-entity]")
+  let firstMatch: HTMLElement | null = null
+
+  nodes.forEach((node) => {
+    const selected = Boolean(entityId) && node.dataset.ponixEntity === entityId
+    if (selected && !firstMatch) {
+      firstMatch = node
+    }
+    node.dataset.ponixEntityState = selected ? "selected" : "idle"
+  })
+
+  const target = firstMatch as HTMLElement | null
+  if (!target) return
+
+  const rect = target.getBoundingClientRect()
+  const top =
+    frameWindow.scrollY +
+    rect.top -
+    Math.max(24, (frameWindow.innerHeight - rect.height) / 2)
+
+  frameWindow.scrollTo({
+    top: Math.max(0, top),
+    behavior: "smooth",
+  })
 }
 
 function isSectionMessage(
