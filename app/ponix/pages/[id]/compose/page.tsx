@@ -16,6 +16,12 @@ import {
   updateSectionEntityRelationAction,
 } from "@/app/ponix/relations/actions"
 import { updateCmsSectionAction } from "@/app/ponix/sections/actions"
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "@/components/ui/accordion"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -387,23 +393,37 @@ function SectionEntityWorkspace({
 
         <Separator />
 
-        {relations.sectionEntities.length ? (
-          <ul className="space-y-2">
-            {relations.sectionEntities.map((relation) => (
-              <SectionEntityRelationEditor
-                key={relation.id}
-                relation={relation}
-                redirectTo={redirectTo}
-                typeOptions={relationTypeOptions}
-                slotOptions={slotOptions}
-              />
-            ))}
-          </ul>
-        ) : (
-          <p className="rounded-md border bg-muted/30 p-4 text-sm text-muted-foreground">
-            아직 연결된 데이터가 없습니다.
-          </p>
-        )}
+        <div className="space-y-3">
+          <div className="flex items-end justify-between gap-3">
+            <div>
+              <h2 className="font-medium">Linked entities</h2>
+              <p className="text-xs text-muted-foreground">
+                목록에서 항목을 고른 뒤 연결 정보만 펼쳐 수정합니다.
+              </p>
+            </div>
+            <Badge variant="outline" className="rounded-full">
+              {relations.sectionEntities.length}
+            </Badge>
+          </div>
+
+          {relations.sectionEntities.length ? (
+            <Accordion type="single" collapsible className="space-y-2">
+              {relations.sectionEntities.map((relation) => (
+                <SectionEntityRelationEditor
+                  key={relation.id}
+                  relation={relation}
+                  redirectTo={redirectTo}
+                  typeOptions={relationTypeOptions}
+                  slotOptions={slotOptions}
+                />
+              ))}
+            </Accordion>
+          ) : (
+            <p className="rounded-md border bg-muted/30 p-4 text-sm text-muted-foreground">
+              아직 연결된 데이터가 없습니다.
+            </p>
+          )}
+        </div>
 
         <div>
           <div className="mb-3 flex items-center gap-2">
@@ -434,24 +454,56 @@ function SectionEntityRelationEditor({
   const slotListId = `relation-slots-${relation.id}`
 
   return (
-    <li className="rounded-xl border bg-background/70 p-3 shadow-xs">
-      <div className="mb-3 flex items-start justify-between gap-3">
-        <div className="min-w-0">
-          <Link
-            href={`/ponix/entities/${relation.entityId}`}
-            className="line-clamp-1 text-sm font-medium underline-offset-4 hover:underline"
-          >
-            {relation.entity?.title ?? relation.entityId}
-          </Link>
-          <p className="font-mono text-xs text-muted-foreground">
-            {relation.entity?.schemaKey ?? "schema"}
-          </p>
+    <AccordionItem
+      value={relation.id}
+      className="rounded-xl border bg-background/70 px-3 shadow-xs"
+      data-composer-relation-item={relation.id}
+    >
+      <AccordionTrigger
+        className="gap-3 py-3 hover:no-underline"
+        data-composer-relation-trigger={relation.id}
+      >
+        <div className="grid min-w-0 flex-1 gap-2 text-left">
+          <div className="flex min-w-0 items-start justify-between gap-3">
+            <div className="min-w-0">
+              <p className="line-clamp-1 text-sm font-medium">
+                {relation.entity?.title ?? relation.entityId}
+              </p>
+              <p className="font-mono text-xs text-muted-foreground">
+                {relation.entity?.schemaKey ?? "schema"}
+              </p>
+            </div>
+            <Badge variant="outline" className="rounded-full">
+              {relation.entity?.published ? "published" : "draft"}
+            </Badge>
+          </div>
+          <div className="flex flex-wrap gap-1.5">
+            <Badge
+              variant="secondary"
+              className="rounded-full font-mono text-[10px]"
+            >
+              {relation.slot}
+            </Badge>
+            <Badge
+              variant="outline"
+              className="rounded-full font-mono text-[10px]"
+            >
+              {relation.relationType}
+            </Badge>
+            <Badge
+              variant="outline"
+              className="rounded-full font-mono text-[10px]"
+            >
+              #{relation.sortOrder}
+            </Badge>
+          </div>
         </div>
-        <Badge variant="outline" className="rounded-full">
-          {relation.entity?.published ? "published" : "draft"}
-        </Badge>
-      </div>
+      </AccordionTrigger>
 
+      <AccordionContent
+        className="space-y-3 pb-3"
+        data-composer-relation-editor={relation.id}
+      >
       <form
         action={updateSectionEntityRelationAction}
         className="grid gap-2 sm:grid-cols-[minmax(0,1fr)_minmax(0,0.9fr)_5.5rem]"
@@ -513,7 +565,7 @@ function SectionEntityRelationEditor({
         />
       </form>
 
-      <form action={deleteSectionEntityRelationAction} className="mt-2">
+      <form action={deleteSectionEntityRelationAction}>
         <input type="hidden" name="redirect_to" value={redirectTo} />
         <input type="hidden" name="relation_id" value={relation.id} />
         <Button
@@ -525,7 +577,8 @@ function SectionEntityRelationEditor({
           이 섹션에서 제거
         </Button>
       </form>
-    </li>
+      </AccordionContent>
+    </AccordionItem>
   )
 }
 
