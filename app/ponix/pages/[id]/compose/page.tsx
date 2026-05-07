@@ -5,10 +5,8 @@ import { Database, Layers3, PencilLine } from "lucide-react"
 
 import { CmsEntityPicker } from "@/app/ponix/_components/cms-entity-picker"
 import { renderFieldInput } from "@/app/ponix/_components/cms-section-form"
-import {
-  CmsSaveNotice,
-  CmsSubmitButton,
-} from "@/app/ponix/_components/cms-save-controls"
+import { CmsSubmitButton } from "@/app/ponix/_components/cms-save-controls"
+import { ComposerSaveFeedback } from "@/app/ponix/pages/[id]/compose/composer-save-feedback"
 import { PonixComposerWorkspace } from "@/app/ponix/pages/[id]/compose/composer-workspace"
 import {
   addSectionEntityRelationAction,
@@ -176,18 +174,11 @@ function SectionInspector({
 }) {
   return (
     <aside className="space-y-4 xl:sticky xl:top-40 xl:max-h-[calc(100svh-10rem)] xl:overflow-auto xl:pr-1">
-      <CmsSaveNotice
-        saved={saved}
-        error={relationError}
-        savedDescription="선택한 섹션 정보가 저장되었습니다."
+      <ComposerSaveFeedback
+        sectionSaved={saved}
+        relationMessage={relationMessage}
+        relationError={relationError}
       />
-      {relationMessage && (
-        <CmsSaveNotice
-          saved
-          savedTitle="연결을 반영했습니다"
-          savedDescription={relationMessage}
-        />
-      )}
       <Card className="overflow-hidden rounded-2xl bg-card/95 shadow-sm">
         <CardHeader className="border-b bg-muted/20">
           <p className="caps text-muted-foreground">선택한 섹션</p>

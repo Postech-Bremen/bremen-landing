@@ -2,7 +2,7 @@
 
 import Link from "next/link"
 import { usePathname } from "next/navigation"
-import type { CSSProperties, ReactNode } from "react"
+import { useEffect, type CSSProperties, type ReactNode } from "react"
 import {
   Activity,
   ArrowUpRight,
@@ -82,6 +82,8 @@ const navGroups = [
   },
 ]
 
+const composerTransientParams = ["saved", "relation_message", "relation_error"]
+
 function isActivePath(pathname: string, href: string) {
   if (href === "/ponix") return pathname === href
   return pathname === href || pathname.startsWith(`${href}/`)
@@ -89,6 +91,28 @@ function isActivePath(pathname: string, href: string) {
 
 export function PonixShell({ memberName, children }: PonixShellProps) {
   const pathname = usePathname()
+
+  useEffect(() => {
+    if (!pathname.includes("/compose")) return
+
+    const url = new URL(window.location.href)
+    let changed = false
+
+    for (const param of composerTransientParams) {
+      if (url.searchParams.has(param)) {
+        url.searchParams.delete(param)
+        changed = true
+      }
+    }
+
+    if (changed) {
+      window.history.replaceState(
+        null,
+        "",
+        `${url.pathname}${url.search}${url.hash}`,
+      )
+    }
+  }, [pathname])
 
   return (
     <SidebarProvider
