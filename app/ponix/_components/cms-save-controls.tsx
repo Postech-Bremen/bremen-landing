@@ -10,18 +10,20 @@ import { cn } from "@/lib/utils"
 export function CmsSaveNotice({
   saved,
   error,
+  errorTitle = "저장하지 못했습니다",
   savedTitle = "저장되었습니다",
   savedDescription = "변경 사항이 반영되었습니다.",
 }: {
   saved?: boolean
   error?: string
+  errorTitle?: string
   savedTitle?: string
   savedDescription?: string
 }) {
   if (error) {
     return (
       <Alert variant="destructive" className="rounded-xl shadow-sm">
-        <AlertTitle>저장하지 못했습니다</AlertTitle>
+        <AlertTitle>{errorTitle}</AlertTitle>
         <AlertDescription>{error}</AlertDescription>
       </Alert>
     )
