@@ -585,7 +585,10 @@ function BridgeHealthNotice({ health }: { health: CmsBridgeHealth }) {
     return (
       <div className="mt-3 flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
         <Badge variant="outline" className="rounded-full">
-          Entity graph synced
+          읽기: entity_relations
+        </Badge>
+        <Badge variant="outline" className="rounded-full">
+          저장: source row
         </Badge>
         <span>
           {health.mirrored}
@@ -640,6 +643,7 @@ function PageSectionRelationsTable({
             </TableCell>
             <TableCell className="font-mono text-xs">
               {relation.sortOrder}
+              <BridgeSourceHint relation={relation} />
             </TableCell>
             <TableCell>
               <SectionLink
@@ -720,6 +724,7 @@ function SectionEntityRelationsTable({
             <TableCell className="font-mono text-xs">{relation.slot}</TableCell>
             <TableCell className="font-mono text-xs">
               {relation.sortOrder}
+              <BridgeSourceHint relation={relation} />
             </TableCell>
             <TableCell>
               <EntityLink entity={relation.entity} fallbackId={relation.entityId} />
@@ -825,7 +830,7 @@ function PageSectionRelationActions({
         className="flex items-center gap-2"
       >
         <input type="hidden" name="redirect_to" value={redirectTo} />
-        <input type="hidden" name="relation_id" value={relation.id} />
+        <input type="hidden" name="relation_id" value={relation.sourceId} />
         <Input
           aria-label="Sort order"
           name="sort_order"
@@ -839,7 +844,7 @@ function PageSectionRelationActions({
       </form>
       <form action={deletePageSectionRelationAction}>
         <input type="hidden" name="redirect_to" value={redirectTo} />
-        <input type="hidden" name="relation_id" value={relation.id} />
+        <input type="hidden" name="relation_id" value={relation.sourceId} />
         <Button
           type="submit"
           size="sm"
@@ -867,7 +872,7 @@ function SectionEntityRelationActions({
         className="flex items-center gap-2"
       >
         <input type="hidden" name="redirect_to" value={redirectTo} />
-        <input type="hidden" name="relation_id" value={relation.id} />
+        <input type="hidden" name="relation_id" value={relation.sourceId} />
         <Input
           aria-label="Sort order"
           name="sort_order"
@@ -881,7 +886,7 @@ function SectionEntityRelationActions({
       </form>
       <form action={deleteSectionEntityRelationAction}>
         <input type="hidden" name="redirect_to" value={redirectTo} />
-        <input type="hidden" name="relation_id" value={relation.id} />
+        <input type="hidden" name="relation_id" value={relation.sourceId} />
         <Button
           type="submit"
           size="sm"
@@ -891,6 +896,19 @@ function SectionEntityRelationActions({
           Remove from section
         </Button>
       </form>
+    </div>
+  )
+}
+
+function BridgeSourceHint({
+  relation,
+}: {
+  relation: CmsPageSectionRelation | CmsSectionEntityRelation
+}) {
+  return (
+    <div className="mt-1 space-y-0.5 text-[10px] leading-tight text-muted-foreground">
+      <div>source: {shortId(relation.sourceId)}</div>
+      <div>graph: {shortId(relation.graphRelationId)}</div>
     </div>
   )
 }
@@ -932,6 +950,10 @@ function EntityRelationActions({
       </form>
     </div>
   )
+}
+
+function shortId(id: string) {
+  return id.slice(0, 8)
 }
 
 function PageLink({

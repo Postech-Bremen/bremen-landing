@@ -116,6 +116,9 @@ export type CmsLinkedEntity = SchemaSummary & {
 
 export type CmsPageSectionRelation = {
   id: string
+  graphRelationId: string
+  sourceTable: "page_sections"
+  sourceId: string
   pageId: string
   sectionId: string
   sortOrder: number
@@ -127,6 +130,9 @@ export type CmsPageSectionRelation = {
 
 export type CmsSectionEntityRelation = {
   id: string
+  graphRelationId: string
+  sourceTable: "section_entities"
+  sourceId: string
   sectionId: string
   entityId: string
   relationType: string
@@ -916,6 +922,9 @@ async function loadPageSectionRelationsFromEntityGraph({
 
       return {
         id: relation.source_id,
+        graphRelationId: relation.id,
+        sourceTable: "page_sections",
+        sourceId: relation.source_id,
         pageId: mappedPageId,
         sectionId: mappedSectionId,
         sortOrder: relation.sort_order,
@@ -1003,6 +1012,9 @@ async function loadSectionEntityRelationsFromEntityGraph({
 
       return {
         id: relation.source_id,
+        graphRelationId: relation.id,
+        sourceTable: "section_entities",
+        sourceId: relation.source_id,
         sectionId: mappedSectionId,
         entityId: relation.to_entity_id,
         relationType: relation.relation_type,

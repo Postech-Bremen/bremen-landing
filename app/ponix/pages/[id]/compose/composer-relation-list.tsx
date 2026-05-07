@@ -97,7 +97,7 @@ export function ComposerRelationList({
     startTransition(() => {
       void reorderSectionEntityRelationsAction({
         sectionId,
-        relationIds: next.map((relation) => relation.id),
+        relationIds: next.map((relation) => relation.sourceId),
       }).then((result) => {
         if (!result.ok) {
           setOrderedRelations(previous)
@@ -225,6 +225,8 @@ function SectionEntityRelationEditor({
   return (
     <div
       data-composer-relation-item={relation.id}
+      data-composer-relation-source-id={relation.sourceId}
+      data-composer-relation-graph-id={relation.graphRelationId}
       data-composer-entity-id={relation.entityId}
       onDragOver={onDragOver}
       onDrop={onDrop}
@@ -377,7 +379,11 @@ function SectionEntityRelationEditor({
                 }}
               >
                 <input type="hidden" name="redirect_to" value={redirectTo} />
-                <input type="hidden" name="relation_id" value={relation.id} />
+                <input
+                  type="hidden"
+                  name="relation_id"
+                  value={relation.sourceId}
+                />
                 <div className="grid gap-3 sm:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_7rem]">
                   <div className="space-y-1.5">
                     <Label
@@ -449,7 +455,11 @@ function SectionEntityRelationEditor({
           <DrawerFooter className="border-t bg-background px-5 py-4">
             <form action={deleteSectionEntityRelationAction}>
               <input type="hidden" name="redirect_to" value={redirectTo} />
-              <input type="hidden" name="relation_id" value={relation.id} />
+              <input
+                type="hidden"
+                name="relation_id"
+                value={relation.sourceId}
+              />
               <Button
                 type="submit"
                 size="sm"

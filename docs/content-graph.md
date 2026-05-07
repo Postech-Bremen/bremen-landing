@@ -46,6 +46,17 @@ is a compatibility read model, not the only source of truth. Do not remove
 `pages`, `sections`, `page_sections`, or `section_entities` until all renderers,
 forms, audits, migrations, and generated types have moved to the entity graph.
 
+Current PONIX contract:
+
+- CMS relation lists read page/section placement through `entity_relations`
+  bridge rows.
+- Those bridge rows expose both the `entity_relations.id` and the legacy
+  `source_id`.
+- Routine CMS writes still target `page_sections` and `section_entities`; bridge
+  triggers mirror those writes back into `entity_relations`.
+- Code that mutates page or section composition must pass the legacy
+  `source_id`, not the graph row id.
+
 ## Tables
 
 | Table | Purpose |

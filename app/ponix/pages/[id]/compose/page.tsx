@@ -504,7 +504,10 @@ function ComposerBridgeHealth({
     return (
       <div className="mt-3 flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
         <Badge variant="outline" className="rounded-full">
-          Entity graph synced
+          읽기: entity_relations
+        </Badge>
+        <Badge variant="outline" className="rounded-full">
+          저장: section_entities
         </Badge>
         <span>
           {health.mirrored}
