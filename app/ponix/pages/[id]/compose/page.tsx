@@ -240,10 +240,6 @@ function SectionInspector({
         </CardContent>
       </Card>
 
-      {sectionDetail && (
-        <SectionQuickEditCard detail={sectionDetail} redirectTo={redirectTo} />
-      )}
-
       {section && relations && relationOptions && (
         <SectionEntityWorkspace
           section={section}
@@ -252,6 +248,12 @@ function SectionInspector({
           redirectTo={redirectTo}
         />
       )}
+
+      {sectionDetail && (
+        <SectionQuickEditCard detail={sectionDetail} redirectTo={redirectTo} />
+      )}
+
+      {section && <SectionAdvancedSettingsCard section={section} />}
     </aside>
   )
 }
@@ -267,39 +269,55 @@ function SectionQuickEditCard({
 
   return (
     <Card className="overflow-hidden rounded-2xl bg-card/95 shadow-sm">
-      <CardHeader className="border-b bg-muted/20">
-        <CardTitle className="font-serif text-2xl italic">Copy & buttons</CardTitle>
-        <CardDescription>
-          방문자가 보는 제목, 설명, 버튼 문구를 수정합니다.
-        </CardDescription>
-      </CardHeader>
-      <CardContent className="p-5">
-        <form action={updateCmsSectionAction} className="space-y-4">
-          <input type="hidden" name="section_id" value={detail.row.id} />
-          <input type="hidden" name="redirect_to" value={redirectTo} />
-          <div className="max-h-[32rem] space-y-4 overflow-auto pr-1">
-            {fields.map((field) => {
-              const id = `composer-section-${field.source}-${field.key}`
-              const name = cmsFieldInputName(field)
-              const value = getSectionFieldValue(detail.row, field)
-              return (
-                <div key={`${field.source}:${field.key}`} className="space-y-2">
-                  <Label htmlFor={id}>{field.label}</Label>
-                  {renderFieldInput({ field, id, name, value })}
-                  {field.description && (
-                    <p className="text-xs leading-relaxed text-muted-foreground">
-                      {field.description}
-                    </p>
-                  )}
-                </div>
-              )
-            })}
-          </div>
-          <CmsSubmitButton className="w-full rounded-full">
-            섹션 저장
-          </CmsSubmitButton>
-        </form>
-      </CardContent>
+      <Accordion type="single" collapsible>
+        <AccordionItem value="copy" className="border-0">
+          <CardHeader className="border-b bg-muted/20 p-0">
+            <AccordionTrigger
+              className="px-5 py-4 hover:no-underline"
+              data-composer-copy-trigger
+            >
+              <div className="min-w-0 text-left">
+                <p className="font-serif text-2xl italic leading-none">
+                  섹션 문구
+                </p>
+                <p className="mt-2 text-sm text-muted-foreground">
+                  제목, 설명, 버튼처럼 화면에 바로 보이는 말을 정리합니다.
+                </p>
+              </div>
+            </AccordionTrigger>
+          </CardHeader>
+          <AccordionContent className="p-5" data-composer-copy-editor>
+            <form action={updateCmsSectionAction} className="space-y-4">
+              <input type="hidden" name="section_id" value={detail.row.id} />
+              <input type="hidden" name="redirect_to" value={redirectTo} />
+              <div className="max-h-[32rem] space-y-4 overflow-auto pr-1">
+                {fields.map((field) => {
+                  const id = `composer-section-${field.source}-${field.key}`
+                  const name = cmsFieldInputName(field)
+                  const value = getSectionFieldValue(detail.row, field)
+                  return (
+                    <div
+                      key={`${field.source}:${field.key}`}
+                      className="space-y-2"
+                    >
+                      <Label htmlFor={id}>{field.label}</Label>
+                      {renderFieldInput({ field, id, name, value })}
+                      {field.description && (
+                        <p className="text-xs leading-relaxed text-muted-foreground">
+                          {field.description}
+                        </p>
+                      )}
+                    </div>
+                  )
+                })}
+              </div>
+              <CmsSubmitButton className="w-full rounded-full">
+                섹션 저장
+              </CmsSubmitButton>
+            </form>
+          </AccordionContent>
+        </AccordionItem>
+      </Accordion>
     </Card>
   )
 }
@@ -329,10 +347,10 @@ function SectionEntityWorkspace({
       <CardHeader className="border-b bg-muted/20">
         <div className="flex items-center gap-2">
           <Database className="size-4 text-muted-foreground" />
-          <CardTitle className="font-serif text-2xl italic">Shown data</CardTitle>
+          <CardTitle className="font-serif text-2xl italic">연결 데이터</CardTitle>
         </div>
         <CardDescription>
-          이 섹션에 노출할 영상, 사진, 공연, 기록을 연결합니다.
+          이 섹션에 보여줄 영상, 사진, 공연, 기록을 고릅니다.
         </CardDescription>
         {relations.sectionEntityList.bridgeHealth && (
           <ComposerBridgeHealth
@@ -396,7 +414,7 @@ function SectionEntityWorkspace({
         <div className="space-y-3">
           <div className="flex items-end justify-between gap-3">
             <div>
-              <h2 className="font-medium">Linked entities</h2>
+              <h2 className="font-medium">현재 노출 중인 데이터</h2>
               <p className="text-xs text-muted-foreground">
                 목록에서 항목을 고른 뒤 연결 정보만 펼쳐 수정합니다.
               </p>
@@ -425,16 +443,41 @@ function SectionEntityWorkspace({
           )}
         </div>
 
-        <div>
-          <div className="mb-3 flex items-center gap-2">
-            <Layers3 className="size-4 text-muted-foreground" />
-            <h2 className="font-medium">Props</h2>
-          </div>
-          <pre className="max-h-56 overflow-auto rounded-md border bg-muted/40 p-3 text-xs leading-relaxed">
-            {JSON.stringify(section.props, null, 2)}
-          </pre>
-        </div>
       </CardContent>
+    </Card>
+  )
+}
+
+function SectionAdvancedSettingsCard({ section }: { section: GraphSection }) {
+  return (
+    <Card className="overflow-hidden rounded-2xl bg-card/95 shadow-sm">
+      <Accordion type="single" collapsible>
+        <AccordionItem value="advanced" className="border-0">
+          <CardHeader className="border-b bg-muted/20 p-0">
+            <AccordionTrigger
+              className="px-5 py-4 hover:no-underline"
+              data-composer-advanced-trigger
+            >
+              <div className="flex min-w-0 items-center gap-2 text-left">
+                <Layers3 className="size-4 text-muted-foreground" />
+                <div>
+                  <p className="font-serif text-2xl italic leading-none">
+                    고급 설정
+                  </p>
+                  <p className="mt-2 text-sm text-muted-foreground">
+                    렌더러가 읽는 원본 설정입니다. 필요한 경우에만 확인합니다.
+                  </p>
+                </div>
+              </div>
+            </AccordionTrigger>
+          </CardHeader>
+          <AccordionContent className="p-5" data-composer-advanced-panel>
+            <pre className="max-h-56 overflow-auto rounded-md border bg-muted/40 p-3 text-xs leading-relaxed">
+              {JSON.stringify(section.props, null, 2)}
+            </pre>
+          </AccordionContent>
+        </AccordionItem>
+      </Accordion>
     </Card>
   )
 }
