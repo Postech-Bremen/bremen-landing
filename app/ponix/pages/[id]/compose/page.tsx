@@ -1,7 +1,7 @@
 import type { Metadata } from "next"
 import Link from "next/link"
 import { notFound } from "next/navigation"
-import { ArrowUpRight, Database, Layers3, PencilLine } from "lucide-react"
+import { Database, Layers3, PencilLine } from "lucide-react"
 
 import { CmsEntityPicker } from "@/app/ponix/_components/cms-entity-picker"
 import { renderFieldInput } from "@/app/ponix/_components/cms-section-form"
@@ -9,6 +9,7 @@ import {
   CmsSaveNotice,
   CmsSubmitButton,
 } from "@/app/ponix/_components/cms-save-controls"
+import { PonixComposerWorkspace } from "@/app/ponix/pages/[id]/compose/composer-workspace"
 import {
   addSectionEntityRelationAction,
   deleteSectionEntityRelationAction,
@@ -25,7 +26,6 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card"
-import { ScrollArea } from "@/components/ui/scroll-area"
 import { Separator } from "@/components/ui/separator"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -79,164 +79,69 @@ export default async function PonixPageComposerPage({
     preview.graph.sections[0] ??
     null
   const selectedKey = selectedSection?.key ?? null
-  const [sectionDetail, sectionRelations, relationOptions] = selectedSection
-    ? await Promise.all([
-        loadCmsSectionDetail(selectedSection.id),
-        loadCmsSectionRelations(selectedSection.id),
-        loadCmsRelationEditorOptions(),
-      ])
-    : [null, null, null]
-  const composeUrl = selectedKey ? composeHref(id, selectedKey) : `/ponix/pages/${id}/compose`
+  const [relationOptions, sectionContexts] = await Promise.all([
+    loadCmsRelationEditorOptions(),
+    Promise.all(
+      preview.graph.sections.map(async (section) => {
+        const [sectionDetail, sectionRelations] = await Promise.all([
+          loadCmsSectionDetail(section.id),
+          loadCmsSectionRelations(section.id),
+        ])
+
+        return {
+          section,
+          sectionDetail:
+            sectionDetail?.kind === "section" ? sectionDetail : null,
+          sectionRelations,
+        }
+      }),
+    ),
+  ])
+  const sectionSaved = searchValue(search?.saved) === "section"
+  const relationMessage = searchValue(search?.relation_message) ?? undefined
+  const relationError = searchValue(search?.relation_error) ?? undefined
 
   return (
     <section className="mx-auto flex w-full max-w-[104rem] flex-col gap-5">
-      <ComposerHeader
+      <PonixComposerWorkspace
         pageId={id}
         title={preview.page.title}
         slug={preview.page.slug}
         kind={preview.kind}
-        sectionCount={preview.graph.sections.length}
-      />
-
-      <div className="grid min-h-[calc(100svh-13rem)] gap-5 xl:grid-cols-[minmax(0,1fr)_25rem]">
-        <Card className="overflow-hidden rounded-2xl bg-card/95 shadow-sm">
-          <CardHeader className="border-b bg-muted/20 px-5 py-5 md:px-6">
-            <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
-              <div>
-                <p className="caps text-muted-foreground">Live canvas</p>
-                <CardTitle className="font-serif text-3xl italic md:text-4xl">
-                  Edit in context
-                </CardTitle>
-                <CardDescription>
-                  실제 사이트 화면을 보며 섹션을 고르고, 오른쪽에서 바로 정리합니다.
-                </CardDescription>
-              </div>
-              <Button asChild variant="outline" className="w-fit rounded-full">
-                <Link href={`/ponix/preview/pages/${id}`}>
-                  Preview route
-                  <ArrowUpRight className="size-4" />
-                </Link>
-              </Button>
-            </div>
-            <SectionRail
+        sections={preview.graph.sections.map((section) => ({
+          id: section.id,
+          key: section.key,
+          title: section.title,
+        }))}
+        initialSelectedKey={selectedKey}
+      >
+        {sectionContexts.map(({ section, sectionDetail, sectionRelations }) => (
+          <div
+            key={section.id}
+            data-composer-panel={section.key}
+            data-state={section.key === selectedKey ? "selected" : "idle"}
+            hidden={section.key !== selectedKey}
+          >
+            <SectionInspector
               pageId={id}
-              sections={preview.graph.sections}
-              selectedKey={selectedKey}
+              pageSlug={preview.page.slug}
+              section={section}
+              sectionDetail={sectionDetail}
+              relations={sectionRelations}
+              relationOptions={relationOptions}
+              redirectTo={composeHref(id, section.key)}
+              saved={section.key === selectedKey && sectionSaved}
+              relationMessage={
+                section.key === selectedKey ? relationMessage : undefined
+              }
+              relationError={
+                section.key === selectedKey ? relationError : undefined
+              }
             />
-          </CardHeader>
-          <CardContent className="bg-[#f7f1e8] p-0">
-            <iframe
-              title={`${preview.page.title} live canvas`}
-              src={canvasHref(id, selectedKey)}
-              className="h-[calc(100svh-18rem)] min-h-[42rem] w-full border-0 bg-background"
-            />
-          </CardContent>
-        </Card>
-
-        <SectionInspector
-          pageId={id}
-          pageSlug={preview.page.slug}
-          section={selectedSection}
-          sectionDetail={
-            sectionDetail?.kind === "section" ? sectionDetail : null
-          }
-          relations={sectionRelations}
-          relationOptions={relationOptions}
-          redirectTo={composeUrl}
-          saved={search?.saved === "section"}
-          relationMessage={searchValue(search?.relation_message) ?? undefined}
-          relationError={searchValue(search?.relation_error) ?? undefined}
-        />
-      </div>
-    </section>
-  )
-}
-
-function ComposerHeader({
-  pageId,
-  title,
-  slug,
-  kind,
-  sectionCount,
-}: {
-  pageId: string
-  title: string
-  slug: string
-  kind: string
-  sectionCount: number
-}) {
-  return (
-    <div className="relative overflow-hidden rounded-2xl border bg-card/95 p-5 shadow-sm md:p-7">
-      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_8%_0%,color-mix(in_oklch,var(--accent)_12%,transparent),transparent_34%),linear-gradient(135deg,color-mix(in_oklch,var(--secondary)_84%,transparent),transparent_42%)]" />
-      <div className="relative flex flex-col gap-5 lg:flex-row lg:items-start lg:justify-between">
-        <div>
-          <p className="caps mb-3 text-muted-foreground">PONIX / Composer</p>
-          <h1 className="font-serif text-[clamp(3rem,6vw,5.5rem)] italic leading-[0.86] tracking-tight">
-            {title}
-          </h1>
-          <div className="mt-4 flex flex-wrap items-center gap-2">
-            <Badge variant="secondary" className="rounded-full font-mono">
-              /{slug}
-            </Badge>
-            <Badge variant="outline" className="rounded-full">
-              {kind}
-            </Badge>
-            <Badge variant="outline" className="rounded-full">
-              {sectionCount} sections
-            </Badge>
           </div>
-        </div>
-        <div className="flex flex-wrap gap-2">
-          <Button asChild variant="outline" className="rounded-full">
-            <Link href={`/ponix/pages/${pageId}`}>Record</Link>
-          </Button>
-          <Button asChild className="rounded-full">
-            <Link href={`/ponix/pages/${pageId}/edit`}>Page settings</Link>
-          </Button>
-        </div>
-      </div>
-    </div>
-  )
-}
-
-function SectionRail({
-  pageId,
-  sections,
-  selectedKey,
-}: {
-  pageId: string
-  sections: GraphSection[]
-  selectedKey: string | null
-}) {
-  if (!sections.length) {
-    return null
-  }
-
-  return (
-    <ScrollArea className="mt-5 whitespace-nowrap">
-      <div className="flex gap-2 pb-2">
-        {sections.map((section, index) => {
-          const selected = section.key === selectedKey
-
-          return (
-            <Button
-              key={section.id}
-              asChild
-              variant={selected ? "default" : "outline"}
-              size="sm"
-              className="rounded-full"
-            >
-              <Link href={composeHref(pageId, section.key)}>
-                <span className="tabular-nums">
-                  {String(index + 1).padStart(2, "0")}
-                </span>
-                {section.title ?? section.key}
-              </Link>
-            </Button>
-          )
-        })}
-      </div>
-    </ScrollArea>
+        ))}
+      </PonixComposerWorkspace>
+    </section>
   )
 }
 
@@ -701,14 +606,6 @@ function MetaRow({
 
 function composeHref(pageId: string, sectionKey: string) {
   return `/ponix/pages/${pageId}/compose?section=${encodeURIComponent(sectionKey)}`
-}
-
-function canvasHref(pageId: string, sectionKey: string | null) {
-  const params = sectionKey
-    ? `?section=${encodeURIComponent(sectionKey)}`
-    : ""
-
-  return `/ponix-canvas/pages/${pageId}${params}`
 }
 
 function searchValue(value: string | string[] | undefined) {

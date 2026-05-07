@@ -1,8 +1,7 @@
 "use client"
 
-import Link from "next/link"
 import { useRouter } from "next/navigation"
-import type { MouseEvent, ReactNode } from "react"
+import { useEffect, useState, type MouseEvent, type ReactNode } from "react"
 import { PencilLine } from "lucide-react"
 
 import { Badge } from "@/components/ui/badge"
@@ -29,13 +28,65 @@ export function AdminSectionFrame({
   children: ReactNode
 }) {
   const router = useRouter()
+  const [activeKey, setActiveKey] = useState(control?.selectedKey ?? null)
+
+  useEffect(() => {
+    if (!control) return
+
+    function handleMessage(event: MessageEvent) {
+      if (event.origin !== window.location.origin) return
+      if (!isSectionMessage(event.data, "ponix:set-selected-section")) return
+
+      setActiveKey(event.data.sectionKey)
+
+      if (event.data.sectionKey === sectionKey) {
+        requestAnimationFrame(() => {
+          document
+            .querySelector(`[data-ponix-section="${CSS.escape(sectionKey)}"]`)
+            ?.scrollIntoView({ block: "center", behavior: "smooth" })
+        })
+      }
+    }
+
+    function handleLocalEvent(event: Event) {
+      if (!(event instanceof CustomEvent)) return
+      const detail = event.detail
+      if (!isSectionMessage(detail, "ponix:set-selected-section")) return
+      setActiveKey(detail.sectionKey)
+    }
+
+    window.addEventListener("message", handleMessage)
+    window.addEventListener("ponix:set-selected-section", handleLocalEvent)
+    return () => {
+      window.removeEventListener("message", handleMessage)
+      window.removeEventListener("ponix:set-selected-section", handleLocalEvent)
+    }
+  }, [control, sectionKey])
 
   if (!control) {
     return <>{children}</>
   }
 
-  const selected = control.selectedKey === sectionKey
+  const selected = activeKey === sectionKey
   const href = sectionComposerHref(control.pageId, sectionKey)
+
+  function selectSection() {
+    window.dispatchEvent(
+      new CustomEvent("ponix:set-selected-section", {
+        detail: { type: "ponix:set-selected-section", sectionKey },
+      }),
+    )
+
+    if (window.parent && window.parent !== window) {
+      window.parent.postMessage(
+        { type: "ponix:select-section", sectionKey },
+        window.location.origin,
+      )
+      return
+    }
+
+    router.push(href)
+  }
 
   function handleClick(event: MouseEvent<HTMLDivElement>) {
     const target = event.target
@@ -52,12 +103,7 @@ export function AdminSectionFrame({
       return
     }
 
-    if (window.parent && window.parent !== window) {
-      window.parent.location.href = href
-      return
-    }
-
-    router.push(href)
+    selectSection()
   }
 
   return (
@@ -72,8 +118,9 @@ export function AdminSectionFrame({
       )}
     >
       <div className="pointer-events-none sticky top-3 z-30 flex justify-end">
-        <Link
-          href={href}
+        <button
+          type="button"
+          onClick={selectSection}
           className={cn(
             "pointer-events-auto -mb-9 inline-flex translate-y-3 items-center gap-2 rounded-full border bg-background/92 px-3 py-1.5 text-xs shadow-sm backdrop-blur transition",
             "opacity-0 group-hover/ponix:translate-y-0 group-hover/ponix:opacity-100",
@@ -88,9 +135,23 @@ export function AdminSectionFrame({
           >
             {sectionKey}
           </Badge>
-        </Link>
+        </button>
       </div>
       {children}
     </div>
+  )
+}
+
+function isSectionMessage(
+  value: unknown,
+  type: "ponix:select-section" | "ponix:set-selected-section",
+): value is { type: string; sectionKey: string } {
+  return (
+    typeof value === "object" &&
+    value !== null &&
+    "type" in value &&
+    "sectionKey" in value &&
+    value.type === type &&
+    typeof value.sectionKey === "string"
   )
 }
