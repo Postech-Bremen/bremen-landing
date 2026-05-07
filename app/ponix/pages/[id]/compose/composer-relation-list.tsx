@@ -21,6 +21,12 @@ import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Checkbox } from "@/components/ui/checkbox"
 import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "@/components/ui/accordion"
+import {
   Drawer,
   DrawerClose,
   DrawerContent,
@@ -468,6 +474,8 @@ function SectionEntityRelationEditor({
 function EntityEditDrawer({ relation }: { relation: Relation }) {
   const entity = relation.entity
   const editableFields = entity ? getEditableEntityFields(entity.schemaKey) : []
+  const columnFields = editableFields.filter((field) => field.source !== "data")
+  const dataFields = editableFields.filter((field) => field.source === "data")
   const [saveState, setSaveState] = useState<SaveState>({ status: "idle" })
   const [isPending, startTransition] = useTransition()
 
@@ -538,14 +546,28 @@ function EntityEditDrawer({ relation }: { relation: Relation }) {
               data-composer-inline-entity-form={relation.entityId}
             >
               <input type="hidden" name="entity_id" value={relation.entityId} />
-              <div className="grid flex-1 gap-4 overflow-auto px-5 py-5 md:grid-cols-2">
-                {editableFields.map((field) => (
-                  <InlineEntityField
-                    key={`${field.source}:${field.key}`}
-                    field={field}
+              <div className="flex-1 overflow-auto px-5 py-5">
+                <Accordion
+                  type="multiple"
+                  defaultValue={["identity", "data"]}
+                  className="space-y-3"
+                  data-composer-entity-field-groups
+                >
+                  <EntityFieldGroup
+                    value="identity"
+                    title="기본 정보"
+                    description="목록과 카드에 바로 노출되는 대표 정보입니다."
+                    fields={columnFields}
                     entity={entity}
                   />
-                ))}
+                  <EntityFieldGroup
+                    value="data"
+                    title="콘텐츠 데이터"
+                    description="렌더러가 사용하는 세부 데이터입니다."
+                    fields={dataFields}
+                    entity={entity}
+                  />
+                </Accordion>
               </div>
               <div
                 className={cn(
@@ -582,6 +604,55 @@ function EntityEditDrawer({ relation }: { relation: Relation }) {
         </div>
       </DrawerContent>
     </DrawerNested>
+  )
+}
+
+function EntityFieldGroup({
+  value,
+  title,
+  description,
+  fields,
+  entity,
+}: {
+  value: string
+  title: string
+  description: string
+  fields: CmsEditableEntityField[]
+  entity: NonNullable<Relation["entity"]>
+}) {
+  if (!fields.length) return null
+
+  return (
+    <AccordionItem
+      value={value}
+      className="overflow-hidden rounded-xl border bg-background/70 px-4"
+      data-composer-entity-field-group={value}
+    >
+      <AccordionTrigger className="hover:no-underline">
+        <span className="flex min-w-0 flex-col gap-1">
+          <span className="flex items-center gap-2">
+            <span>{title}</span>
+            <Badge variant="secondary" className="rounded-full">
+              {fields.length}
+            </Badge>
+          </span>
+          <span className="text-xs font-normal text-muted-foreground">
+            {description}
+          </span>
+        </span>
+      </AccordionTrigger>
+      <AccordionContent>
+        <div className="grid gap-4 md:grid-cols-2">
+          {fields.map((field) => (
+            <InlineEntityField
+              key={`${field.source}:${field.key}`}
+              field={field}
+              entity={entity}
+            />
+          ))}
+        </div>
+      </AccordionContent>
+    </AccordionItem>
   )
 }
 
