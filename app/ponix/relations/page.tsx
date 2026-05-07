@@ -66,9 +66,9 @@ export default async function PonixRelationsPage({
             detail="공연과 영상처럼 연결된 기록"
           />
           <CmsStatTile
-            label="Data options"
+            label="Ready to link"
             value={options.entities.length}
-            detail="연결 후보 데이터"
+            detail="연결할 수 있는 기록"
           />
         </CmsStatGrid>
         <RelationMutationNotice

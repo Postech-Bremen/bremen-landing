@@ -420,6 +420,7 @@ function SectionEntityWorkspace({
           <CmsEntityPicker
             name="entity_id"
             entities={options.entities}
+            schemaOptions={options.entitySchemas}
             showSchemaFilter
           />
           <div className="grid grid-cols-3 gap-2">

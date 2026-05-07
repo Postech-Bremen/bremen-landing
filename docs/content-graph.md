@@ -23,6 +23,29 @@ entity_schemas
 the transition. New CMS architecture work should avoid deepening those special
 tables unless the change is explicitly about preserving the bridge.
 
+## Entity Graph Bridge
+
+Migration `20260506000042_entity_graph_bridge.sql` starts the safe transition by
+mirroring page and section records into the generic graph without deleting the
+legacy tables:
+
+- `pages` rows get shadow `entities` rows with `entity_type = 'page'`.
+- `sections` rows get shadow `entities` rows with `entity_type = 'section'`.
+- `page_sections` rows get shadow `entity_relations` rows from page entity to
+  section entity.
+- `section_entities` rows get shadow `entity_relations` rows from section entity
+  to content entity.
+
+The bridge uses `source_table` and `source_id` columns on `entities` and
+`entity_relations` so each shadow record can be traced back to the legacy row.
+Sync triggers keep the shadow graph updated while the app still writes through
+the current CMS screens.
+
+Until the public loaders and PONIX editors are explicitly migrated, the bridge
+is a compatibility read model, not the only source of truth. Do not remove
+`pages`, `sections`, `page_sections`, or `section_entities` until all renderers,
+forms, audits, migrations, and generated types have moved to the entity graph.
+
 ## Tables
 
 | Table | Purpose |

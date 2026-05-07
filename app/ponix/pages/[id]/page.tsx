@@ -39,7 +39,7 @@ export default async function PonixPageRecordPage({
   const [detail, relations, options, audit, search] = await Promise.all([
     loadCmsPageDetail(id),
     loadCmsPageRelations(id),
-    loadCmsRelationEditorOptions(),
+    loadCmsRelationEditorOptions({ includeEntities: false }),
     loadCmsAuditEventsForTarget({ targetTable: "pages", targetId: id }),
     searchParams,
   ])
