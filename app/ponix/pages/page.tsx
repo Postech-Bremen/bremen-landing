@@ -1,21 +1,15 @@
 import type { Metadata } from "next"
-import Link from "next/link"
 
 import {
   CmsListPage,
-  CmsTableCard,
+  CmsRecordCard,
+  CmsRecordGrid,
+  CmsStatGrid,
+  CmsStatTile,
   formatCmsDate,
   PublishBadge,
   SchemaBadge,
 } from "@/app/ponix/_components/cms-list"
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table"
 import { requireCmsAdmin } from "@/lib/cms/auth"
 import { loadCmsPages } from "@/lib/cms/content"
 
@@ -30,65 +24,44 @@ export const metadata: Metadata = {
 export default async function PonixPagesPage() {
   await requireCmsAdmin("/ponix/pages")
   const pages = await loadCmsPages()
+  const publishedCount = pages.filter((page) => page.published).length
+  const homePage = pages.find((page) => page.slug === "home")
 
   return (
     <CmsListPage
       eyebrow="PONIX / Pages"
-      title="Pages"
-      description="Route-level records for page copy, publish state, and section composition."
+      title="Page Studio"
+      description="공개 사이트의 각 페이지를 실제 화면 기준으로 열고, 섹션과 데이터를 이어서 관리합니다."
     >
-      <CmsTableCard title="Page records" meta={`${pages.length} records`}>
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Slug</TableHead>
-              <TableHead>Title</TableHead>
-              <TableHead>Schema</TableHead>
-              <TableHead>Status</TableHead>
-              <TableHead>Updated</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {pages.map((page) => (
-              <TableRow key={page.id}>
-                <TableCell className="font-mono text-xs">
-                  <Link
-                    href={`/ponix/pages/${page.id}`}
-                    className="underline-offset-4 hover:underline"
-                  >
-                    {page.slug}
-                  </Link>
-                </TableCell>
-                <TableCell>
-                  <Link
-                    href={`/ponix/pages/${page.id}`}
-                    className="font-medium underline-offset-4 hover:underline"
-                  >
-                    {page.title}
-                  </Link>
-                  {page.subtitle && (
-                    <div className="text-xs text-muted-foreground">
-                      {page.subtitle}
-                    </div>
-                  )}
-                </TableCell>
-                <TableCell>
-                  <SchemaBadge
-                    label={page.schemaLabel}
-                    registered={page.schemaRegistered}
-                  />
-                </TableCell>
-                <TableCell>
-                  <PublishBadge published={page.published} />
-                </TableCell>
-                <TableCell className="text-xs text-muted-foreground">
-                  {formatCmsDate(page.updatedAt)}
-                </TableCell>
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
-      </CmsTableCard>
+      <CmsStatGrid>
+        <CmsStatTile label="Pages" value={pages.length} detail="관리 중인 공개 페이지" accent />
+        <CmsStatTile label="Published" value={publishedCount} detail="사이트에 노출 중" />
+        <CmsStatTile label="Draft" value={pages.length - publishedCount} detail="검토가 필요한 페이지" />
+        <CmsStatTile label="Home" value={homePage ? "Ready" : "Missing"} detail="메인 페이지 구성 상태" />
+      </CmsStatGrid>
+
+      <CmsRecordGrid>
+        {pages.map((page) => (
+          <CmsRecordCard
+            key={page.id}
+            href={`/ponix/pages/${page.id}/compose`}
+            eyebrow={`/${page.slug === "home" ? "" : page.slug}`}
+            title={page.title}
+            description={page.subtitle ?? "화면 구성과 섹션 연결을 관리합니다."}
+            actionLabel="Compose"
+            badges={
+              <>
+                <PublishBadge published={page.published} />
+                <SchemaBadge
+                  label={page.schemaLabel}
+                  registered={page.schemaRegistered}
+                />
+              </>
+            }
+            meta={`Updated ${formatCmsDate(page.updatedAt)}`}
+          />
+        ))}
+      </CmsRecordGrid>
     </CmsListPage>
   )
 }

@@ -127,6 +127,8 @@ export type Database = {
           schema_key: string
           slug: string | null
           sort_at: string
+          source_id: string | null
+          source_table: string | null
           subtitle: string | null
           summary: string | null
           thumbnail_url: string | null
@@ -144,6 +146,8 @@ export type Database = {
           schema_key?: string
           slug?: string | null
           sort_at?: string
+          source_id?: string | null
+          source_table?: string | null
           subtitle?: string | null
           summary?: string | null
           thumbnail_url?: string | null
@@ -161,6 +165,8 @@ export type Database = {
           schema_key?: string
           slug?: string | null
           sort_at?: string
+          source_id?: string | null
+          source_table?: string | null
           subtitle?: string | null
           summary?: string | null
           thumbnail_url?: string | null
@@ -196,6 +202,8 @@ export type Database = {
           schema_key: string
           slot: string
           sort_order: number
+          source_id: string | null
+          source_table: string | null
           to_entity_id: string
           updated_at: string
         }
@@ -210,6 +218,8 @@ export type Database = {
           schema_key?: string
           slot?: string
           sort_order?: number
+          source_id?: string | null
+          source_table?: string | null
           to_entity_id: string
           updated_at?: string
         }
@@ -224,6 +234,8 @@ export type Database = {
           schema_key?: string
           slot?: string
           sort_order?: number
+          source_id?: string | null
+          source_table?: string | null
           to_entity_id?: string
           updated_at?: string
         }

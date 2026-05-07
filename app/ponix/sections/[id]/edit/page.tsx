@@ -47,6 +47,7 @@ export default async function PonixSectionEditPage({
       detail={detail}
       relations={relations}
       error={firstParam(query.error)}
+      saved={query.saved === "section"}
     />
   )
 }

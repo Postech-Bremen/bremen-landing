@@ -36,5 +36,11 @@ export default async function PonixEntityEditPage({
     notFound()
   }
 
-  return <CmsEntityEditorPage detail={detail} error={firstParam(query.error)} />
+  return (
+    <CmsEntityEditorPage
+      detail={detail}
+      error={firstParam(query.error)}
+      saved={query.saved === "entity"}
+    />
+  )
 }

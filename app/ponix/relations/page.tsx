@@ -7,7 +7,11 @@ import {
   relationMutationState,
   SectionEntityRelationsCard,
 } from "@/app/ponix/_components/cms-relations"
-import { CmsListPage } from "@/app/ponix/_components/cms-list"
+import {
+  CmsListPage,
+  CmsStatGrid,
+  CmsStatTile,
+} from "@/app/ponix/_components/cms-list"
 import { requireCmsAdmin } from "@/lib/cms/auth"
 import {
   loadCmsRelationEditorOptions,
@@ -40,10 +44,33 @@ export default async function PonixRelationsPage({
   return (
     <CmsListPage
       eyebrow="PONIX / Relations"
-      title="Relations"
-      description="The content graph that connects pages, sections, and reusable entities."
+      title="Content Graph"
+      description="페이지, 섹션, 데이터를 어떤 순서로 보여줄지 연결하는 운영 지도입니다."
     >
       <div className="space-y-6">
+        <CmsStatGrid>
+          <CmsStatTile
+            label="Page sections"
+            value={graph.pageSections.relations.length}
+            detail="페이지에 배치된 섹션"
+            accent
+          />
+          <CmsStatTile
+            label="Section data"
+            value={graph.sectionEntities.relations.length}
+            detail="섹션에 노출되는 데이터"
+          />
+          <CmsStatTile
+            label="Entity links"
+            value={graph.entityRelations.relations.length}
+            detail="공연과 영상처럼 연결된 기록"
+          />
+          <CmsStatTile
+            label="Ready to link"
+            value={options.entities.length}
+            detail="연결할 수 있는 기록"
+          />
+        </CmsStatGrid>
         <RelationMutationNotice
           message={mutation.message}
           error={mutation.error}

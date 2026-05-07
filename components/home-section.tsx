@@ -3,6 +3,10 @@
 import Image from "next/image"
 import Link from "next/link"
 import type { CSSProperties, ReactNode } from "react"
+import {
+  AdminSectionFrame,
+  type AdminSectionControl,
+} from "@/components/admin-section-frame"
 import { Reveal } from "@/components/reveal"
 import {
   CalendarBlank,
@@ -224,7 +228,13 @@ function SectionHead({
   )
 }
 
-export function HomeSection({ overview }: { overview: HomeOverview }) {
+export function HomeSection({
+  overview,
+  adminSectionControl,
+}: {
+  overview: HomeOverview
+  adminSectionControl?: AdminSectionControl
+}) {
   const homeStats = overview.statCards
   const homeFeaturedVideo = overview.featuredVideo
   const homeHighlights = overview.stageHighlights
@@ -614,11 +624,22 @@ export function HomeSection({ overview }: { overview: HomeOverview }) {
 
   return (
     <div className="max-w-6xl mx-auto px-6 md:px-8 py-12 md:py-20">
-      {homeSections.map((section) => (
-        <div key={`${section.key}:${section.sectionType}`}>
-          {renderSection(section)}
-        </div>
-      ))}
+      {homeSections.map((section) => {
+        const renderedSection = renderSection(section)
+
+        if (!renderedSection) return null
+
+        return (
+          <AdminSectionFrame
+            key={`${section.key}:${section.sectionType}`}
+            sectionKey={section.key}
+            sectionTitle={section.title}
+            control={adminSectionControl}
+          >
+            {renderedSection}
+          </AdminSectionFrame>
+        )
+      })}
     </div>
   )
 }

@@ -336,10 +336,15 @@ function SectionEntityAddForm({
         <input type="hidden" name="entity_id" value={fixedEntityId} />
       ) : (
         <FieldGroup label="Entity">
-          <CmsEntityPicker name="entity_id" entities={options.entities} />
+          <CmsEntityPicker
+            name="entity_id"
+            entities={options.entities}
+            schemaOptions={options.entitySchemas}
+            showSchemaFilter
+          />
           {options.entityCount && options.entityCount > options.entityLimit ? (
             <p className="text-xs text-muted-foreground">
-              Search covers the latest {options.entityLimit} entities.
+              원하는 기록이 보이지 않으면 검색어를 입력하세요.
             </p>
           ) : null}
         </FieldGroup>
@@ -404,14 +409,24 @@ function EntityRelationAddForm({
         <input type="hidden" name="from_entity_id" value={fixedFromEntityId} />
       ) : (
         <FieldGroup label="From">
-          <EntitySelect name="from_entity_id" entities={options.entities} />
+          <CmsEntityPicker
+            name="from_entity_id"
+            entities={options.entities}
+            schemaOptions={options.entitySchemas}
+            showSchemaFilter
+          />
         </FieldGroup>
       )}
       {fixedToEntityId ? (
         <input type="hidden" name="to_entity_id" value={fixedToEntityId} />
       ) : (
         <FieldGroup label="To">
-          <EntitySelect name="to_entity_id" entities={options.entities} />
+          <CmsEntityPicker
+            name="to_entity_id"
+            entities={options.entities}
+            schemaOptions={options.entitySchemas}
+            showSchemaFilter
+          />
         </FieldGroup>
       )}
       <FieldGroup label="Type">
@@ -514,33 +529,6 @@ function SectionSelect({
       {sections.map((section) => (
         <option key={section.id} value={section.id}>
           {section.key} · {section.title ?? "Untitled"}
-        </option>
-      ))}
-    </select>
-  )
-}
-
-function EntitySelect({
-  name,
-  entities,
-}: {
-  name: string
-  entities: CmsRelationEditorOptions["entities"]
-}) {
-  return (
-    <select
-      name={name}
-      required
-      className={selectClassName}
-      defaultValue=""
-    >
-      <option value="" disabled>
-        Select entity
-      </option>
-      {entities.map((entity) => (
-        <option key={entity.id} value={entity.id}>
-          {entity.entityType} · {entity.title}
-          {entity.slug ? ` · ${entity.slug}` : ""}
         </option>
       ))}
     </select>

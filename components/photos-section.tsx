@@ -3,6 +3,10 @@
 import Image from "next/image"
 import { useState } from "react"
 import { CaretLeft, CaretRight } from "@phosphor-icons/react/dist/ssr"
+import {
+  AdminSectionFrame,
+  type AdminSectionControl,
+} from "@/components/admin-section-frame"
 import { Button } from "@/components/ui/button"
 import {
   Dialog,
@@ -29,6 +33,7 @@ type PhotosSectionProps = {
   page: ContentPageConfig
   sections: ContentSectionConfig[]
   photos: Photo[]
+  adminSectionControl?: AdminSectionControl
 }
 
 const photoTone: Record<string, string> = {
@@ -267,6 +272,7 @@ export function PhotosSection({
   page,
   sections,
   photos,
+  adminSectionControl,
 }: PhotosSectionProps) {
   const gallerySection = sections.find((section) => section.key === "photos-gallery")
 
@@ -279,7 +285,17 @@ export function PhotosSection({
         description={page.description}
       />
 
-      <PhotoGallerySurface gallerySection={gallerySection} photos={photos} />
+      {gallerySection ? (
+        <AdminSectionFrame
+          sectionKey={gallerySection.key}
+          sectionTitle={gallerySection.title}
+          control={adminSectionControl}
+        >
+          <PhotoGallerySurface gallerySection={gallerySection} photos={photos} />
+        </AdminSectionFrame>
+      ) : (
+        <PhotoGallerySurface gallerySection={gallerySection} photos={photos} />
+      )}
     </div>
   )
 }

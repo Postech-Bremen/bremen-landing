@@ -2,9 +2,9 @@ import type { Metadata } from "next"
 import { redirect } from "next/navigation"
 
 import { signOutAction, updateProfileAction } from "@/app/auth/actions"
+import { FormSubmitButton } from "@/components/form-submit-button"
 import { ProfileImageInput } from "@/components/profile-image-input"
 import { Badge } from "@/components/ui/badge"
-import { Button } from "@/components/ui/button"
 import {
   Card,
   CardContent,
@@ -89,9 +89,13 @@ export default async function MyPage({ searchParams }: MyPageProps) {
             </p>
           </div>
           <form action={signOutAction} className="lg:col-span-4 lg:justify-self-end">
-            <Button type="submit" variant="outline" size="lg">
+            <FormSubmitButton
+              variant="outline"
+              size="lg"
+              pendingLabel="Signing out..."
+            >
               Sign Out
-            </Button>
+            </FormSubmitButton>
           </form>
         </div>
 
@@ -262,9 +266,13 @@ export default async function MyPage({ searchParams }: MyPageProps) {
                       </p>
                     )}
 
-                    <Button type="submit" size="lg" className="mt-7 w-full">
+                    <FormSubmitButton
+                      size="lg"
+                      className="mt-7 w-full"
+                      pendingLabel="Saving profile..."
+                    >
                       Save Profile
-                    </Button>
+                    </FormSubmitButton>
                   </form>
                 </CardContent>
               </Card>

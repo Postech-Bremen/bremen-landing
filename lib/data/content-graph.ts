@@ -4,6 +4,11 @@ import {
   PUBLIC_CONTENT_CACHE_TAG,
   PUBLIC_CONTENT_REVALIDATE_SECONDS,
 } from "@/lib/data/public-cache"
+import {
+  buildHomeOverview,
+  loadMemberStats,
+} from "@/lib/data/home-overview"
+import type { HomeOverview } from "@/components/home-section"
 import type { Database, Json } from "@/lib/supabase/types"
 import { createPublicClient } from "@/lib/supabase/public"
 import {
@@ -242,16 +247,29 @@ export type HistoryPageContent = {
 }
 
 export type DraftPreviewPageContent =
-  | ({ kind: "performances" } & PerformancePageContent)
-  | ({ kind: "videos" } & VideoPageContent)
-  | ({ kind: "photos" } & PhotoPageContent)
-  | ({ kind: "history" } & HistoryPageContent)
+  | {
+      kind: "home"
+      page: ContentPageConfig
+      sections: ContentSectionConfig[]
+      graph: GraphPage
+      overview: HomeOverview
+    }
+  | ({ kind: "performances"; graph: GraphPage } & PerformancePageContent)
+  | ({ kind: "videos"; graph: GraphPage } & VideoPageContent)
+  | ({ kind: "photos"; graph: GraphPage } & PhotoPageContent)
+  | ({ kind: "history"; graph: GraphPage } & HistoryPageContent)
   | {
       kind: "generic"
       page: ContentPageConfig
       sections: ContentSectionConfig[]
       graph: GraphPage
     }
+
+export type DraftCompositionPageContent = {
+  kind: DraftPreviewPageContent["kind"]
+  page: ContentPageConfig
+  graph: GraphPage
+}
 
 type GraphPageLoadOptions = {
   id?: string
@@ -925,8 +943,17 @@ async function loadHomeCurationUncached(): Promise<HomeCuration | null> {
   const page = await loadGraphPage("home")
   if (!page) return null
 
+  return homeCurationFromGraph(page)
+}
+
+async function homeCurationFromGraph(
+  page: GraphPage,
+  options: { includeDrafts?: boolean } = {},
+): Promise<HomeCuration | null> {
   const sections = page.sections.map((section) => contentSectionFromGraph(section))
-  const performanceSlugById = await loadPerformanceSlugsById()
+  const performanceSlugById = await loadPerformanceSlugsById(
+    Boolean(options.includeDrafts),
+  )
   const heroVideo =
     sectionItems(page, "home-hero")
       .map((item) => homeVideoFromSectionItem(item, performanceSlugById))
@@ -1178,9 +1205,38 @@ export async function loadDraftPreviewPage(
   const contentPage = contentPageFromGraph(page.page)
   const sections = page.sections.map((section) => contentSectionFromGraph(section))
 
+  if (page.page.slug === "home") {
+    const [videos, performances, photos, memberStats, homeCuration] =
+      await Promise.all([
+        loadVideoArchiveUncached(),
+        loadPerformancePlaylistsUncached(),
+        loadPhotoArchiveUncached(),
+        loadMemberStats(),
+        homeCurationFromGraph(page, { includeDrafts: true }),
+      ])
+    const overview = buildHomeOverview({
+      videos,
+      performances,
+      photos,
+      memberStats,
+      homeCuration,
+    })
+
+    if (overview) {
+      return {
+        kind: "home",
+        graph: page,
+        page: contentPage,
+        sections,
+        overview,
+      }
+    }
+  }
+
   if (page.page.slug === "performances") {
     return {
       kind: "performances",
+      graph: page,
       page: contentPage,
       sections,
       playlists:
@@ -1194,6 +1250,7 @@ export async function loadDraftPreviewPage(
 
     return {
       kind: "videos",
+      graph: page,
       page: contentPage,
       sections,
       featuredVideos: videosFromSectionItems(
@@ -1216,6 +1273,7 @@ export async function loadDraftPreviewPage(
   if (page.page.slug === "photos") {
     return {
       kind: "photos",
+      graph: page,
       page: contentPage,
       sections,
       photos: sectionItems(page, "photos-gallery")
@@ -1227,6 +1285,7 @@ export async function loadDraftPreviewPage(
   if (page.page.slug === "history") {
     return {
       kind: "history",
+      graph: page,
       page: contentPage,
       sections,
       milestones: sectionItems(page, "history-timeline")
@@ -1240,6 +1299,34 @@ export async function loadDraftPreviewPage(
     kind: "generic",
     page: contentPage,
     sections,
+    graph: page,
+  }
+}
+
+export async function loadDraftCompositionPage(
+  pageId: string,
+): Promise<DraftCompositionPageContent | null> {
+  const page = await loadGraphPageUncached({
+    id: pageId,
+    includeDrafts: true,
+  })
+
+  if (!page) return null
+
+  const typedSlugs = new Set<DraftPreviewPageContent["kind"]>([
+    "home",
+    "performances",
+    "videos",
+    "photos",
+    "history",
+  ])
+  const kind = typedSlugs.has(page.page.slug as DraftPreviewPageContent["kind"])
+    ? (page.page.slug as DraftPreviewPageContent["kind"])
+    : "generic"
+
+  return {
+    kind,
+    page: contentPageFromGraph(page.page),
     graph: page,
   }
 }

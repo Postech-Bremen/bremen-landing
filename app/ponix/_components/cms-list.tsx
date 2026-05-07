@@ -1,8 +1,8 @@
-import Link from "next/link"
 import type { ReactNode } from "react"
+import Link from "next/link"
+import { ArrowUpRight } from "lucide-react"
 
 import { Badge } from "@/components/ui/badge"
-import { Button } from "@/components/ui/button"
 import {
   Card,
   CardContent,
@@ -25,33 +25,28 @@ export function CmsListPage({
   children: ReactNode
 }) {
   return (
-    <main className="relative min-h-[calc(100vh-5rem)] overflow-hidden">
-      <div className="pointer-events-none absolute inset-0 -z-10">
-        <div className="absolute right-[-10rem] top-10 h-96 w-96 rounded-full bg-accent/10 blur-3xl" />
-        <div className="absolute left-[-8rem] bottom-0 h-80 w-80 rounded-full bg-muted blur-3xl" />
-      </div>
-
-      <section className="mx-auto max-w-7xl px-6 py-16 md:px-8 md:py-24">
-        <div className="mb-10 flex flex-col gap-5 md:flex-row md:items-end md:justify-between">
-          <div>
-            <p className="caps mb-5">{eyebrow}</p>
-            <h1 className="font-serif text-[clamp(3.5rem,10vw,7rem)] italic leading-[0.82] tracking-tight">
+    <section className="mx-auto flex w-full max-w-[96rem] flex-col gap-6">
+      <div className="relative overflow-hidden rounded-2xl border bg-card/95 p-5 shadow-sm md:p-7">
+        <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_12%_0%,color-mix(in_oklch,var(--accent)_12%,transparent),transparent_34%),linear-gradient(135deg,color-mix(in_oklch,var(--muted)_90%,transparent),transparent_42%)]" />
+        <div className="relative flex flex-col gap-5 md:flex-row md:items-start md:justify-between">
+          <div className="min-w-0">
+            <p className="caps mb-3 text-muted-foreground">{eyebrow}</p>
+            <h1 className="font-serif text-[clamp(3rem,6vw,5.5rem)] italic leading-[0.86] tracking-tight">
               {title}
             </h1>
-            <p className="mt-5 max-w-2xl text-sm leading-relaxed text-muted-foreground md:text-base">
+            <p className="mt-4 max-w-3xl text-sm leading-relaxed text-muted-foreground md:text-base">
               {description}
             </p>
           </div>
-          <div className="flex flex-wrap items-center gap-2">
-            {actions}
-            <Button asChild variant="outline" className="w-fit rounded-full">
-              <Link href="/ponix">PONIX Home</Link>
-            </Button>
-          </div>
+          {actions && (
+            <div className="flex shrink-0 flex-wrap items-center gap-2">
+              {actions}
+            </div>
+          )}
         </div>
-        {children}
-      </section>
-    </main>
+      </div>
+      {children}
+    </section>
   )
 }
 
@@ -65,15 +60,115 @@ export function CmsTableCard({
   children: ReactNode
 }) {
   return (
-    <Card className="rounded-md border bg-card/95 shadow-xl">
-      <CardHeader className="border-b">
+    <Card className="overflow-hidden rounded-2xl border bg-card/95 shadow-sm">
+      <CardHeader className="border-b bg-muted/20">
         <div className="flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
-          <CardTitle className="font-serif text-3xl italic">{title}</CardTitle>
+          <CardTitle className="font-serif text-2xl italic md:text-3xl">
+            {title}
+          </CardTitle>
           <p className="caps text-muted-foreground">{meta}</p>
         </div>
       </CardHeader>
       <CardContent className="p-0">{children}</CardContent>
     </Card>
+  )
+}
+
+export function CmsStatGrid({ children }: { children: ReactNode }) {
+  return <div className="grid gap-3 md:grid-cols-4">{children}</div>
+}
+
+export function CmsStatTile({
+  label,
+  value,
+  detail,
+  accent = false,
+}: {
+  label: string
+  value: string | number
+  detail: string
+  accent?: boolean
+}) {
+  return (
+    <Card
+      className={cn(
+        "rounded-2xl border bg-card/95 shadow-sm",
+        accent && "border-transparent bg-primary text-primary-foreground",
+      )}
+    >
+      <CardHeader className="pb-2">
+        <p className={cn("caps", accent && "text-primary-foreground/65")}>
+          {label}
+        </p>
+        <CardTitle className="font-serif text-5xl italic leading-none">
+          {value}
+        </CardTitle>
+      </CardHeader>
+      <CardContent
+        className={cn(
+          "text-sm text-muted-foreground",
+          accent && "text-primary-foreground/75",
+        )}
+      >
+        {detail}
+      </CardContent>
+    </Card>
+  )
+}
+
+export function CmsRecordGrid({ children }: { children: ReactNode }) {
+  return <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">{children}</div>
+}
+
+export function CmsRecordCard({
+  href,
+  eyebrow,
+  title,
+  description,
+  badges,
+  meta,
+  actionLabel = "Open",
+  media,
+}: {
+  href: string
+  eyebrow: string
+  title: string
+  description?: string | null
+  badges?: ReactNode
+  meta?: ReactNode
+  actionLabel?: string
+  media?: ReactNode
+}) {
+  return (
+    <Link
+      href={href}
+      className="group flex min-h-56 flex-col overflow-hidden rounded-2xl border bg-card/95 shadow-sm outline-none transition-all hover:-translate-y-0.5 hover:border-accent/35 hover:shadow-xl focus-visible:ring-[3px] focus-visible:ring-ring/50"
+    >
+      {media && (
+        <div className="relative h-28 overflow-hidden border-b bg-muted/40">
+          {media}
+        </div>
+      )}
+      <div className="flex flex-1 flex-col p-5">
+        <div className="mb-4 flex items-start justify-between gap-3">
+          <p className="caps min-w-0 truncate text-muted-foreground">{eyebrow}</p>
+          <ArrowUpRight className="size-4 shrink-0 text-muted-foreground transition-transform group-hover:-translate-y-0.5 group-hover:translate-x-0.5 group-hover:text-accent" />
+        </div>
+        <h2 className="font-serif-kr text-2xl leading-tight">{title}</h2>
+        {description && (
+          <p className="mt-3 line-clamp-2 text-sm leading-relaxed text-muted-foreground">
+            {description}
+          </p>
+        )}
+        {badges && <div className="mt-5 flex flex-wrap gap-2">{badges}</div>}
+        <div className="mt-auto flex items-end justify-between gap-4 pt-6">
+          <div className="min-w-0 text-xs text-muted-foreground">{meta}</div>
+          <span className="rounded-full border px-3 py-1.5 text-xs font-medium transition-colors group-hover:border-accent/40 group-hover:bg-accent group-hover:text-accent-foreground">
+            {actionLabel}
+          </span>
+        </div>
+      </div>
+    </Link>
   )
 }
 

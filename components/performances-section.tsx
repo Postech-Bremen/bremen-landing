@@ -1,7 +1,4 @@
-import {
-  Fragment,
-  type ElementType,
-} from "react"
+import type { ElementType } from "react"
 import Image from "next/image"
 import Link from "next/link"
 import {
@@ -10,6 +7,10 @@ import {
 } from "@phosphor-icons/react/dist/ssr"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
+import {
+  AdminSectionFrame,
+  type AdminSectionControl,
+} from "@/components/admin-section-frame"
 import {
   Carousel,
   CarouselContent,
@@ -399,12 +400,14 @@ type PerformancesSectionProps = {
   page: ContentPageConfig
   sections: ContentSectionConfig[]
   playlists: PerformancePlaylistItem[]
+  adminSectionControl?: AdminSectionControl
 }
 
 export function PerformancesSection({
   page,
   sections,
   playlists,
+  adminSectionControl,
 }: PerformancesSectionProps) {
   const playlistCount = playlists.length
   const playlistWithRecordings = playlists.filter((playlist) => playlist.recordingCount > 0)
@@ -450,11 +453,22 @@ export function PerformancesSection({
         }
       />
 
-      {pageSections.map((section) => (
-        <Fragment key={`${section.key}:${section.sectionType}`}>
-          {renderSection(section)}
-        </Fragment>
-      ))}
+      {pageSections.map((section) => {
+        const renderedSection = renderSection(section)
+
+        if (!renderedSection) return null
+
+        return (
+          <AdminSectionFrame
+            key={`${section.key}:${section.sectionType}`}
+            sectionKey={section.key}
+            sectionTitle={section.title}
+            control={adminSectionControl}
+          >
+            {renderedSection}
+          </AdminSectionFrame>
+        )
+      })}
     </div>
   )
 }

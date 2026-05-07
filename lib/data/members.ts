@@ -1,3 +1,10 @@
+import { unstable_cache } from "next/cache"
+
+import {
+  PUBLIC_CONTENT_CACHE_TAG,
+  PUBLIC_CONTENT_REVALIDATE_SECONDS,
+} from "@/lib/data/public-cache"
+import { createPublicClient } from "@/lib/supabase/public"
 import type { Database } from "@/lib/supabase/types"
 
 type MemberRow = Database["public"]["Tables"]["members"]["Row"]
@@ -90,3 +97,37 @@ export function groupMembersByYear(members: MemberRecord[]): MemberGroup[] {
       total: yearMembers.length,
     }))
 }
+
+async function loadPublicMembersUncached(): Promise<MemberRecord[]> {
+  if (
+    !process.env.NEXT_PUBLIC_SUPABASE_URL ||
+    !process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+  ) {
+    return []
+  }
+
+  try {
+    const supabase = createPublicClient()
+    const { data, error } = await supabase
+      .from("members")
+      .select(memberPublicSelect)
+      .not("student_year", "is", null)
+
+    if (error || !data?.length) {
+      return []
+    }
+
+    return sortPublicMembers(data)
+  } catch {
+    return []
+  }
+}
+
+export const loadPublicMembers = unstable_cache(
+  loadPublicMembersUncached,
+  ["public-content", "members"],
+  {
+    tags: [PUBLIC_CONTENT_CACHE_TAG],
+    revalidate: PUBLIC_CONTENT_REVALIDATE_SECONDS,
+  },
+)

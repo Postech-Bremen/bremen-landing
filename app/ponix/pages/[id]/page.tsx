@@ -39,7 +39,7 @@ export default async function PonixPageRecordPage({
   const [detail, relations, options, audit, search] = await Promise.all([
     loadCmsPageDetail(id),
     loadCmsPageRelations(id),
-    loadCmsRelationEditorOptions(),
+    loadCmsRelationEditorOptions({ includeEntities: false }),
     loadCmsAuditEventsForTarget({ targetTable: "pages", targetId: id }),
     searchParams,
   ])
@@ -64,10 +64,16 @@ export default async function PonixPageRecordPage({
             Edit page
           </Link>
           <Link
-            href={`/ponix/preview/pages/${id}`}
+            href={`/ponix/pages/${id}/compose`}
             className="inline-flex h-9 items-center justify-center rounded-full bg-primary px-4 py-2 text-sm font-medium text-primary-foreground shadow-xs transition-colors hover:bg-primary/90"
           >
-            Preview page
+            Compose page
+          </Link>
+          <Link
+            href={`/ponix/preview/pages/${id}`}
+            className="inline-flex h-9 items-center justify-center rounded-full border border-input bg-background px-4 py-2 text-sm font-medium shadow-xs transition-colors hover:bg-accent hover:text-accent-foreground"
+          >
+            Preview
           </Link>
         </div>
       }

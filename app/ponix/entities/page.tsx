@@ -3,20 +3,15 @@ import Link from "next/link"
 
 import {
   CmsListPage,
-  CmsTableCard,
+  CmsRecordCard,
+  CmsRecordGrid,
+  CmsStatGrid,
+  CmsStatTile,
   formatCmsDate,
   PublishBadge,
   SchemaBadge,
 } from "@/app/ponix/_components/cms-list"
 import { Button } from "@/components/ui/button"
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table"
 import { requireCmsAdmin } from "@/lib/cms/auth"
 import { loadCmsEntities } from "@/lib/cms/content"
 
@@ -34,74 +29,64 @@ export default async function PonixEntitiesPage() {
   const meta = count && count > limit
     ? `${entities.length} of ${count} records`
     : `${entities.length} records`
+  const publishedCount = entities.filter((entity) => entity.published).length
+  const schemaCount = new Set(entities.map((entity) => entity.schemaKey)).size
+  const typeCount = new Set(entities.map((entity) => entity.entityType)).size
 
   return (
     <CmsListPage
       eyebrow="PONIX / Entities"
-      title="Entities"
-      description="Reusable content records that can be edited, linked, and placed into public sections."
+      title="Data Library"
+      description="영상, 사진, 공연, 히스토리처럼 여러 페이지와 섹션에서 다시 쓰는 원본 데이터입니다."
       actions={
         <Button asChild className="w-fit rounded-full">
-          <Link href="/ponix/entities/new">New entity</Link>
+          <Link href="/ponix/entities/new">새 데이터</Link>
         </Button>
       }
     >
-      <CmsTableCard title="Entity records" meta={meta}>
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Type</TableHead>
-              <TableHead>Title</TableHead>
-              <TableHead>Slug</TableHead>
-              <TableHead>Schema</TableHead>
-              <TableHead>Status</TableHead>
-              <TableHead>Sort date</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {entities.map((entity) => (
-              <TableRow key={entity.id}>
-                <TableCell className="font-mono text-xs">
-                  {entity.entityType}
-                </TableCell>
-                <TableCell>
-                  <Link
-                    href={`/ponix/entities/${entity.id}`}
-                    className="font-medium underline-offset-4 hover:underline"
-                  >
-                    {entity.title}
-                  </Link>
-                  {entity.subtitle && (
-                    <div className="text-xs text-muted-foreground">
-                      {entity.subtitle}
-                    </div>
-                  )}
-                </TableCell>
-                <TableCell className="max-w-[18rem] truncate font-mono text-xs text-muted-foreground">
-                  <Link
-                    href={`/ponix/entities/${entity.id}`}
-                    className="underline-offset-4 hover:underline"
-                  >
-                    {entity.slug ?? entity.id}
-                  </Link>
-                </TableCell>
-                <TableCell>
-                  <SchemaBadge
-                    label={entity.schemaLabel}
-                    registered={entity.schemaRegistered}
-                  />
-                </TableCell>
-                <TableCell>
-                  <PublishBadge published={entity.published} />
-                </TableCell>
-                <TableCell className="text-xs text-muted-foreground">
-                  {formatCmsDate(entity.sortAt)}
-                </TableCell>
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
-      </CmsTableCard>
+      <CmsStatGrid>
+        <CmsStatTile label="Loaded" value={entities.length} detail={meta} accent />
+        <CmsStatTile label="Published" value={publishedCount} detail="노출 가능한 데이터" />
+        <CmsStatTile label="Types" value={typeCount} detail="공연, 영상, 사진 등" />
+        <CmsStatTile label="Schemas" value={schemaCount} detail="등록된 데이터 형태" />
+      </CmsStatGrid>
+
+      <CmsRecordGrid>
+        {entities.map((entity) => (
+          <CmsRecordCard
+            key={entity.id}
+            href={`/ponix/entities/${entity.id}`}
+            eyebrow={entity.entityType}
+            title={entity.title}
+            description={entity.subtitle ?? entity.slug ?? entity.id}
+            actionLabel="Edit data"
+            badges={
+              <>
+                <PublishBadge published={entity.published} />
+                <SchemaBadge
+                  label={entity.schemaLabel}
+                  registered={entity.schemaRegistered}
+                />
+              </>
+            }
+            meta={`Sort ${formatCmsDate(entity.sortAt)}`}
+            media={
+              entity.thumbnailUrl ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img
+                  src={entity.thumbnailUrl}
+                  alt=""
+                  className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-[1.03]"
+                />
+              ) : (
+                <div className="grid h-full place-items-center font-serif text-4xl italic text-muted-foreground/50">
+                  {entity.entityType.slice(0, 2)}
+                </div>
+              )
+            }
+          />
+        ))}
+      </CmsRecordGrid>
     </CmsListPage>
   )
 }
