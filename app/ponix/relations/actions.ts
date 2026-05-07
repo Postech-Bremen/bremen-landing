@@ -59,6 +59,10 @@ function parseText(formData: FormData, key: string, label: string) {
   return value
 }
 
+function hasField(formData: FormData, key: string) {
+  return formData.has(key)
+}
+
 function parseSortOrder(formData: FormData) {
   const raw = stringField(formData, "sort_order")
   if (!raw) return 0
@@ -280,6 +284,23 @@ export async function updateSectionEntityRelationAction(formData: FormData) {
     const update: SectionEntityUpdate = {
       sort_order: parseSortOrder(formData),
     }
+
+    if (hasField(formData, "relation_type")) {
+      update.relation_type = parseText(
+        formData,
+        "relation_type",
+        "Relation type",
+      )
+    }
+
+    if (hasField(formData, "slot")) {
+      update.slot = stringField(formData, "slot") || "default"
+    }
+
+    if (hasField(formData, "props")) {
+      update.props = parseProps(formData)
+    }
+
     const { data: relation, error: loadError } = await supabase
       .from("section_entities")
       .select("section_id, entity_id")
@@ -301,7 +322,7 @@ export async function updateSectionEntityRelationAction(formData: FormData) {
       `/ponix/sections/${relation.section_id}`,
       `/ponix/entities/${relation.entity_id}`,
     ])
-    relationSuccess(redirectTo, "Section relation order saved.")
+    relationSuccess(redirectTo, "Section relation saved.")
   } catch (error) {
     relationError(redirectTo, error)
   }
