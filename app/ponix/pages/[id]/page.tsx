@@ -85,7 +85,7 @@ export default async function PonixPageRecordPage({
       <PageSectionRelationsCard
         title="Page structure"
         description="Sections attached to this page in render order."
-        relations={relations.pageSections}
+        relationList={relations.pageSectionList}
         editable
         editorOptions={options}
         fixedPageId={id}

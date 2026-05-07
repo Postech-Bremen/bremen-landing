@@ -13,30 +13,6 @@ type SectionRow = Database["public"]["Tables"]["sections"]["Row"]
 type EntityRow = Database["public"]["Tables"]["entities"]["Row"]
 type SupabaseClient = Awaited<ReturnType<typeof createClient>>
 
-const PAGE_SECTION_RELATION_SELECT = `
-  id,
-  page_id,
-  section_id,
-  sort_order,
-  props,
-  updated_at,
-  page:pages!page_sections_page_id_fkey(id, slug, title, published),
-  section:sections!page_sections_section_id_fkey(id, key, title, section_type, schema_key, published)
-`
-
-const SECTION_ENTITY_RELATION_SELECT = `
-  id,
-  section_id,
-  entity_id,
-  relation_type,
-  slot,
-  sort_order,
-  props,
-  updated_at,
-  section:sections!section_entities_section_id_fkey(id, key, title, section_type, schema_key, published),
-  entity:entities!section_entities_entity_id_fkey(id, entity_type, slug, title, subtitle, summary, thumbnail_url, schema_key, data, published, sort_at)
-`
-
 const ENTITY_RELATION_SELECT = `
   id,
   from_entity_id,
@@ -45,9 +21,11 @@ const ENTITY_RELATION_SELECT = `
   slot,
   sort_order,
   props,
+  source_table,
+  source_id,
   updated_at,
-  fromEntity:entities!entity_relations_from_entity_id_fkey(id, entity_type, slug, title, subtitle, summary, thumbnail_url, schema_key, data, published, sort_at),
-  toEntity:entities!entity_relations_to_entity_id_fkey(id, entity_type, slug, title, subtitle, summary, thumbnail_url, schema_key, data, published, sort_at)
+  fromEntity:entities!entity_relations_from_entity_id_fkey(id, entity_type, slug, title, subtitle, summary, thumbnail_url, schema_key, data, published, sort_at, source_table, source_id),
+  toEntity:entities!entity_relations_to_entity_id_fkey(id, entity_type, slug, title, subtitle, summary, thumbnail_url, schema_key, data, published, sort_at, source_table, source_id)
 `
 
 type SchemaSummary = {
@@ -97,6 +75,15 @@ export type CmsRelationList<T> = {
   relations: T[]
   count: number | null
   limit: number
+  bridgeHealth?: CmsBridgeHealth
+}
+
+export type CmsBridgeHealth = {
+  source: "entity_graph"
+  expected: number | null
+  mirrored: number
+  missing: number | null
+  ok: boolean
 }
 
 export type CmsLinkedPage = {
@@ -198,16 +185,20 @@ export type LoadCmsEntityOptionsOptions = {
 
 export type CmsPageRelationContext = {
   pageSections: CmsPageSectionRelation[]
+  pageSectionList: CmsRelationList<CmsPageSectionRelation>
 }
 
 export type CmsSectionRelationContext = {
   pageSections: CmsPageSectionRelation[]
+  pageSectionList: CmsRelationList<CmsPageSectionRelation>
   sectionEntities: CmsSectionEntityRelation[]
+  sectionEntityList: CmsRelationList<CmsSectionEntityRelation>
   entityRelations: CmsEntityRelation[]
 }
 
 export type CmsEntityRelationContext = {
   sectionEntities: CmsSectionEntityRelation[]
+  sectionEntityList: CmsRelationList<CmsSectionEntityRelation>
   outgoingEntityRelations: CmsEntityRelation[]
   incomingEntityRelations: CmsEntityRelation[]
 }
@@ -291,11 +282,31 @@ function relationList<T>(
   relations: T[],
   count: number | null,
   limit = RELATION_LIST_LIMIT,
+  bridgeHealth?: CmsBridgeHealth,
 ): CmsRelationList<T> {
   return {
     relations,
     count,
     limit,
+    bridgeHealth,
+  }
+}
+
+function bridgeHealth({
+  expected,
+  mirrored,
+}: {
+  expected: number | null
+  mirrored: number
+}): CmsBridgeHealth {
+  const missing = expected === null ? null : Math.max(0, expected - mirrored)
+
+  return {
+    source: "entity_graph",
+    expected,
+    mirrored,
+    missing,
+    ok: expected === null ? true : expected === mirrored,
   }
 }
 
@@ -349,6 +360,10 @@ function linkedEntity(entity: RawEntityLink | null): CmsLinkedEntity | null {
   }
 }
 
+function sourceId(entity: RawEntityLink | null, sourceTable: string) {
+  return entity?.source_table === sourceTable ? entity.source_id : null
+}
+
 type RawPageLink = Pick<PageRow, "id" | "slug" | "title" | "published">
 type RawSectionLink = Pick<
   SectionRow,
@@ -367,31 +382,9 @@ type RawEntityLink = Pick<
   | "data"
   | "published"
   | "sort_at"
+  | "source_table"
+  | "source_id"
 >
-
-type RawPageSectionRelation = {
-  id: string
-  page_id: string
-  section_id: string
-  sort_order: number
-  props: Json
-  updated_at: string
-  page: RawPageLink | null
-  section: RawSectionLink | null
-}
-
-type RawSectionEntityRelation = {
-  id: string
-  section_id: string
-  entity_id: string
-  relation_type: string
-  slot: string
-  sort_order: number
-  props: Json
-  updated_at: string
-  section: RawSectionLink | null
-  entity: RawEntityLink | null
-}
 
 type RawEntityRelation = {
   id: string
@@ -401,41 +394,11 @@ type RawEntityRelation = {
   slot: string
   sort_order: number
   props: Json
+  source_table: string | null
+  source_id: string | null
   updated_at: string
   fromEntity: RawEntityLink | null
   toEntity: RawEntityLink | null
-}
-
-function mapPageSectionRelation(
-  relation: RawPageSectionRelation,
-): CmsPageSectionRelation {
-  return {
-    id: relation.id,
-    pageId: relation.page_id,
-    sectionId: relation.section_id,
-    sortOrder: relation.sort_order,
-    props: relation.props,
-    updatedAt: relation.updated_at,
-    page: linkedPage(relation.page),
-    section: linkedSection(relation.section),
-  }
-}
-
-function mapSectionEntityRelation(
-  relation: RawSectionEntityRelation,
-): CmsSectionEntityRelation {
-  return {
-    id: relation.id,
-    sectionId: relation.section_id,
-    entityId: relation.entity_id,
-    relationType: relation.relation_type,
-    slot: relation.slot,
-    sortOrder: relation.sort_order,
-    props: relation.props,
-    updatedAt: relation.updated_at,
-    section: linkedSection(relation.section),
-    entity: linkedEntity(relation.entity),
-  }
 }
 
 function mapEntityRelation(relation: RawEntityRelation): CmsEntityRelation {
@@ -771,7 +734,115 @@ export async function loadCmsEntityDetail(
   }
 }
 
-async function loadPageSectionRelations({
+function uniqueStrings(values: Array<string | null | undefined>) {
+  return [...new Set(values.filter((value): value is string => Boolean(value)))]
+}
+
+async function loadShadowEntityId({
+  supabase,
+  sourceTable,
+  sourceId,
+}: {
+  supabase: SupabaseClient
+  sourceTable: "pages" | "sections"
+  sourceId: string
+}) {
+  const { data, error } = await supabase
+    .from("entities")
+    .select("id")
+    .eq("source_table", sourceTable)
+    .eq("source_id", sourceId)
+    .maybeSingle()
+
+  if (error) {
+    throw new Error(`Failed to load ${sourceTable} graph bridge: ${error.message}`)
+  }
+
+  return data?.id ?? null
+}
+
+async function countLegacyPageSections({
+  supabase,
+  pageId,
+  sectionId,
+}: {
+  supabase: SupabaseClient
+  pageId?: string
+  sectionId?: string
+}) {
+  let query = supabase
+    .from("page_sections")
+    .select("id", { count: "exact", head: true })
+
+  if (pageId) query = query.eq("page_id", pageId)
+  if (sectionId) query = query.eq("section_id", sectionId)
+
+  const { error, count } = await query
+  if (error) {
+    throw new Error(`Failed to count page-section bridge rows: ${error.message}`)
+  }
+
+  return count
+}
+
+async function countLegacySectionEntities({
+  supabase,
+  sectionId,
+  entityId,
+}: {
+  supabase: SupabaseClient
+  sectionId?: string
+  entityId?: string
+}) {
+  let query = supabase
+    .from("section_entities")
+    .select("id", { count: "exact", head: true })
+
+  if (sectionId) query = query.eq("section_id", sectionId)
+  if (entityId) query = query.eq("entity_id", entityId)
+
+  const { error, count } = await query
+  if (error) {
+    throw new Error(`Failed to count section-entity bridge rows: ${error.message}`)
+  }
+
+  return count
+}
+
+async function loadPageLinksById(supabase: SupabaseClient, pageIds: string[]) {
+  if (!pageIds.length) return new Map<string, RawPageLink>()
+
+  const { data, error } = await supabase
+    .from("pages")
+    .select("id, slug, title, published")
+    .in("id", pageIds)
+
+  if (error) {
+    throw new Error(`Failed to load page bridge links: ${error.message}`)
+  }
+
+  return new Map((data ?? []).map((page) => [page.id, page]))
+}
+
+async function loadSectionLinksById(
+  supabase: SupabaseClient,
+  sectionIds: string[],
+) {
+  if (!sectionIds.length) return new Map<string, RawSectionLink>()
+
+  const { data, error } = await supabase
+    .from("sections")
+    .select("id, key, title, section_type, schema_key, published")
+    .in("id", sectionIds)
+
+  if (error) {
+    throw new Error(`Failed to load section bridge links: ${error.message}`)
+  }
+
+  return new Map((data ?? []).map((section) => [section.id, section]))
+}
+
+async function loadPageSectionRelationsFromEntityGraph({
   supabase,
   pageId,
   sectionId,
@@ -782,35 +853,91 @@ async function loadPageSectionRelations({
   sectionId?: string
   limit?: number
 }): Promise<CmsRelationList<CmsPageSectionRelation>> {
+  const [pageShadowId, sectionShadowId, expected] = await Promise.all([
+    pageId
+      ? loadShadowEntityId({ supabase, sourceTable: "pages", sourceId: pageId })
+      : Promise.resolve(null),
+    sectionId
+      ? loadShadowEntityId({
+          supabase,
+          sourceTable: "sections",
+          sourceId: sectionId,
+        })
+      : Promise.resolve(null),
+    countLegacyPageSections({ supabase, pageId, sectionId }),
+  ])
+
+  if ((pageId && !pageShadowId) || (sectionId && !sectionShadowId)) {
+    return relationList(
+      [],
+      0,
+      limit,
+      bridgeHealth({ expected, mirrored: 0 }),
+    )
+  }
+
   let query = supabase
-    .from("page_sections")
-    .select(PAGE_SECTION_RELATION_SELECT, { count: "exact" })
+    .from("entity_relations")
+    .select(ENTITY_RELATION_SELECT, { count: "exact" })
+    .is("source_table", null)
+    .eq("source_table", "page_sections")
 
-  if (pageId) {
-    query = query.eq("page_id", pageId)
-  }
-
-  if (sectionId) {
-    query = query.eq("section_id", sectionId)
-  }
+  if (pageShadowId) query = query.eq("from_entity_id", pageShadowId)
+  if (sectionShadowId) query = query.eq("to_entity_id", sectionShadowId)
 
   const { data, error, count } = await query
-    .order("page_id", { ascending: true })
+    .order("from_entity_id", { ascending: true })
     .order("sort_order", { ascending: true })
     .range(0, limit - 1)
 
   if (error) {
-    throw new Error(`Failed to load page-section relations: ${error.message}`)
+    throw new Error(`Failed to load page-section graph relations: ${error.message}`)
   }
 
-  const relations = ((data ?? []) as unknown as RawPageSectionRelation[])
-    .map(mapPageSectionRelation)
+  const rawRelations = (data ?? []) as unknown as RawEntityRelation[]
+  const pageIds = uniqueStrings([
+    pageId,
+    ...rawRelations.map((relation) => sourceId(relation.fromEntity, "pages")),
+  ])
+  const sectionIds = uniqueStrings([
+    sectionId,
+    ...rawRelations.map((relation) => sourceId(relation.toEntity, "sections")),
+  ])
+  const [pagesById, sectionsById] = await Promise.all([
+    loadPageLinksById(supabase, pageIds),
+    loadSectionLinksById(supabase, sectionIds),
+  ])
+
+  const relations = rawRelations
+    .map((relation): CmsPageSectionRelation | null => {
+      const mappedPageId = sourceId(relation.fromEntity, "pages") ?? pageId
+      const mappedSectionId = sourceId(relation.toEntity, "sections") ?? sectionId
+
+      if (!mappedPageId || !mappedSectionId || !relation.source_id) return null
+
+      return {
+        id: relation.source_id,
+        pageId: mappedPageId,
+        sectionId: mappedSectionId,
+        sortOrder: relation.sort_order,
+        props: relation.props,
+        updatedAt: relation.updated_at,
+        page: linkedPage(pagesById.get(mappedPageId) ?? null),
+        section: linkedSection(sectionsById.get(mappedSectionId) ?? null),
+      }
+    })
+    .filter((relation): relation is CmsPageSectionRelation => Boolean(relation))
     .sort(byPageSectionOrder)
 
-  return relationList(relations, count, limit)
+  return relationList(
+    relations,
+    count,
+    limit,
+    bridgeHealth({ expected, mirrored: count ?? relations.length }),
+  )
 }
 
-async function loadSectionEntityRelations({
+async function loadSectionEntityRelationsFromEntityGraph({
   supabase,
   sectionId,
   entityId,
@@ -821,33 +948,82 @@ async function loadSectionEntityRelations({
   entityId?: string
   limit?: number
 }): Promise<CmsRelationList<CmsSectionEntityRelation>> {
+  const [sectionShadowId, expected] = await Promise.all([
+    sectionId
+      ? loadShadowEntityId({
+          supabase,
+          sourceTable: "sections",
+          sourceId: sectionId,
+        })
+      : Promise.resolve(null),
+    countLegacySectionEntities({ supabase, sectionId, entityId }),
+  ])
+
+  if (sectionId && !sectionShadowId) {
+    return relationList(
+      [],
+      0,
+      limit,
+      bridgeHealth({ expected, mirrored: 0 }),
+    )
+  }
+
   let query = supabase
-    .from("section_entities")
-    .select(SECTION_ENTITY_RELATION_SELECT, { count: "exact" })
+    .from("entity_relations")
+    .select(ENTITY_RELATION_SELECT, { count: "exact" })
+    .eq("source_table", "section_entities")
 
-  if (sectionId) {
-    query = query.eq("section_id", sectionId)
-  }
-
-  if (entityId) {
-    query = query.eq("entity_id", entityId)
-  }
+  if (sectionShadowId) query = query.eq("from_entity_id", sectionShadowId)
+  if (entityId) query = query.eq("to_entity_id", entityId)
 
   const { data, error, count } = await query
-    .order("section_id", { ascending: true })
+    .order("from_entity_id", { ascending: true })
     .order("slot", { ascending: true })
     .order("sort_order", { ascending: true })
     .range(0, limit - 1)
 
   if (error) {
-    throw new Error(`Failed to load section-entity relations: ${error.message}`)
+    throw new Error(`Failed to load section-entity graph relations: ${error.message}`)
   }
 
-  const relations = ((data ?? []) as unknown as RawSectionEntityRelation[])
-    .map(mapSectionEntityRelation)
+  const rawRelations = (data ?? []) as unknown as RawEntityRelation[]
+  const sectionIds = uniqueStrings([
+    sectionId,
+    ...rawRelations.map((relation) => sourceId(relation.fromEntity, "sections")),
+  ])
+  const sectionsById = await loadSectionLinksById(supabase, sectionIds)
+
+  const relations = rawRelations
+    .map((relation): CmsSectionEntityRelation | null => {
+      const mappedSectionId =
+        sourceId(relation.fromEntity, "sections") ?? sectionId
+
+      if (!mappedSectionId || !relation.source_id || !relation.toEntity) {
+        return null
+      }
+
+      return {
+        id: relation.source_id,
+        sectionId: mappedSectionId,
+        entityId: relation.to_entity_id,
+        relationType: relation.relation_type,
+        slot: relation.slot,
+        sortOrder: relation.sort_order,
+        props: relation.props,
+        updatedAt: relation.updated_at,
+        section: linkedSection(sectionsById.get(mappedSectionId) ?? null),
+        entity: linkedEntity(relation.toEntity),
+      }
+    })
+    .filter((relation): relation is CmsSectionEntityRelation => Boolean(relation))
     .sort(bySectionEntityOrder)
 
-  return relationList(relations, count, limit)
+  return relationList(
+    relations,
+    count,
+    limit,
+    bridgeHealth({ expected, mirrored: count ?? relations.length }),
+  )
 }
 
 async function loadEntityRelations({
@@ -906,6 +1082,7 @@ async function loadEntityRelationsForFromEntities({
   const { data, error, count } = await supabase
     .from("entity_relations")
     .select(ENTITY_RELATION_SELECT, { count: "exact" })
+    .is("source_table", null)
     .in("from_entity_id", fromEntityIds)
     .order("from_entity_id", { ascending: true })
     .order("slot", { ascending: true })
@@ -926,8 +1103,8 @@ async function loadEntityRelationsForFromEntities({
 export async function loadCmsRelationGraph(): Promise<CmsRelationGraph> {
   const supabase = await createClient()
   const [pageSections, sectionEntities, entityRelations] = await Promise.all([
-    loadPageSectionRelations({ supabase }),
-    loadSectionEntityRelations({ supabase }),
+    loadPageSectionRelationsFromEntityGraph({ supabase }),
+    loadSectionEntityRelationsFromEntityGraph({ supabase }),
     loadEntityRelations({ supabase }),
   ])
 
@@ -942,10 +1119,14 @@ export async function loadCmsPageRelations(
   pageId: string,
 ): Promise<CmsPageRelationContext> {
   const supabase = await createClient()
-  const pageSections = await loadPageSectionRelations({ supabase, pageId })
+  const pageSections = await loadPageSectionRelationsFromEntityGraph({
+    supabase,
+    pageId,
+  })
 
   return {
     pageSections: pageSections.relations,
+    pageSectionList: pageSections,
   }
 }
 
@@ -954,8 +1135,8 @@ export async function loadCmsSectionRelations(
 ): Promise<CmsSectionRelationContext> {
   const supabase = await createClient()
   const [pageSections, sectionEntities] = await Promise.all([
-    loadPageSectionRelations({ supabase, sectionId }),
-    loadSectionEntityRelations({ supabase, sectionId }),
+    loadPageSectionRelationsFromEntityGraph({ supabase, sectionId }),
+    loadSectionEntityRelationsFromEntityGraph({ supabase, sectionId }),
   ])
   const entityRelations = await loadEntityRelationsForFromEntities({
     supabase,
@@ -964,7 +1145,9 @@ export async function loadCmsSectionRelations(
 
   return {
     pageSections: pageSections.relations,
+    pageSectionList: pageSections,
     sectionEntities: sectionEntities.relations,
+    sectionEntityList: sectionEntities,
     entityRelations: entityRelations.relations,
   }
 }
@@ -975,13 +1158,14 @@ export async function loadCmsEntityRelations(
   const supabase = await createClient()
   const [sectionEntities, outgoingEntityRelations, incomingEntityRelations] =
     await Promise.all([
-      loadSectionEntityRelations({ supabase, entityId }),
+      loadSectionEntityRelationsFromEntityGraph({ supabase, entityId }),
       loadEntityRelations({ supabase, fromEntityId: entityId }),
       loadEntityRelations({ supabase, toEntityId: entityId }),
     ])
 
   return {
     sectionEntities: sectionEntities.relations,
+    sectionEntityList: sectionEntities,
     outgoingEntityRelations: outgoingEntityRelations.relations,
     incomingEntityRelations: incomingEntityRelations.relations,
   }
