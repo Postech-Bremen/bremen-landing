@@ -1,12 +1,12 @@
 "use client"
 
-import Image from "next/image"
 import { useState } from "react"
 import { CaretLeft, CaretRight } from "@phosphor-icons/react/dist/ssr"
 import {
   AdminSectionFrame,
   type AdminSectionControl,
 } from "@/components/admin-section-frame"
+import { ContentImage } from "@/components/content-image"
 import { Button } from "@/components/ui/button"
 import {
   Dialog,
@@ -167,7 +167,7 @@ export function PhotoGallerySurface({
                   )}
                 >
                   {photo.thumbnailUrl && (
-                    <Image
+                    <ContentImage
                       src={photo.thumbnailUrl}
                       alt={photo.title}
                       fill
@@ -217,7 +217,7 @@ export function PhotoGallerySurface({
                 )}
               >
                 {current.thumbnailUrl ? (
-                  <Image
+                  <ContentImage
                     src={current.thumbnailUrl}
                     alt={current.title}
                     fill
