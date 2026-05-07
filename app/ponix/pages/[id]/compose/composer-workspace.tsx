@@ -74,7 +74,6 @@ export function PonixComposerWorkspace({
     const delays = [0, 150, 500, 1000]
     const timers = delays.map((delay) =>
       window.setTimeout(() => {
-        highlightEntityInFrame(iframeRef.current, selectedEntityId)
         iframeRef.current?.contentWindow?.postMessage(
           { type: "ponix:set-selected-entity", entityId: selectedEntityId },
           window.location.origin,
@@ -194,7 +193,6 @@ export function PonixComposerWorkspace({
 
     dirtyRef.current = false
     delete panelsRef.current?.dataset.composerDirty
-    highlightEntityInFrame(iframeRef.current, null)
     iframeRef.current?.contentWindow?.postMessage(
       { type: "ponix:set-selected-entity", entityId: null },
       window.location.origin,
@@ -215,7 +213,6 @@ export function PonixComposerWorkspace({
       )
     }
 
-    highlightEntityInFrame(iframeRef.current, selectedEntityId)
     target.postMessage(
       { type: "ponix:set-selected-entity", entityId: selectedEntityId },
       window.location.origin,
@@ -380,41 +377,6 @@ function canvasHref(pageId: string, sectionKey: string | null) {
 
 function composeHref(pageId: string, sectionKey: string) {
   return `/ponix/pages/${pageId}/compose?section=${encodeURIComponent(sectionKey)}`
-}
-
-function highlightEntityInFrame(
-  frame: HTMLIFrameElement | null,
-  entityId: string | null,
-) {
-  const frameWindow = frame?.contentWindow
-  const frameDocument = frame?.contentDocument
-  if (!frameWindow || !frameDocument) return
-
-  const nodes =
-    frameDocument.querySelectorAll<HTMLElement>("[data-ponix-entity]")
-  let firstMatch: HTMLElement | null = null
-
-  nodes.forEach((node) => {
-    const selected = Boolean(entityId) && node.dataset.ponixEntity === entityId
-    if (selected && !firstMatch) {
-      firstMatch = node
-    }
-    node.dataset.ponixEntityState = selected ? "selected" : "idle"
-  })
-
-  const target = firstMatch as HTMLElement | null
-  if (!target) return
-
-  const rect = target.getBoundingClientRect()
-  const top =
-    frameWindow.scrollY +
-    rect.top -
-    Math.max(24, (frameWindow.innerHeight - rect.height) / 2)
-
-  frameWindow.scrollTo({
-    top: Math.max(0, top),
-    behavior: "smooth",
-  })
 }
 
 function isSectionMessage(
