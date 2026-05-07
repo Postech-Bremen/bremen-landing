@@ -69,8 +69,16 @@ Maintainer checklist before sending invitations:
 Recommended checks after deployment:
 
 ```bash
-curl -I https://bremen-landing.vercel.app
+curl -I https://bremen.postech.ac.kr
 ```
+
+Canonical production domain:
+
+- `https://bremen.postech.ac.kr`
+
+Vercel fallback domain:
+
+- `https://bremen-landing.vercel.app`
 
 Run a smoke test for:
 
@@ -91,6 +99,14 @@ Expected redirect categories:
 - production site URL
 - Vercel preview wildcard
 - local development callback
+
+Current expected values:
+
+- Site URL: `https://bremen.postech.ac.kr`
+- Production callback: `https://bremen.postech.ac.kr/auth/callback`
+- Vercel fallback callback: `https://bremen-landing.vercel.app/auth/callback`
+- Vercel preview wildcard: `https://*-hyeongsoo-kims-projects-3dc1850b.vercel.app/**`
+- Local development callback: `http://localhost:3000/auth/callback`
 
 When adding or changing a domain:
 
