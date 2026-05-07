@@ -150,3 +150,18 @@
     transform: translateZ(0) rotate(0deg) translateY(-4px) scale(1.02);
   }
 }
+
+@layer utilities {
+  @keyframes accordion-down {
+    from {
+      height: 0;
+    }
+    to {
+      height: var(--radix-accordion-content-height);
+    }
+  }
+
+  .animate-accordion-down {
+    animation: accordion-down 180ms ease-out;
+  }
+}
