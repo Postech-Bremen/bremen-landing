@@ -22,6 +22,15 @@ type EntityUpdate = Database["public"]["Tables"]["entities"]["Update"]
 type EntityInsert = Database["public"]["Tables"]["entities"]["Insert"]
 type EntityRow = Database["public"]["Tables"]["entities"]["Row"]
 
+type ActionResult =
+  | {
+      ok: true
+    }
+  | {
+      ok: false
+      error: string
+    }
+
 type ParsedValue =
   | {
       ok: true
@@ -304,6 +313,81 @@ async function uploadThumbnailIfPresent({
   return supabase.storage.from(entityThumbnailBucket).getPublicUrl(path).data.publicUrl
 }
 
+async function buildEntityUpdate({
+  formData,
+  entity,
+  editPath,
+  redirectOnError,
+}: {
+  formData: FormData
+  entity: EntityRow
+  editPath: string
+  redirectOnError: boolean
+}) {
+  const schema = getEntityEditorSchema(entity.schema_key)
+  if (!schema) {
+    const error = "This entity schema is not registered for editing."
+    if (redirectOnError) {
+      redirectWithParams(editPath, { error })
+    }
+    throw new Error(error)
+  }
+
+  const fields = getEditableEntityFields(entity.schema_key)
+  const data = jsonObject(entity.data)
+  const update: EntityUpdate = {}
+
+  for (const field of fields) {
+    const parsed = parseFieldValue(formData, field)
+
+    if (!parsed.ok) {
+      if (redirectOnError) {
+        redirectWithParams(editPath, {
+          error: parsed.error,
+        })
+      }
+      throw new Error(parsed.error)
+    }
+
+    if (field.source === "data") {
+      updateDataValue(data, field, parsed)
+      continue
+    }
+
+    if (field.key === "published") {
+      update.published = Boolean(parsed.value)
+    }
+
+    if (field.key === "slug") {
+      update.slug = parsed.value === null ? null : String(parsed.value)
+    }
+
+    if (field.key === "title") {
+      update.title = String(parsed.value)
+    }
+
+    if (field.key === "subtitle") {
+      update.subtitle = parsed.value === null ? null : String(parsed.value)
+    }
+
+    if (field.key === "summary") {
+      update.summary = parsed.value === null ? null : String(parsed.value)
+    }
+
+    if (field.key === "thumbnail_url") {
+      update.thumbnail_url =
+        parsed.value === null ? null : String(parsed.value)
+    }
+
+    if (field.key === "sort_at") {
+      update.sort_at = new Date(String(parsed.value)).toISOString()
+    }
+  }
+
+  update.data = data
+  return update
+}
+
 export async function createCmsEntityAction(formData: FormData) {
   const schemaKey = stringField(formData, "schema_key")
   const createPath = schemaKey
@@ -438,59 +522,12 @@ export async function updateCmsEntityAction(formData: FormData) {
     })
   }
 
-  const schema = getEntityEditorSchema(entity.schema_key)
-  if (!schema) {
-    redirectWithParams(editPath, {
-      error: "This entity schema is not registered for editing.",
-    })
-  }
-
-  const fields = getEditableEntityFields(entity.schema_key)
-  const data = jsonObject(entity.data)
-  const update: EntityUpdate = {}
-
-  for (const field of fields) {
-    const parsed = parseFieldValue(formData, field)
-
-    if (!parsed.ok) {
-      redirectWithParams(editPath, {
-        error: parsed.error,
-      })
-    }
-
-    if (field.source === "data") {
-      updateDataValue(data, field, parsed)
-      continue
-    }
-
-    if (field.key === "published") {
-      update.published = Boolean(parsed.value)
-    }
-
-    if (field.key === "slug") {
-      update.slug = parsed.value === null ? null : String(parsed.value)
-    }
-
-    if (field.key === "title") {
-      update.title = String(parsed.value)
-    }
-
-    if (field.key === "subtitle") {
-      update.subtitle = parsed.value === null ? null : String(parsed.value)
-    }
-
-    if (field.key === "summary") {
-      update.summary = parsed.value === null ? null : String(parsed.value)
-    }
-
-    if (field.key === "thumbnail_url") {
-      update.thumbnail_url = parsed.value === null ? null : String(parsed.value)
-    }
-
-    if (field.key === "sort_at") {
-      update.sort_at = new Date(String(parsed.value)).toISOString()
-    }
-  }
+  const update = await buildEntityUpdate({
+    formData,
+    entity,
+    editPath,
+    redirectOnError: true,
+  })
 
   const uploadedThumbnailUrl = await uploadThumbnailIfPresent({
     supabase,
@@ -502,8 +539,6 @@ export async function updateCmsEntityAction(formData: FormData) {
   if (uploadedThumbnailUrl) {
     update.thumbnail_url = uploadedThumbnailUrl
   }
-
-  update.data = data
 
   const { error: updateError } = await supabase
     .from("entities")
@@ -521,4 +556,55 @@ export async function updateCmsEntityAction(formData: FormData) {
   redirectWithParams(redirectTo, {
     saved: "entity",
   })
+}
+
+export async function updateCmsEntityInlineAction(
+  formData: FormData,
+): Promise<ActionResult> {
+  const entityId = stringField(formData, "entity_id")
+
+  try {
+    if (!entityId) {
+      throw new Error("Missing entity id.")
+    }
+
+    const editPath = `/ponix/entities/${entityId}/edit`
+    await requireCmsAdmin(editPath)
+
+    const supabase = await createClient()
+    const { data: entity, error: loadError } = await supabase
+      .from("entities")
+      .select("*")
+      .eq("id", entityId)
+      .maybeSingle()
+
+    if (loadError || !entity) {
+      throw new Error("Entity not found.")
+    }
+
+    const update = await buildEntityUpdate({
+      formData,
+      entity,
+      editPath,
+      redirectOnError: false,
+    })
+
+    const { error: updateError } = await supabase
+      .from("entities")
+      .update(update)
+      .eq("id", entityId)
+
+    if (updateError) {
+      throw new Error("Entity save failed.")
+    }
+
+    revalidateEntitySurfaces(entityId)
+
+    return { ok: true }
+  } catch (error) {
+    return {
+      ok: false,
+      error: error instanceof Error ? error.message : "Entity save failed.",
+    }
+  }
 }
