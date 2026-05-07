@@ -20,6 +20,7 @@ import { formatViews, type Video } from "@/lib/data/videos"
 import { createPublicClient } from "@/lib/supabase/public"
 
 type HomeVideoSource = Video & {
+  entityId?: string
   caption?: string
 }
 
@@ -101,6 +102,7 @@ function videoTitle(video: HomeVideoSource) {
 function mapHomeVideo(video: HomeVideoSource, caption?: string) {
   return {
     id: video.id,
+    entityId: video.entityId,
     title: videoTitle(video),
     thumbnailUrl: video.thumbnailUrl,
     watchUrl: video.watchUrl,

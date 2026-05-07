@@ -149,6 +149,28 @@
   .tilt-card:hover {
     transform: translateZ(0) rotate(0deg) translateY(-4px) scale(1.02);
   }
+
+  [data-ponix-entity] {
+    outline: 0 solid transparent;
+    outline-offset: 0;
+    transition:
+      outline-color 180ms ease,
+      outline-width 180ms ease,
+      outline-offset 180ms ease,
+      box-shadow 180ms ease;
+  }
+
+  [data-ponix-entity][data-ponix-entity-state='selected'] {
+    outline-color: var(--accent);
+    outline-width: 3px;
+    outline-offset: 6px;
+    box-shadow: 0 0 0 10px color-mix(in_oklch, var(--accent) 16%, transparent);
+  }
+
+  [data-composer-entity-id][data-composer-entity-state='selected'] {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 4px color-mix(in_oklch, var(--accent) 14%, transparent);
+  }
 }
 
 @layer utilities {

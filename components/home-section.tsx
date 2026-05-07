@@ -36,6 +36,7 @@ export type HomeStatCard =
 
 export type HomeVideo = {
   id: string
+  entityId?: string
   title: string
   thumbnailUrl?: string
   watchUrl?: string
@@ -300,6 +301,8 @@ export function HomeSection({
             href={homeFeaturedVideo.watchUrl ?? watchUrl(homeFeaturedVideo.id)}
             target="_blank"
             rel="noopener noreferrer"
+            data-ponix-entity={homeFeaturedVideo.entityId}
+            data-ponix-entity-kind="video"
             className="col-span-12 md:col-span-7 group flex flex-col gap-4 animate-in fade-in-0 slide-in-from-bottom-3 duration-700 delay-100"
           >
             <div className="relative aspect-video overflow-hidden border bg-muted rounded-md">
@@ -384,6 +387,8 @@ export function HomeSection({
                 href={v.watchUrl ?? watchUrl(v.id)}
                 target="_blank"
                 rel="noopener noreferrer"
+                data-ponix-entity={v.entityId}
+                data-ponix-entity-kind="video"
                 className="group flex flex-col gap-3"
               >
                 <div className="relative aspect-video overflow-hidden border bg-muted rounded-md">

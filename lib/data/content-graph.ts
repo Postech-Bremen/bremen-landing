@@ -135,6 +135,7 @@ export type HistoryMilestoneItem = {
 }
 
 export type HomeCurationVideo = Video & {
+  entityId?: string
   caption?: string
 }
 
@@ -1064,6 +1065,7 @@ function homeVideoFromSectionItem(
   const props = jsonObject(item.props)
   return {
     ...video,
+    entityId: item.entity.id,
     caption: stringValue(props, "caption") ?? undefined,
   }
 }

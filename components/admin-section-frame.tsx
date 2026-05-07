@@ -46,6 +46,15 @@ export function AdminSectionFrame({
       }
     }
 
+    function handleEntityMessage(event: MessageEvent) {
+      if (event.origin !== window.location.origin) return
+      if (!isEntityMessage(event.data, "ponix:set-selected-entity")) return
+
+      requestAnimationFrame(() => {
+        highlightEntityInCanvas(event.data.entityId)
+      })
+    }
+
     function handleLocalEvent(event: Event) {
       if (!(event instanceof CustomEvent)) return
       const detail = event.detail
@@ -54,9 +63,11 @@ export function AdminSectionFrame({
     }
 
     window.addEventListener("message", handleMessage)
+    window.addEventListener("message", handleEntityMessage)
     window.addEventListener("ponix:set-selected-section", handleLocalEvent)
     return () => {
       window.removeEventListener("message", handleMessage)
+      window.removeEventListener("message", handleEntityMessage)
       window.removeEventListener("ponix:set-selected-section", handleLocalEvent)
     }
   }, [control, sectionKey])
@@ -140,6 +151,33 @@ export function AdminSectionFrame({
   )
 }
 
+function highlightEntityInCanvas(entityId: string | null) {
+  const nodes = document.querySelectorAll<HTMLElement>("[data-ponix-entity]")
+  let firstMatch: HTMLElement | null = null
+
+  nodes.forEach((node) => {
+    const selected = Boolean(entityId) && node.dataset.ponixEntity === entityId
+    if (selected && !firstMatch) {
+      firstMatch = node
+    }
+    node.dataset.ponixEntityState = selected ? "selected" : "idle"
+  })
+
+  const target = firstMatch as HTMLElement | null
+  if (!target) return
+
+  const rect = target.getBoundingClientRect()
+  const top =
+    window.scrollY +
+    rect.top -
+    Math.max(24, (window.innerHeight - rect.height) / 2)
+
+  window.scrollTo({
+    top: Math.max(0, top),
+    behavior: "smooth",
+  })
+}
+
 function scrollSectionIntoCanvasView(sectionKey: string) {
   const section = document.querySelector<HTMLElement>(
     `[data-ponix-section="${CSS.escape(sectionKey)}"]`,
@@ -170,5 +208,19 @@ function isSectionMessage(
     "sectionKey" in value &&
     value.type === type &&
     typeof value.sectionKey === "string"
+  )
+}
+
+function isEntityMessage(
+  value: unknown,
+  type: "ponix:set-selected-entity",
+): value is { type: string; entityId: string | null } {
+  return (
+    typeof value === "object" &&
+    value !== null &&
+    "type" in value &&
+    "entityId" in value &&
+    value.type === type &&
+    (typeof value.entityId === "string" || value.entityId === null)
   )
 }
