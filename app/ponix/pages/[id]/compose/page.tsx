@@ -9,7 +9,11 @@ import {
   CmsSaveNotice,
   CmsSubmitButton,
 } from "@/app/ponix/_components/cms-save-controls"
-import { addSectionEntityRelationAction } from "@/app/ponix/relations/actions"
+import {
+  addSectionEntityRelationAction,
+  deleteSectionEntityRelationAction,
+  updateSectionEntityRelationAction,
+} from "@/app/ponix/relations/actions"
 import { updateCmsSectionAction } from "@/app/ponix/sections/actions"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Badge } from "@/components/ui/badge"
@@ -39,6 +43,7 @@ import {
   getEditableSectionFields,
   getSectionFieldValue,
 } from "@/lib/cms/section-editor"
+import { getCmsSchema } from "@/lib/cms/schema-registry"
 import { loadDraftCompositionPage } from "@/lib/data/content-graph"
 import type { GraphSection } from "@/lib/data/content-graph"
 
@@ -402,6 +407,11 @@ function SectionEntityWorkspace({
   const nextSortOrder =
     Math.max(0, ...relations.sectionEntities.map((relation) => relation.sortOrder)) +
     10
+  const slotOptions = getCmsSchema(section.schemaKey)?.relationSlots ?? ["default"]
+  const relationTypeOptions = uniqueStrings([
+    "item",
+    ...relations.sectionEntities.map((relation) => relation.relationType),
+  ])
 
   return (
     <Card className="overflow-hidden rounded-2xl bg-card/95 shadow-sm">
@@ -436,6 +446,7 @@ function SectionEntityWorkspace({
                 id="composer-relation-type"
                 name="relation_type"
                 defaultValue="item"
+                list="composer-relation-types"
                 className="h-10 bg-background/80"
               />
             </div>
@@ -444,7 +455,8 @@ function SectionEntityWorkspace({
               <Input
                 id="composer-slot"
                 name="slot"
-                defaultValue="default"
+                defaultValue={slotOptions[0] ?? "default"}
+                list="composer-slots"
                 className="h-10 bg-background/80"
               />
             </div>
@@ -462,6 +474,10 @@ function SectionEntityWorkspace({
           <CmsSubmitButton className="w-full rounded-full">
             데이터 연결
           </CmsSubmitButton>
+          <RelationDatalists
+            typeOptions={relationTypeOptions}
+            slotOptions={slotOptions}
+          />
         </form>
 
         <Separator />
@@ -469,27 +485,13 @@ function SectionEntityWorkspace({
         {relations.sectionEntities.length ? (
           <ul className="space-y-2">
             {relations.sectionEntities.map((relation) => (
-              <li key={relation.id} className="rounded-md border bg-background/70 p-3">
-                <div className="mb-2 flex items-start justify-between gap-3">
-                  <div className="min-w-0">
-                    <Link
-                      href={`/ponix/entities/${relation.entityId}`}
-                      className="line-clamp-1 text-sm font-medium underline-offset-4 hover:underline"
-                    >
-                      {relation.entity?.title ?? relation.entityId}
-                    </Link>
-                    <p className="font-mono text-xs text-muted-foreground">
-                      {relation.entity?.schemaKey ?? "schema"}
-                    </p>
-                  </div>
-                  <Badge variant="outline" className="rounded-full">
-                    {relation.slot}
-                  </Badge>
-                </div>
-                <p className="text-xs text-muted-foreground">
-                  {relation.relationType} · order {relation.sortOrder}
-                </p>
-              </li>
+              <SectionEntityRelationEditor
+                key={relation.id}
+                relation={relation}
+                redirectTo={redirectTo}
+                typeOptions={relationTypeOptions}
+                slotOptions={slotOptions}
+              />
             ))}
           </ul>
         ) : (
@@ -509,6 +511,143 @@ function SectionEntityWorkspace({
         </div>
       </CardContent>
     </Card>
+  )
+}
+
+function SectionEntityRelationEditor({
+  relation,
+  redirectTo,
+  typeOptions,
+  slotOptions,
+}: {
+  relation: CmsSectionRelationContext["sectionEntities"][number]
+  redirectTo: string
+  typeOptions: string[]
+  slotOptions: string[]
+}) {
+  const typeListId = `relation-types-${relation.id}`
+  const slotListId = `relation-slots-${relation.id}`
+
+  return (
+    <li className="rounded-xl border bg-background/70 p-3 shadow-xs">
+      <div className="mb-3 flex items-start justify-between gap-3">
+        <div className="min-w-0">
+          <Link
+            href={`/ponix/entities/${relation.entityId}`}
+            className="line-clamp-1 text-sm font-medium underline-offset-4 hover:underline"
+          >
+            {relation.entity?.title ?? relation.entityId}
+          </Link>
+          <p className="font-mono text-xs text-muted-foreground">
+            {relation.entity?.schemaKey ?? "schema"}
+          </p>
+        </div>
+        <Badge variant="outline" className="rounded-full">
+          {relation.entity?.published ? "published" : "draft"}
+        </Badge>
+      </div>
+
+      <form
+        action={updateSectionEntityRelationAction}
+        className="grid gap-2 sm:grid-cols-[minmax(0,1fr)_minmax(0,0.9fr)_5.5rem]"
+      >
+        <input type="hidden" name="redirect_to" value={redirectTo} />
+        <input type="hidden" name="relation_id" value={relation.id} />
+        <div className="space-y-1.5">
+          <Label htmlFor={`relation-type-${relation.id}`} className="text-xs">
+            Type
+          </Label>
+          <Input
+            id={`relation-type-${relation.id}`}
+            name="relation_type"
+            defaultValue={relation.relationType}
+            list={typeListId}
+            className="h-9 bg-card"
+          />
+        </div>
+        <div className="space-y-1.5">
+          <Label htmlFor={`relation-slot-${relation.id}`} className="text-xs">
+            Slot
+          </Label>
+          <Input
+            id={`relation-slot-${relation.id}`}
+            name="slot"
+            defaultValue={relation.slot}
+            list={slotListId}
+            className="h-9 bg-card"
+          />
+        </div>
+        <div className="space-y-1.5">
+          <Label htmlFor={`relation-order-${relation.id}`} className="text-xs">
+            Order
+          </Label>
+          <Input
+            id={`relation-order-${relation.id}`}
+            name="sort_order"
+            type="number"
+            defaultValue={relation.sortOrder}
+            className="h-9 bg-card"
+          />
+        </div>
+        <div className="flex gap-2 sm:col-span-3">
+          <CmsSubmitButton
+            className="h-9 flex-1 rounded-full"
+            pendingLabel="반영 중..."
+          >
+            연결 정보 저장
+          </CmsSubmitButton>
+          <Button asChild variant="outline" className="h-9 rounded-full">
+            <Link href={`/ponix/entities/${relation.entityId}`}>데이터 보기</Link>
+          </Button>
+        </div>
+        <RelationDatalists
+          typeOptions={typeOptions}
+          slotOptions={slotOptions}
+          typeListId={typeListId}
+          slotListId={slotListId}
+        />
+      </form>
+
+      <form action={deleteSectionEntityRelationAction} className="mt-2">
+        <input type="hidden" name="redirect_to" value={redirectTo} />
+        <input type="hidden" name="relation_id" value={relation.id} />
+        <Button
+          type="submit"
+          size="sm"
+          variant="ghost"
+          className="h-8 px-2 text-destructive hover:text-destructive"
+        >
+          이 섹션에서 제거
+        </Button>
+      </form>
+    </li>
+  )
+}
+
+function RelationDatalists({
+  typeOptions,
+  slotOptions,
+  typeListId = "composer-relation-types",
+  slotListId = "composer-slots",
+}: {
+  typeOptions: string[]
+  slotOptions: string[]
+  typeListId?: string
+  slotListId?: string
+}) {
+  return (
+    <>
+      <datalist id={typeListId}>
+        {typeOptions.map((option) => (
+          <option key={option} value={option} />
+        ))}
+      </datalist>
+      <datalist id={slotListId}>
+        {slotOptions.map((option) => (
+          <option key={option} value={option} />
+        ))}
+      </datalist>
+    </>
   )
 }
 
@@ -578,4 +717,8 @@ function searchValue(value: string | string[] | undefined) {
   }
 
   return value ?? null
+}
+
+function uniqueStrings(values: string[]) {
+  return Array.from(new Set(values.map((value) => value.trim()).filter(Boolean)))
 }
