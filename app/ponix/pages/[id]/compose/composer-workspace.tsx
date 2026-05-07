@@ -169,6 +169,20 @@ export function PonixComposerWorkspace({
     return () => window.removeEventListener("message", handleMessage)
   })
 
+  useEffect(() => {
+    function handleReloadCanvas() {
+      const frame = iframeRef.current
+      if (!frame) return
+
+      frame.src = canvasHref(pageId, selectedKey)
+    }
+
+    window.addEventListener("ponix:reload-canvas", handleReloadCanvas)
+    return () => {
+      window.removeEventListener("ponix:reload-canvas", handleReloadCanvas)
+    }
+  }, [pageId, selectedKey])
+
   function selectSection(sectionKey: string) {
     if (!sections.some((section) => section.key === sectionKey)) return
     if (

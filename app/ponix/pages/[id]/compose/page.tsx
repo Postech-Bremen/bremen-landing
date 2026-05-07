@@ -1,18 +1,15 @@
 import type { Metadata } from "next"
 import Link from "next/link"
 import { notFound } from "next/navigation"
-import { ArrowDown, ArrowUp, Database, Layers3, PencilLine } from "lucide-react"
+import { Database, Layers3, PencilLine } from "lucide-react"
 
 import { CmsEntityPicker } from "@/app/ponix/_components/cms-entity-picker"
 import { renderFieldInput } from "@/app/ponix/_components/cms-section-form"
 import { CmsSubmitButton } from "@/app/ponix/_components/cms-save-controls"
+import { ComposerRelationList } from "@/app/ponix/pages/[id]/compose/composer-relation-list"
 import { ComposerSaveFeedback } from "@/app/ponix/pages/[id]/compose/composer-save-feedback"
 import { PonixComposerWorkspace } from "@/app/ponix/pages/[id]/compose/composer-workspace"
-import {
-  addSectionEntityRelationAction,
-  deleteSectionEntityRelationAction,
-  updateSectionEntityRelationAction,
-} from "@/app/ponix/relations/actions"
+import { addSectionEntityRelationAction } from "@/app/ponix/relations/actions"
 import { updateCmsSectionAction } from "@/app/ponix/sections/actions"
 import {
   Accordion,
@@ -423,29 +420,13 @@ function SectionEntityWorkspace({
             </Badge>
           </div>
 
-          {relations.sectionEntities.length ? (
-            <Accordion type="single" collapsible className="space-y-2">
-              {relations.sectionEntities.map((relation, index) => (
-                <SectionEntityRelationEditor
-                  key={relation.id}
-                  relation={relation}
-                  previousSortOrder={
-                    relations.sectionEntities[index - 1]?.sortOrder ?? null
-                  }
-                  nextSortOrder={
-                    relations.sectionEntities[index + 1]?.sortOrder ?? null
-                  }
-                  redirectTo={redirectTo}
-                  typeOptions={relationTypeOptions}
-                  slotOptions={slotOptions}
-                />
-              ))}
-            </Accordion>
-          ) : (
-            <p className="rounded-md border bg-muted/30 p-4 text-sm text-muted-foreground">
-              아직 연결된 데이터가 없습니다.
-            </p>
-          )}
+          <ComposerRelationList
+            sectionId={section.id}
+            relations={relations.sectionEntities}
+            redirectTo={redirectTo}
+            typeOptions={relationTypeOptions}
+            slotOptions={slotOptions}
+          />
         </div>
 
       </CardContent>
@@ -484,269 +465,6 @@ function SectionAdvancedSettingsCard({ section }: { section: GraphSection }) {
         </AccordionItem>
       </Accordion>
     </Card>
-  )
-}
-
-function SectionEntityRelationEditor({
-  relation,
-  previousSortOrder,
-  nextSortOrder,
-  redirectTo,
-  typeOptions,
-  slotOptions,
-}: {
-  relation: CmsSectionRelationContext["sectionEntities"][number]
-  previousSortOrder: number | null
-  nextSortOrder: number | null
-  redirectTo: string
-  typeOptions: string[]
-  slotOptions: string[]
-}) {
-  const typeListId = `relation-types-${relation.id}`
-  const slotListId = `relation-slots-${relation.id}`
-  const moveUpSortOrder =
-    previousSortOrder === null ? null : previousSortOrder - 1
-  const moveDownSortOrder =
-    nextSortOrder === null ? null : nextSortOrder + 1
-
-  return (
-    <AccordionItem
-      value={relation.id}
-      className="rounded-xl border bg-background/70 px-3 shadow-xs"
-      data-composer-relation-item={relation.id}
-      data-composer-entity-id={relation.entityId}
-    >
-      <AccordionTrigger
-        className="gap-3 py-3 hover:no-underline"
-        data-composer-relation-trigger={relation.id}
-      >
-        <div className="grid min-w-0 flex-1 gap-2 text-left">
-          <div className="flex min-w-0 items-start justify-between gap-3">
-            <div className="min-w-0">
-              <p className="line-clamp-1 text-sm font-medium">
-                {relation.entity?.title ?? relation.entityId}
-              </p>
-              <p className="font-mono text-xs text-muted-foreground">
-                {relation.entity?.schemaKey ?? "schema"}
-              </p>
-            </div>
-            <Badge variant="outline" className="rounded-full">
-              {relation.entity?.published ? "published" : "draft"}
-            </Badge>
-          </div>
-          <div className="flex flex-wrap gap-1.5">
-            <Badge
-              variant="secondary"
-              className="rounded-full font-mono text-[10px]"
-            >
-              {relation.slot}
-            </Badge>
-            <Badge
-              variant="outline"
-              className="rounded-full font-mono text-[10px]"
-            >
-              {relation.relationType}
-            </Badge>
-            <Badge
-              variant="outline"
-              className="rounded-full font-mono text-[10px]"
-            >
-              #{relation.sortOrder}
-            </Badge>
-          </div>
-        </div>
-      </AccordionTrigger>
-
-      <AccordionContent
-        className="space-y-3 pb-3"
-        data-composer-relation-editor={relation.id}
-      >
-        <div
-          className="rounded-xl border bg-muted/30 p-3"
-          data-composer-entity-quick-view={relation.entityId}
-        >
-          <div className="flex items-start justify-between gap-3">
-            <div className="min-w-0">
-              <p className="text-xs font-medium text-muted-foreground">
-                데이터
-              </p>
-              <p className="mt-1 line-clamp-1 text-sm font-medium">
-                {relation.entity?.title ?? relation.entityId}
-              </p>
-              {(relation.entity?.subtitle || relation.entity?.summary) && (
-                <p className="mt-1 line-clamp-2 text-xs leading-relaxed text-muted-foreground">
-                  {relation.entity?.subtitle ?? relation.entity?.summary}
-                </p>
-              )}
-            </div>
-            <Badge
-              variant="secondary"
-              className="rounded-full font-mono text-[10px]"
-            >
-              {relation.entity?.entityType ?? "entity"}
-            </Badge>
-          </div>
-          <div className="mt-3 flex flex-wrap gap-2">
-            <Button
-              asChild
-              variant="outline"
-              size="sm"
-              className="h-8 rounded-full"
-            >
-              <Link href={`/ponix/entities/${relation.entityId}`}>
-                상세 보기
-              </Link>
-            </Button>
-            <Button
-              asChild
-              variant="outline"
-              size="sm"
-              className="h-8 rounded-full"
-            >
-              <Link href={`/ponix/entities/${relation.entityId}/edit`}>
-                데이터 수정
-              </Link>
-            </Button>
-          </div>
-        </div>
-
-        <form
-          action={updateSectionEntityRelationAction}
-          className="grid gap-2 sm:grid-cols-[minmax(0,1fr)_minmax(0,0.9fr)_5.5rem]"
-          data-composer-track-dirty
-        >
-          <input type="hidden" name="redirect_to" value={redirectTo} />
-          <input type="hidden" name="relation_id" value={relation.id} />
-          <div className="space-y-1.5">
-            <Label htmlFor={`relation-type-${relation.id}`} className="text-xs">
-              Type
-            </Label>
-            <Input
-              id={`relation-type-${relation.id}`}
-              name="relation_type"
-              defaultValue={relation.relationType}
-              list={typeListId}
-              className="h-9 bg-card"
-            />
-          </div>
-          <div className="space-y-1.5">
-            <Label htmlFor={`relation-slot-${relation.id}`} className="text-xs">
-              Slot
-            </Label>
-            <Input
-              id={`relation-slot-${relation.id}`}
-              name="slot"
-              defaultValue={relation.slot}
-              list={slotListId}
-              className="h-9 bg-card"
-            />
-          </div>
-          <div className="space-y-1.5">
-            <Label
-              htmlFor={`relation-order-${relation.id}`}
-              className="text-xs"
-            >
-              Order
-            </Label>
-            <Input
-              id={`relation-order-${relation.id}`}
-              name="sort_order"
-              type="number"
-              defaultValue={relation.sortOrder}
-              className="h-9 bg-card"
-            />
-          </div>
-          <div className="flex gap-2 sm:col-span-3">
-            <CmsSubmitButton
-              className="h-9 flex-1 rounded-full"
-              pendingLabel="반영 중..."
-            >
-              연결 정보 저장
-            </CmsSubmitButton>
-            <Button asChild variant="outline" className="h-9 rounded-full">
-              <Link href={`/ponix/entities/${relation.entityId}/edit`}>
-                데이터 수정
-              </Link>
-            </Button>
-          </div>
-          <RelationDatalists
-            typeOptions={typeOptions}
-            slotOptions={slotOptions}
-            typeListId={typeListId}
-            slotListId={slotListId}
-          />
-        </form>
-
-        <div className="grid gap-2 sm:grid-cols-2" data-composer-order-controls>
-          <RelationMoveForm
-            relationId={relation.id}
-            redirectTo={redirectTo}
-            sortOrder={moveUpSortOrder}
-            label="위로"
-            icon="up"
-          />
-          <RelationMoveForm
-            relationId={relation.id}
-            redirectTo={redirectTo}
-            sortOrder={moveDownSortOrder}
-            label="아래로"
-            icon="down"
-          />
-        </div>
-
-        <form action={deleteSectionEntityRelationAction}>
-          <input type="hidden" name="redirect_to" value={redirectTo} />
-          <input type="hidden" name="relation_id" value={relation.id} />
-          <Button
-            type="submit"
-            size="sm"
-            variant="ghost"
-            className="h-8 px-2 text-destructive hover:text-destructive"
-          >
-            이 섹션에서 제거
-          </Button>
-        </form>
-      </AccordionContent>
-    </AccordionItem>
-  )
-}
-
-function RelationMoveForm({
-  relationId,
-  redirectTo,
-  sortOrder,
-  label,
-  icon,
-}: {
-  relationId: string
-  redirectTo: string
-  sortOrder: number | null
-  label: string
-  icon: "up" | "down"
-}) {
-  const Icon = icon === "up" ? ArrowUp : ArrowDown
-
-  return (
-    <form action={updateSectionEntityRelationAction}>
-      <input type="hidden" name="redirect_to" value={redirectTo} />
-      <input type="hidden" name="relation_id" value={relationId} />
-      <input
-        type="hidden"
-        name="sort_order"
-        value={sortOrder === null ? "" : String(sortOrder)}
-        data-composer-move-sort-order={label}
-      />
-      <Button
-        type="submit"
-        size="sm"
-        variant="outline"
-        disabled={sortOrder === null}
-        className="h-8 w-full rounded-full"
-      >
-        <Icon className="size-3.5" />
-        {label}
-      </Button>
-    </form>
   )
 }
 
