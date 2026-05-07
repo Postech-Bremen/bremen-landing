@@ -76,12 +76,12 @@ export default async function PonixSectionRecordPage({
       <PageSectionRelationsCard
         title="Page placements"
         description="Pages that include this section."
-        relations={relations.pageSections}
+        relationList={relations.pageSectionList}
       />
       <SectionEntityRelationsCard
         title="Curated entities"
         description="Search existing entities, attach them here, and tune their order."
-        relations={relations.sectionEntities}
+        relationList={relations.sectionEntityList}
         editable
         editorOptions={options}
         fixedSectionId={id}

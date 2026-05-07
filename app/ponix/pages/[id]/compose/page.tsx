@@ -11,6 +11,7 @@ import {
 } from "@/app/ponix/_components/cms-save-controls"
 import { addSectionEntityRelationAction } from "@/app/ponix/relations/actions"
 import { updateCmsSectionAction } from "@/app/ponix/sections/actions"
+import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import {
@@ -412,6 +413,11 @@ function SectionEntityWorkspace({
         <CardDescription>
           이 섹션에 노출할 영상, 사진, 공연, 기록을 연결합니다.
         </CardDescription>
+        {relations.sectionEntityList.bridgeHealth && (
+          <ComposerBridgeHealth
+            health={relations.sectionEntityList.bridgeHealth}
+          />
+        )}
       </CardHeader>
       <CardContent className="space-y-5 p-5">
         <form action={addSectionEntityRelationAction} className="space-y-4">
@@ -503,6 +509,35 @@ function SectionEntityWorkspace({
         </div>
       </CardContent>
     </Card>
+  )
+}
+
+function ComposerBridgeHealth({
+  health,
+}: {
+  health: NonNullable<CmsSectionRelationContext["sectionEntityList"]["bridgeHealth"]>
+}) {
+  if (health.ok) {
+    return (
+      <div className="mt-3 flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
+        <Badge variant="outline" className="rounded-full">
+          Entity graph synced
+        </Badge>
+        <span>
+          {health.mirrored}
+          {health.expected !== null ? ` / ${health.expected}` : ""} mirror rows
+        </span>
+      </div>
+    )
+  }
+
+  return (
+    <Alert variant="destructive" className="mt-3 rounded-md">
+      <AlertDescription>
+        Entity graph mirror is out of sync: {health.mirrored}
+        {health.expected !== null ? ` / ${health.expected}` : ""} rows available.
+      </AlertDescription>
+    </Alert>
   )
 }
 

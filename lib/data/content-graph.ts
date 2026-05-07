@@ -275,6 +275,17 @@ type GraphPageLoadOptions = {
   id?: string
   slug?: string
   includeDrafts?: boolean
+  relationSource?: "legacy" | "entity_graph"
+}
+
+type EntityGraphLink = {
+  id: string
+  source_table: string | null
+  source_id: string | null
+}
+
+type EntityGraphRelation = EntityRelationRow & {
+  toEntity?: EntityGraphLink | null
 }
 
 function hasSupabaseEnv() {
@@ -290,6 +301,10 @@ function jsonObject(value: Json): Record<string, Json | undefined> {
   }
 
   return value
+}
+
+function uniqueStrings(values: Array<string | null | undefined>) {
+  return [...new Set(values.filter((value): value is string => Boolean(value)))]
 }
 
 function stringArrayValue(data: Record<string, Json | undefined>, key: string) {
@@ -518,6 +533,14 @@ async function loadGraphPageUncached(
 
     if (pageError || !page) return null
 
+    if (options.relationSource === "entity_graph") {
+      return await loadGraphPageFromEntityRelations({
+        supabase,
+        page,
+        includeDrafts,
+      })
+    }
+
     const { data: pageSections, error: pageSectionsError } = await supabase
       .from("page_sections")
       .select("*")
@@ -605,6 +628,164 @@ async function loadGraphPageUncached(
     }
   } catch {
     return null
+  }
+}
+
+async function loadGraphPageFromEntityRelations({
+  supabase,
+  page,
+  includeDrafts,
+}: {
+  supabase: ReturnType<typeof createPublicClient>
+  page: PageRow
+  includeDrafts: boolean
+}): Promise<GraphPage> {
+  const { data: pageEntity, error: pageEntityError } = await supabase
+    .from("entities")
+    .select("id")
+    .eq("source_table", "pages")
+    .eq("source_id", page.id)
+    .maybeSingle()
+
+  if (pageEntityError || !pageEntity) return { page, sections: [] }
+
+  const { data: pageSectionRelations, error: pageSectionError } = await supabase
+    .from("entity_relations")
+    .select(
+      `
+        *,
+        toEntity:entities!entity_relations_to_entity_id_fkey(id, source_table, source_id)
+      `,
+    )
+    .eq("source_table", "page_sections")
+    .eq("from_entity_id", pageEntity.id)
+    .order("sort_order", { ascending: true })
+
+  if (pageSectionError || !pageSectionRelations?.length) {
+    return { page, sections: [] }
+  }
+
+  const graphPageSections =
+    pageSectionRelations as unknown as EntityGraphRelation[]
+  const sectionIds = uniqueStrings(
+    graphPageSections.map((relation) =>
+      relation.toEntity?.source_table === "sections"
+        ? relation.toEntity.source_id
+        : null,
+    ),
+  )
+
+  if (!sectionIds.length) return { page, sections: [] }
+
+  let sectionsQuery = supabase.from("sections").select("*").in("id", sectionIds)
+
+  if (!includeDrafts) {
+    sectionsQuery = sectionsQuery.eq("published", true)
+  }
+
+  const { data: sections, error: sectionsError } = await sectionsQuery
+
+  if (sectionsError || !sections?.length) {
+    return { page, sections: [] }
+  }
+
+  const sectionShadowIds = uniqueStrings(
+    graphPageSections.map((relation) => relation.toEntity?.id),
+  )
+  const { data: sectionEntityRelations, error: sectionEntityError } =
+    sectionShadowIds.length
+      ? await supabase
+          .from("entity_relations")
+          .select("*")
+          .eq("source_table", "section_entities")
+          .in("from_entity_id", sectionShadowIds)
+      : { data: [], error: null }
+
+  if (sectionEntityError) return { page, sections: [] }
+
+  const graphSectionEntities =
+    (sectionEntityRelations ?? []) as EntityRelationRow[]
+  const entityIds = uniqueStrings(
+    graphSectionEntities.map((relation) => relation.to_entity_id),
+  )
+  let entitiesResult: {
+    data: EntityRow[] | null
+    error: { message: string } | null
+  } = { data: [], error: null }
+
+  if (entityIds.length) {
+    let entitiesQuery = supabase.from("entities").select("*").in("id", entityIds)
+
+    if (!includeDrafts) {
+      entitiesQuery = entitiesQuery.eq("published", true)
+    }
+
+    entitiesResult = await entitiesQuery
+  }
+
+  const { data: entities, error: entitiesError } = entitiesResult
+
+  if (entitiesError) return { page, sections: [] }
+
+  const sectionById = new Map(sections.map((section) => [section.id, section]))
+  const sectionIdByShadowId = new Map(
+    graphPageSections
+      .map((relation) => [
+        relation.toEntity?.id,
+        relation.toEntity?.source_table === "sections"
+          ? relation.toEntity.source_id
+          : null,
+      ])
+      .filter((entry): entry is [string, string] => Boolean(entry[0] && entry[1])),
+  )
+  const entityById = new Map((entities ?? []).map((entity) => [entity.id, entity]))
+  const itemsBySectionId = new Map<string, GraphSectionItem[]>()
+
+  for (const relation of [...graphSectionEntities].sort(
+    (left, right) =>
+      left.sort_order - right.sort_order ||
+      left.created_at.localeCompare(right.created_at),
+  )) {
+    const sectionId = sectionIdByShadowId.get(relation.from_entity_id)
+    const entity = entityById.get(relation.to_entity_id)
+    if (!sectionId || !entity) continue
+
+    const existing = itemsBySectionId.get(sectionId) ?? []
+    existing.push({
+      entity,
+      relationType: relation.relation_type,
+      slot: relation.slot,
+      sortOrder: relation.sort_order,
+      props: relation.props,
+    })
+    itemsBySectionId.set(sectionId, existing)
+  }
+
+  return {
+    page,
+    sections: graphPageSections
+      .map((relation) => {
+        const sectionId =
+          relation.toEntity?.source_table === "sections"
+            ? relation.toEntity.source_id
+            : null
+        const section = sectionId ? sectionById.get(sectionId) : null
+        if (!section) return null
+
+        return {
+          id: section.id,
+          key: section.key,
+          sectionType: section.section_type,
+          schemaKey: section.schema_key,
+          eyebrow: section.eyebrow,
+          title: section.title,
+          subtitle: section.subtitle,
+          props: section.props,
+          sortOrder: relation.sort_order,
+          items: itemsBySectionId.get(section.id) ?? [],
+        }
+      })
+      .filter((section): section is GraphSection => Boolean(section)),
   }
 }
 
@@ -1198,6 +1379,7 @@ export async function loadDraftPreviewPage(
   const page = await loadGraphPageUncached({
     id: pageId,
     includeDrafts: true,
+    relationSource: "entity_graph",
   })
 
   if (!page) return null
@@ -1309,6 +1491,7 @@ export async function loadDraftCompositionPage(
   const page = await loadGraphPageUncached({
     id: pageId,
     includeDrafts: true,
+    relationSource: "entity_graph",
   })
 
   if (!page) return null

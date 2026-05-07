@@ -33,6 +33,7 @@ import {
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import type {
+  CmsBridgeHealth,
   CmsEntityRelation,
   CmsLinkedEntity,
   CmsLinkedPage,
@@ -133,6 +134,7 @@ export function PageSectionRelationsCard({
       visible={rows.length}
       count={relationList?.count ?? rows.length}
       limit={relationList?.limit}
+      bridgeHealth={relationList?.bridgeHealth}
     >
       {editable && editorOptions && (
         <PageSectionAddForm
@@ -186,6 +188,7 @@ export function SectionEntityRelationsCard({
       visible={rows.length}
       count={relationList?.count ?? rows.length}
       limit={relationList?.limit}
+      bridgeHealth={relationList?.bridgeHealth}
     >
       {editable && editorOptions && (
         <SectionEntityAddForm
@@ -238,6 +241,7 @@ export function EntityRelationsCard({
       visible={rows.length}
       count={relationList?.count ?? rows.length}
       limit={relationList?.limit}
+      bridgeHealth={relationList?.bridgeHealth}
     >
       {editable && allowAdd && editorOptions && (
         <EntityRelationAddForm
@@ -544,6 +548,7 @@ function RelationCard({
   visible,
   count,
   limit,
+  bridgeHealth,
   children,
 }: {
   title: string
@@ -551,6 +556,7 @@ function RelationCard({
   visible: number
   count: number | null
   limit?: number
+  bridgeHealth?: CmsBridgeHealth
   children: ReactNode
 }) {
   return (
@@ -565,9 +571,38 @@ function RelationCard({
           </div>
           <RelationCount visible={visible} count={count} limit={limit} />
         </div>
+        {bridgeHealth && (
+          <BridgeHealthNotice health={bridgeHealth} />
+        )}
       </CardHeader>
       <CardContent className="p-0">{children}</CardContent>
     </Card>
+  )
+}
+
+function BridgeHealthNotice({ health }: { health: CmsBridgeHealth }) {
+  if (health.ok) {
+    return (
+      <div className="mt-3 flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
+        <Badge variant="outline" className="rounded-full">
+          Entity graph synced
+        </Badge>
+        <span>
+          {health.mirrored}
+          {health.expected !== null ? ` / ${health.expected}` : ""} mirror rows
+        </span>
+      </div>
+    )
+  }
+
+  return (
+    <Alert variant="destructive" className="mt-3 rounded-md">
+      <AlertDescription>
+        Entity graph mirror is out of sync: {health.mirrored}
+        {health.expected !== null ? ` / ${health.expected}` : ""} rows available.
+        Use the legacy relation actions only after the bridge catches up.
+      </AlertDescription>
+    </Alert>
   )
 }
 
