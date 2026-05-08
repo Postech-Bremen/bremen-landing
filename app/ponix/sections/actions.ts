@@ -6,14 +6,16 @@ import { redirect } from "next/navigation"
 import { requireCmsAdmin } from "@/lib/cms/auth"
 import {
   cmsFieldInputName,
-  getEditableSectionFields,
-  getSectionCreationSchema,
-  getSectionEditorSchema,
+  editableSectionFieldsForSchema,
   jsonObject,
   sectionTypeFromSchemaKey,
   type CmsEditableSectionField,
   type CmsJsonObject,
 } from "@/lib/cms/section-editor"
+import {
+  loadSectionCreationSchema,
+  loadSectionEditorSchema,
+} from "@/lib/cms/section-editor.server"
 import { PUBLIC_CONTENT_CACHE_TAG } from "@/lib/data/public-cache"
 import { createClient } from "@/lib/supabase/server"
 import type { Database, Json } from "@/lib/supabase/types"
@@ -260,7 +262,7 @@ export async function createCmsSectionAction(formData: FormData) {
     : "/ponix/sections/new"
   const admin = await requireCmsAdmin(createPath)
 
-  const schema = getSectionCreationSchema(schemaKey)
+  const schema = await loadSectionCreationSchema(schemaKey)
   if (!schema) {
     redirectWithParams("/ponix/sections/new", {
       error: "Choose a section schema that can be created from CMS.",
@@ -274,7 +276,7 @@ export async function createCmsSectionAction(formData: FormData) {
     })
   }
 
-  const fields = getEditableSectionFields(schema.schemaKey)
+  const fields = editableSectionFieldsForSchema(schema)
   const props: CmsJsonObject = {}
   const insert: SectionInsert = {
     key: parseSectionKey(formData, createPath),
@@ -364,14 +366,14 @@ export async function updateCmsSectionAction(formData: FormData) {
     })
   }
 
-  const schema = getSectionEditorSchema(section.schema_key)
+  const schema = await loadSectionEditorSchema(section.schema_key)
   if (!schema) {
     redirectWithParams(editPath, {
       error: "This section schema is not registered for editing.",
     })
   }
 
-  const fields = getEditableSectionFields(section.schema_key)
+  const fields = editableSectionFieldsForSchema(schema)
   const props = jsonObject(section.props)
   const update: SectionUpdate = {}
 

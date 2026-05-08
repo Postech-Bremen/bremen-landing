@@ -16,8 +16,8 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import {
   cmsFieldInputName,
-  getEditableSectionFields,
   sectionTypeFromSchemaKey,
+  editableSectionFieldsForSchema,
   type CmsEditableSectionField,
 } from "@/lib/cms/section-editor"
 import type { CmsSchemaDefinition } from "@/lib/cms/schema-registry"
@@ -29,7 +29,7 @@ export function CmsSectionCreatePage({
   schema: CmsSchemaDefinition
   error?: string
 }) {
-  const editableFields = getEditableSectionFields(schema.schemaKey)
+  const editableFields = editableSectionFieldsForSchema(schema)
   const columnFields = editableFields.filter((field) => field.source === "column")
   const propsFields = editableFields.filter((field) => field.source === "props")
   const formId = `cms-section-create-${schema.schemaKey.replace(/[^a-z0-9]+/gi, "-")}`

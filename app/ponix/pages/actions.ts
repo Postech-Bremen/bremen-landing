@@ -6,12 +6,12 @@ import { redirect } from "next/navigation"
 import { requireCmsAdmin } from "@/lib/cms/auth"
 import {
   cmsPageFieldInputName,
-  getEditablePageFields,
-  getPageEditorSchema,
+  editablePageFieldsForSchema,
   jsonObject,
   type CmsEditablePageField,
   type CmsJsonObject,
 } from "@/lib/cms/page-editor"
+import { loadPageEditorSchema } from "@/lib/cms/page-editor.server"
 import { PUBLIC_CONTENT_CACHE_TAG } from "@/lib/data/public-cache"
 import { createClient } from "@/lib/supabase/server"
 import type { Database, Json } from "@/lib/supabase/types"
@@ -163,7 +163,7 @@ export async function updateCmsPageAction(formData: FormData) {
   const redirectTo = safeRedirectPath(formData, editPath)
   await requireCmsAdmin(editPath)
 
-  const schema = getPageEditorSchema()
+  const schema = await loadPageEditorSchema()
   if (!schema) {
     redirectWithParams(editPath, {
       error: "The page editor schema is not registered.",
@@ -183,7 +183,7 @@ export async function updateCmsPageAction(formData: FormData) {
     })
   }
 
-  const fields = getEditablePageFields()
+  const fields = editablePageFieldsForSchema(schema)
   const props = jsonObject(page.props)
   const update: PageUpdate = {}
 

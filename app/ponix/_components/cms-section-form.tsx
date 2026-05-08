@@ -22,17 +22,17 @@ import { Textarea } from "@/components/ui/textarea"
 import type { CmsContentDetail, CmsSectionRelationContext } from "@/lib/cms/content"
 import {
   cmsFieldInputName,
-  getEditableSectionFields,
-  getSectionEditorSchema,
   getSectionFieldValue,
+  editableSectionFieldsForSchema,
   type CmsEditableSectionField,
 } from "@/lib/cms/section-editor"
+import { loadSectionEditorSchema } from "@/lib/cms/section-editor.server"
 
 import { CmsSectionLivePreview } from "./cms-live-preview"
 
 type CmsSectionDetail = Extract<CmsContentDetail, { kind: "section" }>
 
-export function CmsSectionEditorPage({
+export async function CmsSectionEditorPage({
   detail,
   relations,
   error,
@@ -43,8 +43,8 @@ export function CmsSectionEditorPage({
   error?: string
   saved?: boolean
 }) {
-  const schema = getSectionEditorSchema(detail.schemaKey)
-  const editableFields = getEditableSectionFields(detail.schemaKey)
+  const schema = await loadSectionEditorSchema(detail.schemaKey)
+  const editableFields = schema ? editableSectionFieldsForSchema(schema) : []
   const columnFields = editableFields.filter((field) => field.source === "column")
   const propsFields = editableFields.filter((field) => field.source === "props")
   const formId = `cms-section-form-${detail.row.id}`

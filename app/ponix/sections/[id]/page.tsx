@@ -17,7 +17,7 @@ import {
   loadCmsSectionDetail,
   loadCmsSectionRelations,
 } from "@/lib/cms/content"
-import { getEditableSectionFields } from "@/lib/cms/section-editor"
+import { loadEditableSectionFields } from "@/lib/cms/section-editor.server"
 
 export const metadata: Metadata = {
   title: "PONIX Section Detail | 브레멘 Bremen",
@@ -52,7 +52,7 @@ export default async function PonixSectionRecordPage({
     notFound()
   }
 
-  const editableFields = getEditableSectionFields(detail.schemaKey)
+  const editableFields = await loadEditableSectionFields(detail.schemaKey)
 
   return (
     <CmsDetailPage

@@ -22,15 +22,15 @@ import { Textarea } from "@/components/ui/textarea"
 import type { CmsContentDetail } from "@/lib/cms/content"
 import {
   cmsPageFieldInputName,
-  getEditablePageFields,
-  getPageEditorSchema,
   getPageFieldValue,
+  editablePageFieldsForSchema,
   type CmsEditablePageField,
 } from "@/lib/cms/page-editor"
+import { loadPageEditorSchema } from "@/lib/cms/page-editor.server"
 
 type CmsPageDetail = Extract<CmsContentDetail, { kind: "page" }>
 
-export function CmsPageEditorPage({
+export async function CmsPageEditorPage({
   detail,
   error,
   saved,
@@ -39,8 +39,8 @@ export function CmsPageEditorPage({
   error?: string
   saved?: boolean
 }) {
-  const schema = getPageEditorSchema()
-  const editableFields = getEditablePageFields()
+  const schema = await loadPageEditorSchema()
+  const editableFields = schema ? editablePageFieldsForSchema(schema) : []
   const columnFields = editableFields.filter((field) => field.source === "column")
   const propsFields = editableFields.filter((field) => field.source === "props")
 

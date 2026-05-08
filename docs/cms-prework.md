@@ -37,7 +37,9 @@ The database already has JSONB fields:
 
 Those fields are flexible but not enough for a safe CMS. A CMS needs to know which JSON keys are editable, which fields are required, which options are allowed, and which fields are read-only.
 
-The first registry lives in code at `lib/cms/schema-registry.ts`. It can later move to database-backed metadata if needed.
+PONIX now reads editor metadata from DB-backed `entity_schemas` first, then falls
+back to the reviewed code registry at `lib/cms/schema-registry.ts` when metadata
+is missing or invalid.
 
 ## Next Issues
 

@@ -41,10 +41,13 @@ import {
 } from "@/lib/cms/content"
 import {
   cmsFieldInputName,
-  getEditableSectionFields,
   getSectionFieldValue,
+  type CmsEditableSectionField,
 } from "@/lib/cms/section-editor"
-import { getCmsSchema } from "@/lib/cms/schema-registry"
+import { loadEditableSectionFields } from "@/lib/cms/section-editor.server"
+import { loadCmsSchema } from "@/lib/cms/schema-registry.server"
+import { loadEditableEntityFields } from "@/lib/cms/entity-editor.server"
+import type { CmsEditableEntityField } from "@/lib/cms/entity-editor"
 import { loadDraftCompositionPage } from "@/lib/data/content-graph"
 import type { GraphSection } from "@/lib/data/content-graph"
 
@@ -84,16 +87,35 @@ export default async function PonixPageComposerPage({
     loadCmsRelationEditorOptions(),
     Promise.all(
       preview.graph.sections.map(async (section) => {
-        const [sectionDetail, sectionRelations] = await Promise.all([
-          loadCmsSectionDetail(section.id),
-          loadCmsSectionRelations(section.id),
-        ])
+        const [sectionDetail, sectionRelations, editableSectionFields, schema] =
+          await Promise.all([
+            loadCmsSectionDetail(section.id),
+            loadCmsSectionRelations(section.id),
+            loadEditableSectionFields(section.schemaKey),
+            loadCmsSchema(section.schemaKey),
+          ])
+        const entitySchemaKeys = uniqueStrings(
+          sectionRelations?.sectionEntities.map(
+            (relation) => relation.entity?.schemaKey,
+          ) ?? [],
+        )
+        const entityFieldEntries = await Promise.all(
+          entitySchemaKeys.map(async (schemaKey) => [
+            schemaKey,
+            await loadEditableEntityFields(schemaKey),
+          ] as const),
+        )
 
         return {
           section,
           sectionDetail:
             sectionDetail?.kind === "section" ? sectionDetail : null,
           sectionRelations,
+          editableSectionFields,
+          sectionSlotOptions: schema?.relationSlots?.length
+            ? schema.relationSlots
+            : ["default"],
+          entityFieldsBySchemaKey: Object.fromEntries(entityFieldEntries),
         }
       }),
     ),
@@ -116,7 +138,14 @@ export default async function PonixPageComposerPage({
         }))}
         initialSelectedKey={selectedKey}
       >
-        {sectionContexts.map(({ section, sectionDetail, sectionRelations }) => (
+        {sectionContexts.map(({
+          section,
+          sectionDetail,
+          sectionRelations,
+          editableSectionFields,
+          sectionSlotOptions,
+          entityFieldsBySchemaKey,
+        }) => (
           <div
             key={section.id}
             data-composer-panel={section.key}
@@ -130,6 +159,9 @@ export default async function PonixPageComposerPage({
               sectionDetail={sectionDetail}
               relations={sectionRelations}
               relationOptions={relationOptions}
+              editableSectionFields={editableSectionFields}
+              sectionSlotOptions={sectionSlotOptions}
+              entityFieldsBySchemaKey={entityFieldsBySchemaKey}
               redirectTo={composeHref(id, section.key)}
               saved={section.key === selectedKey && sectionSaved}
               relationMessage={
@@ -153,6 +185,9 @@ function SectionInspector({
   sectionDetail,
   relations,
   relationOptions,
+  editableSectionFields,
+  sectionSlotOptions,
+  entityFieldsBySchemaKey,
   redirectTo,
   saved,
   relationMessage,
@@ -164,6 +199,9 @@ function SectionInspector({
   sectionDetail: (Extract<CmsContentDetail, { kind: "section" }>) | null
   relations: CmsSectionRelationContext | null
   relationOptions: CmsRelationEditorOptions | null
+  editableSectionFields: CmsEditableSectionField[]
+  sectionSlotOptions: string[]
+  entityFieldsBySchemaKey: Record<string, CmsEditableEntityField[]>
   redirectTo: string
   saved: boolean
   relationMessage?: string
@@ -233,12 +271,18 @@ function SectionInspector({
           section={section}
           relations={relations}
           options={relationOptions}
+          slotOptions={sectionSlotOptions}
+          entityFieldsBySchemaKey={entityFieldsBySchemaKey}
           redirectTo={redirectTo}
         />
       )}
 
       {sectionDetail && (
-        <SectionQuickEditCard detail={sectionDetail} redirectTo={redirectTo} />
+        <SectionQuickEditCard
+          detail={sectionDetail}
+          fields={editableSectionFields}
+          redirectTo={redirectTo}
+        />
       )}
 
       {section && <SectionAdvancedSettingsCard section={section} />}
@@ -248,13 +292,13 @@ function SectionInspector({
 
 function SectionQuickEditCard({
   detail,
+  fields,
   redirectTo,
 }: {
   detail: Extract<CmsContentDetail, { kind: "section" }>
+  fields: CmsEditableSectionField[]
   redirectTo: string
 }) {
-  const fields = getEditableSectionFields(detail.schemaKey)
-
   return (
     <Card className="overflow-hidden rounded-2xl bg-card/95 shadow-sm">
       <Accordion type="single" collapsible>
@@ -318,17 +362,20 @@ function SectionEntityWorkspace({
   section,
   relations,
   options,
+  slotOptions,
+  entityFieldsBySchemaKey,
   redirectTo,
 }: {
   section: GraphSection
   relations: CmsSectionRelationContext
   options: CmsRelationEditorOptions
+  slotOptions: string[]
+  entityFieldsBySchemaKey: Record<string, CmsEditableEntityField[]>
   redirectTo: string
 }) {
   const nextSortOrder =
     Math.max(0, ...relations.sectionEntities.map((relation) => relation.sortOrder)) +
     10
-  const slotOptions = getCmsSchema(section.schemaKey)?.relationSlots ?? ["default"]
   const relationTypeOptions = uniqueStrings([
     "item",
     ...relations.sectionEntities.map((relation) => relation.relationType),
@@ -426,6 +473,7 @@ function SectionEntityWorkspace({
             redirectTo={redirectTo}
             typeOptions={relationTypeOptions}
             slotOptions={slotOptions}
+            entityFieldsBySchemaKey={entityFieldsBySchemaKey}
           />
         </div>
 
@@ -558,6 +606,10 @@ function searchValue(value: string | string[] | undefined) {
   return value ?? null
 }
 
-function uniqueStrings(values: string[]) {
-  return Array.from(new Set(values.map((value) => value.trim()).filter(Boolean)))
+function uniqueStrings(values: Array<string | null | undefined>) {
+  const strings = values
+    .map((value) => value?.trim())
+    .filter((value): value is string => Boolean(value))
+
+  return Array.from(new Set(strings))
 }

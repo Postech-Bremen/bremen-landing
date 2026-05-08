@@ -14,10 +14,13 @@ import {
 } from "@/components/ui/card"
 import { requireCmsAdmin } from "@/lib/cms/auth"
 import {
-  getSectionCreationSchema,
-  getSectionCreationSchemas,
   sectionTypeFromSchemaKey,
 } from "@/lib/cms/section-editor"
+import {
+  loadSectionCreationSchema,
+  loadSectionCreationSchemas,
+} from "@/lib/cms/section-editor.server"
+import type { CmsSchemaDefinition } from "@/lib/cms/schema-registry"
 
 export const metadata: Metadata = {
   title: "New PONIX Section | 브레멘 Bremen",
@@ -45,15 +48,18 @@ export default async function PonixNewSectionPage({
   await requireCmsAdmin("/ponix/sections/new")
 
   if (schemaKey) {
-    const schema = getSectionCreationSchema(schemaKey)
+    const schema = await loadSectionCreationSchema(schemaKey)
 
     if (schema) {
       return <CmsSectionCreatePage schema={schema} error={error} />
     }
   }
 
+  const schemas = await loadSectionCreationSchemas()
+
   return (
     <SchemaPickerPage
+      schemas={schemas}
       error={
         schemaKey
           ? `Schema ${schemaKey} cannot be created from CMS.`
@@ -63,9 +69,13 @@ export default async function PonixNewSectionPage({
   )
 }
 
-function SchemaPickerPage({ error }: { error?: string }) {
-  const schemas = getSectionCreationSchemas()
-
+function SchemaPickerPage({
+  schemas,
+  error,
+}: {
+  schemas: CmsSchemaDefinition[]
+  error?: string
+}) {
   return (
     <main className="relative min-h-[calc(100vh-5rem)] overflow-hidden">
       <div className="pointer-events-none absolute inset-0 -z-10">

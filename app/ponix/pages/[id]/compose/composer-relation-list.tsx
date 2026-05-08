@@ -43,7 +43,6 @@ import { Textarea } from "@/components/ui/textarea"
 import type { CmsSectionRelationContext } from "@/lib/cms/content"
 import {
   cmsEntityFieldInputName,
-  getEditableEntityFields,
   type CmsEditableEntityField,
 } from "@/lib/cms/entity-editor"
 import { cn } from "@/lib/utils"
@@ -71,12 +70,14 @@ export function ComposerRelationList({
   redirectTo,
   typeOptions,
   slotOptions,
+  entityFieldsBySchemaKey,
 }: {
   sectionId: string
   relations: Relation[]
   redirectTo: string
   typeOptions: string[]
   slotOptions: string[]
+  entityFieldsBySchemaKey: Record<string, CmsEditableEntityField[]>
 }) {
   const [orderedRelations, setOrderedRelations] = useState(relations)
   const [draggingGraphId, setDraggingGraphId] = useState<string | null>(null)
@@ -155,6 +156,7 @@ export function ComposerRelationList({
             redirectTo={redirectTo}
             typeOptions={typeOptions}
             slotOptions={slotOptions}
+            entityFieldsBySchemaKey={entityFieldsBySchemaKey}
             dragging={draggingGraphId === relation.graphRelationId}
             dropTarget={dropTargetGraphId === relation.graphRelationId}
             onDragStart={() => setDraggingGraphId(relation.graphRelationId)}
@@ -191,6 +193,7 @@ function SectionEntityRelationEditor({
   redirectTo,
   typeOptions,
   slotOptions,
+  entityFieldsBySchemaKey,
   dragging,
   dropTarget,
   onDragStart,
@@ -202,6 +205,7 @@ function SectionEntityRelationEditor({
   redirectTo: string
   typeOptions: string[]
   slotOptions: string[]
+  entityFieldsBySchemaKey: Record<string, CmsEditableEntityField[]>
   dragging: boolean
   dropTarget: boolean
   onDragStart: () => void
@@ -359,7 +363,10 @@ function SectionEntityRelationEditor({
                 </Badge>
               </div>
               <div className="mt-3 flex flex-wrap gap-2">
-                <EntityEditDrawer relation={relation} />
+                <EntityEditDrawer
+                  relation={relation}
+                  entityFieldsBySchemaKey={entityFieldsBySchemaKey}
+                />
                 <Button
                   asChild
                   variant="outline"
@@ -488,9 +495,17 @@ function SectionEntityRelationEditor({
   )
 }
 
-function EntityEditDrawer({ relation }: { relation: Relation }) {
+function EntityEditDrawer({
+  relation,
+  entityFieldsBySchemaKey,
+}: {
+  relation: Relation
+  entityFieldsBySchemaKey: Record<string, CmsEditableEntityField[]>
+}) {
   const entity = relation.entity
-  const editableFields = entity ? getEditableEntityFields(entity.schemaKey) : []
+  const editableFields = entity
+    ? (entityFieldsBySchemaKey[entity.schemaKey] ?? [])
+    : []
   const columnFields = editableFields.filter((field) => field.source !== "data")
   const dataFields = editableFields.filter((field) => field.source === "data")
   const [saveState, setSaveState] = useState<SaveState>({ status: "idle" })

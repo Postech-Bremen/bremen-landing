@@ -27,11 +27,15 @@ export function cmsPageFieldInputName(field: CmsFieldDefinition) {
 export function getPageEditorSchema(): CmsSchemaDefinition | null {
   const schema = getCmsSchema("page/default/v1")
 
-  if (!schema || schema.kind !== "page" || schema.table !== "pages") {
+  if (!schema || !isPageEditorSchema(schema)) {
     return null
   }
 
   return schema
+}
+
+export function isPageEditorSchema(schema: CmsSchemaDefinition) {
+  return schema.kind === "page" && schema.table === "pages"
 }
 
 export function getEditablePageFields() {
@@ -41,6 +45,10 @@ export function getEditablePageFields() {
     return []
   }
 
+  return editablePageFieldsForSchema(schema)
+}
+
+export function editablePageFieldsForSchema(schema: CmsSchemaDefinition) {
   return schema.fields.filter((field): field is CmsEditablePageField => {
     if (field.readOnly) {
       return false

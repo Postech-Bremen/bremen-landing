@@ -1,7 +1,11 @@
 import { createClient } from "@/lib/supabase/server"
 import type { Database, Json } from "@/lib/supabase/types"
 
-import { getCmsSchema, getCmsSchemasByKind } from "./schema-registry"
+import type { CmsSchemaDefinition } from "./schema-registry"
+import {
+  loadCmsSchemaRegistryMap,
+  loadCmsSchemasByKind,
+} from "./schema-registry.server"
 
 const ENTITY_LIST_LIMIT = 200
 const RELATION_ENTITY_OPTION_LIMIT = 80
@@ -33,6 +37,7 @@ type SchemaSummary = {
   schemaLabel: string
   schemaRegistered: boolean
 }
+type SchemaRegistryMap = Map<string, CmsSchemaDefinition>
 
 export type CmsPageSummary = SchemaSummary & {
   id: string
@@ -238,8 +243,11 @@ export type CmsContentDetail =
       row: EntityRow
     } & SchemaSummary
 
-function schemaSummary(schemaKey: string): SchemaSummary {
-  const schema = getCmsSchema(schemaKey)
+function schemaSummary(
+  schemaKey: string,
+  registry: SchemaRegistryMap,
+): SchemaSummary {
+  const schema = registry.get(schemaKey)
 
   return {
     schemaKey,
@@ -248,8 +256,9 @@ function schemaSummary(schemaKey: string): SchemaSummary {
   }
 }
 
-function entitySchemaOptions(): CmsEntitySchemaOption[] {
-  return getCmsSchemasByKind("entity")
+async function entitySchemaOptions(): Promise<CmsEntitySchemaOption[]> {
+  const schemas = await loadCmsSchemasByKind("entity")
+  return schemas
     .map((schema) => ({
       key: schema.schemaKey,
       label: schema.label,
@@ -269,9 +278,11 @@ function mapEntitySummary(entity: Pick<
   | "published"
   | "sort_at"
   | "updated_at"
->): CmsEntitySummary {
+>,
+  registry: SchemaRegistryMap,
+): CmsEntitySummary {
   return {
-    ...schemaSummary(entity.schema_key),
+    ...schemaSummary(entity.schema_key, registry),
     id: entity.id,
     entityType: entity.entity_type,
     slug: entity.slug,
@@ -331,13 +342,14 @@ function linkedPage(page: RawPageLink | null): CmsLinkedPage | null {
 
 function linkedSection(
   section: RawSectionLink | null,
+  registry: SchemaRegistryMap,
 ): CmsLinkedSection | null {
   if (!section) {
     return null
   }
 
   return {
-    ...schemaSummary(section.schema_key),
+    ...schemaSummary(section.schema_key, registry),
     id: section.id,
     key: section.key,
     title: section.title,
@@ -346,13 +358,16 @@ function linkedSection(
   }
 }
 
-function linkedEntity(entity: RawEntityLink | null): CmsLinkedEntity | null {
+function linkedEntity(
+  entity: RawEntityLink | null,
+  registry: SchemaRegistryMap,
+): CmsLinkedEntity | null {
   if (!entity) {
     return null
   }
 
   return {
-    ...schemaSummary(entity.schema_key),
+    ...schemaSummary(entity.schema_key, registry),
     id: entity.id,
     entityType: entity.entity_type,
     slug: entity.slug,
@@ -407,7 +422,10 @@ type RawEntityRelation = {
   toEntity: RawEntityLink | null
 }
 
-function mapEntityRelation(relation: RawEntityRelation): CmsEntityRelation {
+function mapEntityRelation(
+  relation: RawEntityRelation,
+  registry: SchemaRegistryMap,
+): CmsEntityRelation {
   return {
     id: relation.id,
     fromEntityId: relation.from_entity_id,
@@ -417,8 +435,8 @@ function mapEntityRelation(relation: RawEntityRelation): CmsEntityRelation {
     sortOrder: relation.sort_order,
     props: relation.props,
     updatedAt: relation.updated_at,
-    fromEntity: linkedEntity(relation.fromEntity),
-    toEntity: linkedEntity(relation.toEntity),
+    fromEntity: linkedEntity(relation.fromEntity, registry),
+    toEntity: linkedEntity(relation.toEntity, registry),
   }
 }
 
@@ -466,17 +484,22 @@ function byEntityRelationOrder(left: CmsEntityRelation, right: CmsEntityRelation
 
 export async function loadCmsPages(): Promise<CmsPageSummary[]> {
   const supabase = await createClient()
-  const { data, error } = await supabase
+  const pagesQuery = supabase
     .from("pages")
     .select("id, slug, title, subtitle, published, updated_at")
     .order("slug", { ascending: true })
+  const [registry, result] = await Promise.all([
+    loadCmsSchemaRegistryMap(),
+    pagesQuery,
+  ])
+  const { data, error } = result
 
   if (error) {
     throw new Error(`Failed to load CMS pages: ${error.message}`)
   }
 
   return (data ?? []).map((page) => ({
-    ...schemaSummary("page/default/v1"),
+    ...schemaSummary("page/default/v1", registry),
     id: page.id,
     slug: page.slug,
     title: page.title,
@@ -490,11 +513,16 @@ export async function loadCmsPageDetail(
   id: string,
 ): Promise<CmsContentDetail | null> {
   const supabase = await createClient()
-  const { data, error } = await supabase
+  const pageQuery = supabase
     .from("pages")
     .select("*")
     .eq("id", id)
     .maybeSingle()
+  const [registry, result] = await Promise.all([
+    loadCmsSchemaRegistryMap(),
+    pageQuery,
+  ])
+  const { data, error } = result
 
   if (error) {
     throw new Error(`Failed to load CMS page detail: ${error.message}`)
@@ -505,7 +533,7 @@ export async function loadCmsPageDetail(
   }
 
   return {
-    ...schemaSummary("page/default/v1"),
+    ...schemaSummary("page/default/v1", registry),
     kind: "page",
     table: "pages",
     title: data.title,
@@ -518,17 +546,22 @@ export async function loadCmsPageDetail(
 
 export async function loadCmsSections(): Promise<CmsSectionSummary[]> {
   const supabase = await createClient()
-  const { data, error } = await supabase
+  const sectionsQuery = supabase
     .from("sections")
     .select("id, key, section_type, schema_key, title, subtitle, published, updated_at")
     .order("key", { ascending: true })
+  const [registry, result] = await Promise.all([
+    loadCmsSchemaRegistryMap(),
+    sectionsQuery,
+  ])
+  const { data, error } = result
 
   if (error) {
     throw new Error(`Failed to load CMS sections: ${error.message}`)
   }
 
   return (data ?? []).map((section) => ({
-    ...schemaSummary(section.schema_key),
+    ...schemaSummary(section.schema_key, registry),
     id: section.id,
     key: section.key,
     sectionType: section.section_type,
@@ -543,11 +576,16 @@ export async function loadCmsSectionDetail(
   id: string,
 ): Promise<CmsContentDetail | null> {
   const supabase = await createClient()
-  const { data, error } = await supabase
+  const sectionQuery = supabase
     .from("sections")
     .select("*")
     .eq("id", id)
     .maybeSingle()
+  const [registry, result] = await Promise.all([
+    loadCmsSchemaRegistryMap(),
+    sectionQuery,
+  ])
+  const { data, error } = result
 
   if (error) {
     throw new Error(`Failed to load CMS section detail: ${error.message}`)
@@ -558,7 +596,7 @@ export async function loadCmsSectionDetail(
   }
 
   return {
-    ...schemaSummary(data.schema_key),
+    ...schemaSummary(data.schema_key, registry),
     kind: "section",
     table: "sections",
     title: data.title ?? data.key,
@@ -571,7 +609,7 @@ export async function loadCmsSectionDetail(
 
 export async function loadCmsEntities(): Promise<CmsEntityList> {
   const supabase = await createClient()
-  const { data, error, count } = await supabase
+  const entitiesQuery = supabase
     .from("entities")
     .select(
       "id, entity_type, schema_key, slug, title, subtitle, thumbnail_url, published, sort_at, updated_at",
@@ -579,6 +617,11 @@ export async function loadCmsEntities(): Promise<CmsEntityList> {
     )
     .order("sort_at", { ascending: false })
     .range(0, ENTITY_LIST_LIMIT - 1)
+  const [registry, result] = await Promise.all([
+    loadCmsSchemaRegistryMap(),
+    entitiesQuery,
+  ])
+  const { data, error, count } = result
 
   if (error) {
     throw new Error(`Failed to load CMS entities: ${error.message}`)
@@ -587,7 +630,7 @@ export async function loadCmsEntities(): Promise<CmsEntityList> {
   return {
     count,
     limit: ENTITY_LIST_LIMIT,
-    entities: (data ?? []).map(mapEntitySummary),
+    entities: (data ?? []).map((entity) => mapEntitySummary(entity, registry)),
   }
 }
 
@@ -597,6 +640,7 @@ export async function loadCmsEntityOptions({
   limit = RELATION_ENTITY_SEARCH_LIMIT,
 }: LoadCmsEntityOptionsOptions = {}): Promise<CmsEntitySummary[]> {
   const supabase = await createClient()
+  const registry = await loadCmsSchemaRegistryMap()
   const normalizedQuery = query?.trim()
   const normalizedSchema = schemaKey?.trim()
   const safeLimit = Math.min(Math.max(limit, 1), 100)
@@ -634,7 +678,7 @@ export async function loadCmsEntityOptions({
     throw new Error(`Failed to load CMS entity options: ${error.message}`)
   }
 
-  return (data ?? []).map(mapEntitySummary)
+  return (data ?? []).map((entity) => mapEntitySummary(entity, registry))
 }
 
 export async function loadCmsRelationEditorOptions({
@@ -648,22 +692,27 @@ export async function loadCmsRelationEditorOptions({
   const entityQuery = countEntities
     ? supabase.from("entities").select(entitySelect, { count: "exact" })
     : supabase.from("entities").select(entitySelect)
+  const pagesQuery = supabase
+    .from("pages")
+    .select("id, slug, title, subtitle, published, updated_at")
+    .order("slug", { ascending: true })
+  const sectionsQuery = supabase
+    .from("sections")
+    .select("id, key, section_type, schema_key, title, subtitle, published, updated_at")
+    .order("key", { ascending: true })
   const entitiesPromise = includeEntities
     ? entityQuery
         .order("sort_at", { ascending: false })
         .range(0, Math.min(Math.max(entityLimit, 1), 100) - 1)
     : Promise.resolve({ data: [], error: null, count: null })
-  const [pagesResult, sectionsResult, entitiesResult] = await Promise.all([
-    supabase
-      .from("pages")
-      .select("id, slug, title, subtitle, published, updated_at")
-      .order("slug", { ascending: true }),
-    supabase
-      .from("sections")
-      .select("id, key, section_type, schema_key, title, subtitle, published, updated_at")
-      .order("key", { ascending: true }),
-    entitiesPromise,
-  ])
+  const [registry, schemaOptions, pagesResult, sectionsResult, entitiesResult] =
+    await Promise.all([
+      loadCmsSchemaRegistryMap(),
+      entitySchemaOptions(),
+      pagesQuery,
+      sectionsQuery,
+      entitiesPromise,
+    ])
 
   if (sectionsResult.error) {
     throw new Error(
@@ -685,7 +734,7 @@ export async function loadCmsRelationEditorOptions({
 
   return {
     pages: (pagesResult.data ?? []).map((page) => ({
-      ...schemaSummary("page/default/v1"),
+      ...schemaSummary("page/default/v1", registry),
       id: page.id,
       slug: page.slug,
       title: page.title,
@@ -694,7 +743,7 @@ export async function loadCmsRelationEditorOptions({
       updatedAt: page.updated_at,
     })),
     sections: (sectionsResult.data ?? []).map((section) => ({
-      ...schemaSummary(section.schema_key),
+      ...schemaSummary(section.schema_key, registry),
       id: section.id,
       key: section.key,
       sectionType: section.section_type,
@@ -703,8 +752,10 @@ export async function loadCmsRelationEditorOptions({
       published: section.published,
       updatedAt: section.updated_at,
     })),
-    entitySchemas: entitySchemaOptions(),
-    entities: (entitiesResult.data ?? []).map(mapEntitySummary),
+    entitySchemas: schemaOptions,
+    entities: (entitiesResult.data ?? []).map((entity) =>
+      mapEntitySummary(entity, registry),
+    ),
     entityCount: entitiesResult.count,
     entityLimit: includeEntities ? Math.min(Math.max(entityLimit, 1), 100) : 0,
   }
@@ -714,11 +765,16 @@ export async function loadCmsEntityDetail(
   id: string,
 ): Promise<CmsContentDetail | null> {
   const supabase = await createClient()
-  const { data, error } = await supabase
+  const entityQuery = supabase
     .from("entities")
     .select("*")
     .eq("id", id)
     .maybeSingle()
+  const [registry, result] = await Promise.all([
+    loadCmsSchemaRegistryMap(),
+    entityQuery,
+  ])
+  const { data, error } = result
 
   if (error) {
     throw new Error(`Failed to load CMS entity detail: ${error.message}`)
@@ -729,7 +785,7 @@ export async function loadCmsEntityDetail(
   }
 
   return {
-    ...schemaSummary(data.schema_key),
+    ...schemaSummary(data.schema_key, registry),
     kind: "entity",
     table: "entities",
     title: data.title,
@@ -908,7 +964,8 @@ async function loadPageSectionRelationsFromEntityGraph({
     sectionId,
     ...rawRelations.map((relation) => sourceId(relation.toEntity, "sections")),
   ])
-  const [pagesById, sectionsById] = await Promise.all([
+  const [registry, pagesById, sectionsById] = await Promise.all([
+    loadCmsSchemaRegistryMap(),
     loadPageLinksById(supabase, pageIds),
     loadSectionLinksById(supabase, sectionIds),
   ])
@@ -931,7 +988,7 @@ async function loadPageSectionRelationsFromEntityGraph({
         props: relation.props,
         updatedAt: relation.updated_at,
         page: linkedPage(pagesById.get(mappedPageId) ?? null),
-        section: linkedSection(sectionsById.get(mappedSectionId) ?? null),
+        section: linkedSection(sectionsById.get(mappedSectionId) ?? null, registry),
       }
     })
     .filter((relation): relation is CmsPageSectionRelation => Boolean(relation))
@@ -999,7 +1056,10 @@ async function loadSectionEntityRelationsFromEntityGraph({
     sectionId,
     ...rawRelations.map((relation) => sourceId(relation.fromEntity, "sections")),
   ])
-  const sectionsById = await loadSectionLinksById(supabase, sectionIds)
+  const [registry, sectionsById] = await Promise.all([
+    loadCmsSchemaRegistryMap(),
+    loadSectionLinksById(supabase, sectionIds),
+  ])
 
   const relations = rawRelations
     .map((relation): CmsSectionEntityRelation | null => {
@@ -1022,8 +1082,8 @@ async function loadSectionEntityRelationsFromEntityGraph({
         sortOrder: relation.sort_order,
         props: relation.props,
         updatedAt: relation.updated_at,
-        section: linkedSection(sectionsById.get(mappedSectionId) ?? null),
-        entity: linkedEntity(relation.toEntity),
+        section: linkedSection(sectionsById.get(mappedSectionId) ?? null, registry),
+        entity: linkedEntity(relation.toEntity, registry),
       }
     })
     .filter((relation): relation is CmsSectionEntityRelation => Boolean(relation))
@@ -1071,8 +1131,9 @@ async function loadEntityRelations({
     throw new Error(`Failed to load entity relations: ${error.message}`)
   }
 
+  const registry = await loadCmsSchemaRegistryMap()
   const relations = ((data ?? []) as unknown as RawEntityRelation[])
-    .map(mapEntityRelation)
+    .map((relation) => mapEntityRelation(relation, registry))
     .sort(byEntityRelationOrder)
 
   return relationList(relations, count, limit)
@@ -1105,8 +1166,9 @@ async function loadEntityRelationsForFromEntities({
     throw new Error(`Failed to load entity relations: ${error.message}`)
   }
 
+  const registry = await loadCmsSchemaRegistryMap()
   const relations = ((data ?? []) as unknown as RawEntityRelation[])
-    .map(mapEntityRelation)
+    .map((relation) => mapEntityRelation(relation, registry))
     .sort(byEntityRelationOrder)
 
   return relationList(relations, count, limit)

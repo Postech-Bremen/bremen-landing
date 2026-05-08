@@ -24,11 +24,15 @@ export function getSectionEditorSchema(
 ): CmsSchemaDefinition | null {
   const schema = getCmsSchema(schemaKey)
 
-  if (!schema || schema.kind !== "section" || schema.table !== "sections") {
+  if (!schema || !isSectionEditorSchema(schema)) {
     return null
   }
 
   return schema
+}
+
+export function isSectionEditorSchema(schema: CmsSchemaDefinition) {
+  return schema.kind === "section" && schema.table === "sections"
 }
 
 const sectionTypeBySchemaKey: Record<string, string> = {
@@ -70,16 +74,20 @@ function hasRequiredReadOnlyField(schema: CmsSchemaDefinition) {
   })
 }
 
+export function canCreateSectionSchema(schema: CmsSchemaDefinition) {
+  return (
+    isSectionEditorSchema(schema) &&
+    Boolean(sectionTypeFromSchemaKey(schema.schemaKey)) &&
+    !hasRequiredReadOnlyField(schema)
+  )
+}
+
 export function getSectionCreationSchema(
   schemaKey: string,
 ): CmsSchemaDefinition | null {
   const schema = getSectionEditorSchema(schemaKey)
 
-  if (!schema || !sectionTypeFromSchemaKey(schema.schemaKey)) {
-    return null
-  }
-
-  if (hasRequiredReadOnlyField(schema)) {
+  if (!schema || !canCreateSectionSchema(schema)) {
     return null
   }
 
@@ -99,6 +107,10 @@ export function getEditableSectionFields(schemaKey: string) {
     return []
   }
 
+  return editableSectionFieldsForSchema(schema)
+}
+
+export function editableSectionFieldsForSchema(schema: CmsSchemaDefinition) {
   return schema.fields.filter((field): field is CmsEditableSectionField => {
     if (field.readOnly) {
       return false
