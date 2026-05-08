@@ -338,17 +338,43 @@ set section_type = excluded.section_type,
     props = excluded.props;
 
 with target as (
-  select page.id as page_id, section.id as section_id
+  select page_entity.id as page_entity_id, section_entity.id as section_entity_id
   from public.pages page
   join public.sections section on section.key = 'performances-updates'
+  join public.entities page_entity
+    on page_entity.source_table = 'pages'
+   and page_entity.source_id = page.id
+  join public.entities section_entity
+    on section_entity.source_table = 'sections'
+   and section_entity.source_id = section.id
   where page.slug = 'performances'
 )
-insert into public.page_sections (page_id, section_id, sort_order, props)
-select page_id, section_id, 25, '{}'::jsonb
+insert into public.entity_relations (
+  from_entity_id,
+  to_entity_id,
+  schema_key,
+  relation_type,
+  slot,
+  sort_order,
+  props,
+  source_table
+)
+select
+  page_entity_id,
+  section_entity_id,
+  'relation/page-section/v1',
+  'contains_section',
+  'sections',
+  25,
+  '{}'::jsonb,
+  'page_sections'
 from target
-on conflict (page_id, section_id) do update
-set sort_order = excluded.sort_order,
-    props = excluded.props;
+on conflict (from_entity_id, to_entity_id, relation_type, slot) do update
+set schema_key = excluded.schema_key,
+    sort_order = excluded.sort_order,
+    props = excluded.props,
+    source_table = excluded.source_table,
+    source_id = excluded.source_id;
 
 insert into public.entities (
   entity_type,
@@ -417,15 +443,23 @@ on conflict (from_entity_id, to_entity_id, relation_type, slot) do update
 set sort_order = excluded.sort_order,
     props = excluded.props;
 
-delete from public.section_entities section_entity
-using public.sections section_ref, public.entities entity
-where section_entity.section_id = section_ref.id
-  and section_entity.entity_id = entity.id
+delete from public.entity_relations relation
+using public.entities section_entity, public.sections section_ref, public.entities entity
+where relation.source_table = 'section_entities'
+  and relation.from_entity_id = section_entity.id
+  and relation.to_entity_id = entity.id
+  and section_entity.source_table = 'sections'
+  and section_entity.source_id = section_ref.id
   and section_ref.key = 'photos-gallery'
   and entity.data->>'source' = 'instagram';
 
 with target_section as (
-  select id from public.sections where key = 'photos-gallery'
+  select section_entity.id as section_entity_id
+  from public.sections section_ref
+  join public.entities section_entity
+    on section_entity.source_table = 'sections'
+   and section_entity.source_id = section_ref.id
+  where section_ref.key = 'photos-gallery'
 ),
 ordered as (
   select
@@ -437,36 +471,51 @@ ordered as (
     and coalesce((entity.data->>'gallery_include')::boolean, false) = true
     and entity.published = true
 )
-insert into public.section_entities (
-  section_id,
-  entity_id,
+insert into public.entity_relations (
+  from_entity_id,
+  to_entity_id,
+  schema_key,
   relation_type,
   slot,
   sort_order,
-  props
+  props,
+  source_table
 )
 select
-  target_section.id,
+  target_section.section_entity_id,
   ordered.id,
+  'relation/section-entity/v1',
   'features_photo',
   'gallery',
   ordered.rank * 10,
-  '{}'::jsonb
+  '{}'::jsonb,
+  'section_entities'
 from target_section
 cross join ordered
-on conflict (section_id, entity_id, relation_type, slot) do update
-set sort_order = excluded.sort_order,
-    props = excluded.props;
+on conflict (from_entity_id, to_entity_id, relation_type, slot) do update
+set schema_key = excluded.schema_key,
+    sort_order = excluded.sort_order,
+    props = excluded.props,
+    source_table = excluded.source_table,
+    source_id = excluded.source_id;
 
-delete from public.section_entities section_entity
-using public.sections section_ref, public.entities entity
-where section_entity.section_id = section_ref.id
-  and section_entity.entity_id = entity.id
+delete from public.entity_relations relation
+using public.entities section_entity, public.sections section_ref, public.entities entity
+where relation.source_table = 'section_entities'
+  and relation.from_entity_id = section_entity.id
+  and relation.to_entity_id = entity.id
+  and section_entity.source_table = 'sections'
+  and section_entity.source_id = section_ref.id
   and section_ref.key = 'performances-updates'
   and entity.data->>'source' = 'instagram';
 
 with target_section as (
-  select id from public.sections where key = 'performances-updates'
+  select section_entity.id as section_entity_id
+  from public.sections section_ref
+  join public.entities section_entity
+    on section_entity.source_table = 'sections'
+   and section_entity.source_id = section_ref.id
+  where section_ref.key = 'performances-updates'
 ),
 ordered as (
   select
@@ -479,26 +528,33 @@ ordered as (
     and coalesce((entity.data->>'gallery_include')::boolean, false) = false
     and entity.published = true
 )
-insert into public.section_entities (
-  section_id,
-  entity_id,
+insert into public.entity_relations (
+  from_entity_id,
+  to_entity_id,
+  schema_key,
   relation_type,
   slot,
   sort_order,
-  props
+  props,
+  source_table
 )
 select
-  target_section.id,
+  target_section.section_entity_id,
   ordered.id,
+  'relation/section-entity/v1',
   'features_post',
   ordered.content_kind,
   ordered.rank * 10,
-  '{}'::jsonb
+  '{}'::jsonb,
+  'section_entities'
 from target_section
 cross join ordered
-on conflict (section_id, entity_id, relation_type, slot) do update
-set sort_order = excluded.sort_order,
-    props = excluded.props;
+on conflict (from_entity_id, to_entity_id, relation_type, slot) do update
+set schema_key = excluded.schema_key,
+    sort_order = excluded.sort_order,
+    props = excluded.props,
+    source_table = excluded.source_table,
+    source_id = excluded.source_id;
 `
 
 writeFileSync(outputPath, sql)
