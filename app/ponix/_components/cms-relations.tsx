@@ -830,7 +830,11 @@ function PageSectionRelationActions({
         className="flex items-center gap-2"
       >
         <input type="hidden" name="redirect_to" value={redirectTo} />
-        <input type="hidden" name="relation_id" value={relation.sourceId} />
+        <input
+          type="hidden"
+          name="relation_id"
+          value={relation.graphRelationId}
+        />
         <Input
           aria-label="Sort order"
           name="sort_order"
@@ -844,7 +848,11 @@ function PageSectionRelationActions({
       </form>
       <form action={deletePageSectionRelationAction}>
         <input type="hidden" name="redirect_to" value={redirectTo} />
-        <input type="hidden" name="relation_id" value={relation.sourceId} />
+        <input
+          type="hidden"
+          name="relation_id"
+          value={relation.graphRelationId}
+        />
         <Button
           type="submit"
           size="sm"
@@ -872,7 +880,11 @@ function SectionEntityRelationActions({
         className="flex items-center gap-2"
       >
         <input type="hidden" name="redirect_to" value={redirectTo} />
-        <input type="hidden" name="relation_id" value={relation.sourceId} />
+        <input
+          type="hidden"
+          name="relation_id"
+          value={relation.graphRelationId}
+        />
         <Input
           aria-label="Sort order"
           name="sort_order"
@@ -886,7 +898,11 @@ function SectionEntityRelationActions({
       </form>
       <form action={deleteSectionEntityRelationAction}>
         <input type="hidden" name="redirect_to" value={redirectTo} />
-        <input type="hidden" name="relation_id" value={relation.sourceId} />
+        <input
+          type="hidden"
+          name="relation_id"
+          value={relation.graphRelationId}
+        />
         <Button
           type="submit"
           size="sm"

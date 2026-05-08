@@ -55,10 +55,11 @@ Current PONIX contract:
   bridge rows.
 - Those bridge rows expose both the `entity_relations.id` and the legacy
   `source_id`.
-- Routine CMS writes still target `page_sections` and `section_entities`; bridge
-  triggers mirror those writes back into `entity_relations`.
-- Code that mutates page or section composition must pass the legacy
-  `source_id`, not the graph row id.
+- Routine CMS writes resolve `entity_relations.id` back to `source_id`, then
+  target `page_sections` and `section_entities`; bridge triggers mirror those
+  writes back into `entity_relations`.
+- Code that mutates page or section composition must pass the graph relation id,
+  not the legacy `source_id`.
 
 ## Tables
 

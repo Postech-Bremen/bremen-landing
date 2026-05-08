@@ -1,7 +1,7 @@
 "use server"
 
 import { revalidatePath, updateTag } from "next/cache"
-import { redirect } from "next/navigation"
+import { redirect, unstable_rethrow } from "next/navigation"
 
 import { requireCmsAdmin } from "@/lib/cms/auth"
 import { PUBLIC_CONTENT_CACHE_TAG } from "@/lib/data/public-cache"
@@ -20,6 +20,7 @@ type EntityRelationInsert =
   Database["public"]["Tables"]["entity_relations"]["Insert"]
 type EntityRelationUpdate =
   Database["public"]["Tables"]["entity_relations"]["Update"]
+type ServerSupabaseClient = Awaited<ReturnType<typeof createClient>>
 
 type ActionResult =
   | {
@@ -101,6 +102,8 @@ function parseProps(formData: FormData): Json {
 }
 
 function relationError(path: string, error: unknown): never {
+  unstable_rethrow(error)
+
   redirectWithParams(path, {
     relation_error:
       error instanceof Error ? error.message : "Relation mutation failed.",
@@ -132,6 +135,66 @@ function revalidateRelationSurfaces(paths: string[]) {
   ]) {
     revalidatePath(path)
   }
+}
+
+async function loadPageSectionSourceRelation(
+  supabase: ServerSupabaseClient,
+  graphRelationId: string,
+) {
+  const { data: bridge, error: bridgeError } = await supabase
+    .from("entity_relations")
+    .select("source_id")
+    .eq("id", graphRelationId)
+    .eq("source_table", "page_sections")
+    .maybeSingle()
+
+  if (bridgeError || !bridge?.source_id) {
+    throw new Error(
+      bridgeError?.message ?? "Page section graph relation not found.",
+    )
+  }
+
+  const { data: relation, error: relationError } = await supabase
+    .from("page_sections")
+    .select("id, page_id, section_id")
+    .eq("id", bridge.source_id)
+    .maybeSingle()
+
+  if (relationError || !relation) {
+    throw new Error(
+      relationError?.message ?? "Page section source row not found.",
+    )
+  }
+
+  return relation
+}
+
+async function loadSectionEntitySourceRelation(
+  supabase: ServerSupabaseClient,
+  graphRelationId: string,
+) {
+  const { data: bridge, error: bridgeError } = await supabase
+    .from("entity_relations")
+    .select("source_id")
+    .eq("id", graphRelationId)
+    .eq("source_table", "section_entities")
+    .maybeSingle()
+
+  if (bridgeError || !bridge?.source_id) {
+    throw new Error(bridgeError?.message ?? "Section graph relation not found.")
+  }
+
+  const { data: relation, error: relationError } = await supabase
+    .from("section_entities")
+    .select("id, section_id, entity_id")
+    .eq("id", bridge.source_id)
+    .maybeSingle()
+
+  if (relationError || !relation) {
+    throw new Error(relationError?.message ?? "Section source row not found.")
+  }
+
+  return relation
 }
 
 export async function addPageSectionRelationAction(formData: FormData) {
@@ -169,24 +232,19 @@ export async function updatePageSectionRelationAction(formData: FormData) {
   try {
     await requireCmsAdmin(redirectTo)
     const supabase = await createClient()
-    const relationId = parseUuid(formData, "relation_id", "Relation")
+    const graphRelationId = parseUuid(formData, "relation_id", "Relation")
     const update: PageSectionUpdate = {
       sort_order: parseSortOrder(formData),
     }
-    const { data: relation, error: loadError } = await supabase
-      .from("page_sections")
-      .select("page_id, section_id")
-      .eq("id", relationId)
-      .maybeSingle()
-
-    if (loadError || !relation) {
-      throw new Error(loadError?.message ?? "Relation not found.")
-    }
+    const relation = await loadPageSectionSourceRelation(
+      supabase,
+      graphRelationId,
+    )
 
     const { error } = await supabase
       .from("page_sections")
       .update(update)
-      .eq("id", relationId)
+      .eq("id", relation.id)
 
     if (error) throw new Error(error.message)
 
@@ -206,21 +264,16 @@ export async function deletePageSectionRelationAction(formData: FormData) {
   try {
     await requireCmsAdmin(redirectTo)
     const supabase = await createClient()
-    const relationId = parseUuid(formData, "relation_id", "Relation")
-    const { data: relation, error: loadError } = await supabase
-      .from("page_sections")
-      .select("page_id, section_id")
-      .eq("id", relationId)
-      .maybeSingle()
-
-    if (loadError || !relation) {
-      throw new Error(loadError?.message ?? "Relation not found.")
-    }
+    const graphRelationId = parseUuid(formData, "relation_id", "Relation")
+    const relation = await loadPageSectionSourceRelation(
+      supabase,
+      graphRelationId,
+    )
 
     const { error } = await supabase
       .from("page_sections")
       .delete()
-      .eq("id", relationId)
+      .eq("id", relation.id)
 
     if (error) throw new Error(error.message)
 
@@ -289,7 +342,7 @@ export async function updateSectionEntityRelationAction(formData: FormData) {
   try {
     await requireCmsAdmin(redirectTo)
     const supabase = await createClient()
-    const relationId = parseUuid(formData, "relation_id", "Relation")
+    const graphRelationId = parseUuid(formData, "relation_id", "Relation")
     const update: SectionEntityUpdate = {
       sort_order: parseSortOrder(formData),
     }
@@ -310,20 +363,15 @@ export async function updateSectionEntityRelationAction(formData: FormData) {
       update.props = parseProps(formData)
     }
 
-    const { data: relation, error: loadError } = await supabase
-      .from("section_entities")
-      .select("section_id, entity_id")
-      .eq("id", relationId)
-      .maybeSingle()
-
-    if (loadError || !relation) {
-      throw new Error(loadError?.message ?? "Relation not found.")
-    }
+    const relation = await loadSectionEntitySourceRelation(
+      supabase,
+      graphRelationId,
+    )
 
     const { error } = await supabase
       .from("section_entities")
       .update(update)
-      .eq("id", relationId)
+      .eq("id", relation.id)
 
     if (error) throw new Error(error.message)
 
@@ -343,7 +391,7 @@ export async function updateSectionEntityRelationInlineAction(
   try {
     await requireCmsAdmin("/ponix/relations")
     const supabase = await createClient()
-    const relationId = parseUuid(formData, "relation_id", "Relation")
+    const graphRelationId = parseUuid(formData, "relation_id", "Relation")
     const update: SectionEntityUpdate = {
       sort_order: parseSortOrder(formData),
     }
@@ -364,20 +412,15 @@ export async function updateSectionEntityRelationInlineAction(
       update.props = parseProps(formData)
     }
 
-    const { data: relation, error: loadError } = await supabase
-      .from("section_entities")
-      .select("section_id, entity_id")
-      .eq("id", relationId)
-      .maybeSingle()
-
-    if (loadError || !relation) {
-      throw new Error(loadError?.message ?? "Relation not found.")
-    }
+    const relation = await loadSectionEntitySourceRelation(
+      supabase,
+      graphRelationId,
+    )
 
     const { error } = await supabase
       .from("section_entities")
       .update(update)
-      .eq("id", relationId)
+      .eq("id", relation.id)
 
     if (error) throw new Error(error.message)
 
@@ -398,10 +441,10 @@ export async function updateSectionEntityRelationInlineAction(
 
 export async function reorderSectionEntityRelationsAction({
   sectionId,
-  relationIds,
+  graphRelationIds,
 }: {
   sectionId: string
-  relationIds: string[]
+  graphRelationIds: string[]
 }): Promise<ActionResult> {
   try {
     await requireCmsAdmin("/ponix/relations")
@@ -410,16 +453,32 @@ export async function reorderSectionEntityRelationsAction({
       throw new Error("Section is required.")
     }
 
-    const orderedIds = relationIds.filter((id) => uuidPattern.test(id))
-    if (orderedIds.length !== relationIds.length || orderedIds.length === 0) {
+    const orderedIds = graphRelationIds.filter((id) => uuidPattern.test(id))
+    if (
+      orderedIds.length !== graphRelationIds.length ||
+      new Set(orderedIds).size !== orderedIds.length ||
+      orderedIds.length === 0
+    ) {
       throw new Error("Relation order is invalid.")
     }
 
     const supabase = await createClient()
+    const { data: sectionShadow, error: shadowError } = await supabase
+      .from("entities")
+      .select("id")
+      .eq("source_table", "sections")
+      .eq("source_id", sectionId)
+      .maybeSingle()
+
+    if (shadowError || !sectionShadow) {
+      throw new Error(shadowError?.message ?? "Section graph entity not found.")
+    }
+
     const { data: relations, error: loadError } = await supabase
-      .from("section_entities")
-      .select("id, section_id, entity_id")
-      .eq("section_id", sectionId)
+      .from("entity_relations")
+      .select("id, source_id, to_entity_id")
+      .eq("source_table", "section_entities")
+      .eq("from_entity_id", sectionShadow.id)
       .in("id", orderedIds)
 
     if (loadError) {
@@ -431,7 +490,18 @@ export async function reorderSectionEntityRelationsAction({
       throw new Error("Some relations do not belong to this section.")
     }
 
-    const updates = orderedIds.map((relationId, index) =>
+    const sourceIdByGraphId = new Map(
+      (relations ?? []).map((relation) => [relation.id, relation.source_id]),
+    )
+    const orderedSourceIds = orderedIds
+      .map((graphRelationId) => sourceIdByGraphId.get(graphRelationId))
+      .filter((id): id is string => Boolean(id))
+
+    if (orderedSourceIds.length !== orderedIds.length) {
+      throw new Error("Some graph relations are missing source rows.")
+    }
+
+    const updates = orderedSourceIds.map((relationId, index) =>
       supabase
         .from("section_entities")
         .update({ sort_order: (index + 1) * 10 } satisfies SectionEntityUpdate)
@@ -447,7 +517,7 @@ export async function reorderSectionEntityRelationsAction({
 
     revalidateRelationSurfaces([
       `/ponix/sections/${sectionId}`,
-      ...(relations ?? []).map((relation) => `/ponix/entities/${relation.entity_id}`),
+      ...(relations ?? []).map((relation) => `/ponix/entities/${relation.to_entity_id}`),
     ])
 
     return { ok: true }
@@ -466,21 +536,16 @@ export async function deleteSectionEntityRelationAction(formData: FormData) {
   try {
     await requireCmsAdmin(redirectTo)
     const supabase = await createClient()
-    const relationId = parseUuid(formData, "relation_id", "Relation")
-    const { data: relation, error: loadError } = await supabase
-      .from("section_entities")
-      .select("section_id, entity_id")
-      .eq("id", relationId)
-      .maybeSingle()
-
-    if (loadError || !relation) {
-      throw new Error(loadError?.message ?? "Relation not found.")
-    }
+    const graphRelationId = parseUuid(formData, "relation_id", "Relation")
+    const relation = await loadSectionEntitySourceRelation(
+      supabase,
+      graphRelationId,
+    )
 
     const { error } = await supabase
       .from("section_entities")
       .delete()
-      .eq("id", relationId)
+      .eq("id", relation.id)
 
     if (error) throw new Error(error.message)
 
