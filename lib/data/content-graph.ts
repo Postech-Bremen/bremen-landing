@@ -19,9 +19,6 @@ import {
 
 type EntityRow = Database["public"]["Tables"]["entities"]["Row"]
 type PageRow = Database["public"]["Tables"]["pages"]["Row"]
-type SectionRow = Database["public"]["Tables"]["sections"]["Row"]
-type PageSectionRow = Database["public"]["Tables"]["page_sections"]["Row"]
-type SectionEntityRow = Database["public"]["Tables"]["section_entities"]["Row"]
 type EntityRelationRow = Database["public"]["Tables"]["entity_relations"]["Row"]
 
 export type GraphSectionItem = {
@@ -276,7 +273,6 @@ type GraphPageLoadOptions = {
   id?: string
   slug?: string
   includeDrafts?: boolean
-  relationSource?: "legacy" | "entity_graph"
 }
 
 type EntityGraphLink = {
@@ -453,29 +449,6 @@ function socialKind(value: string | null): SiteSocialItem["kind"] {
   return "link"
 }
 
-function sortSectionItems(left: SectionEntityRow, right: SectionEntityRow) {
-  return left.sort_order - right.sort_order || left.created_at.localeCompare(right.created_at)
-}
-
-function mapSection(
-  pageSection: PageSectionRow,
-  section: SectionRow,
-  items: GraphSectionItem[],
-): GraphSection {
-  return {
-    id: section.id,
-    key: section.key,
-    sectionType: section.section_type,
-    schemaKey: section.schema_key,
-    eyebrow: section.eyebrow,
-    title: section.title,
-    subtitle: section.subtitle,
-    props: section.props,
-    sortOrder: pageSection.sort_order,
-    items,
-  }
-}
-
 function contentPageFromGraph(page: PageRow): ContentPageConfig {
   return {
     slug: page.slug,
@@ -513,7 +486,6 @@ async function loadGraphPageUncached(
   try {
     const options = typeof query === "string" ? { slug: query } : query
     const includeDrafts = Boolean(options.includeDrafts)
-    const relationSource = options.relationSource ?? "entity_graph"
     const supabase = createPublicClient()
     let pageQuery = supabase
       .from("pages")
@@ -535,99 +507,11 @@ async function loadGraphPageUncached(
 
     if (pageError || !page) return null
 
-    if (relationSource === "entity_graph") {
-      return await loadGraphPageFromEntityRelations({
-        supabase,
-        page,
-        includeDrafts,
-      })
-    }
-
-    const { data: pageSections, error: pageSectionsError } = await supabase
-      .from("page_sections")
-      .select("*")
-      .eq("page_id", page.id)
-      .order("sort_order", { ascending: true })
-
-    if (pageSectionsError || !pageSections?.length) {
-      return { page, sections: [] }
-    }
-
-    const sectionIds = pageSections.map((pageSection) => pageSection.section_id)
-    let sectionsQuery = supabase
-      .from("sections")
-      .select("*")
-      .in("id", sectionIds)
-
-    if (!includeDrafts) {
-      sectionsQuery = sectionsQuery.eq("published", true)
-    }
-
-    const { data: sections, error: sectionsError } = await sectionsQuery
-
-    if (sectionsError || !sections?.length) {
-      return { page, sections: [] }
-    }
-
-    const { data: sectionEntities, error: sectionEntitiesError } = await supabase
-      .from("section_entities")
-      .select("*")
-      .in("section_id", sectionIds)
-
-    if (sectionEntitiesError) return { page, sections: [] }
-
-    const entityIds = [...new Set((sectionEntities ?? []).map((item) => item.entity_id))]
-    let entitiesResult: {
-      data: EntityRow[] | null
-      error: { message: string } | null
-    } = { data: [], error: null }
-
-    if (entityIds.length) {
-      let entitiesQuery = supabase.from("entities").select("*").in("id", entityIds)
-
-      if (!includeDrafts) {
-        entitiesQuery = entitiesQuery.eq("published", true)
-      }
-
-      entitiesResult = await entitiesQuery
-    }
-    const { data: entities, error: entitiesError } = entitiesResult
-
-    if (entitiesError) return { page, sections: [] }
-
-    const sectionById = new Map(sections.map((section) => [section.id, section]))
-    const entityById = new Map((entities ?? []).map((entity) => [entity.id, entity]))
-    const itemsBySectionId = new Map<string, GraphSectionItem[]>()
-
-    for (const sectionEntity of [...(sectionEntities ?? [])].sort(sortSectionItems)) {
-      const entity = entityById.get(sectionEntity.entity_id)
-      if (!entity) continue
-
-      const existing = itemsBySectionId.get(sectionEntity.section_id) ?? []
-      existing.push({
-        entity,
-        relationType: sectionEntity.relation_type,
-        slot: sectionEntity.slot,
-        sortOrder: sectionEntity.sort_order,
-        props: sectionEntity.props,
-      })
-      itemsBySectionId.set(sectionEntity.section_id, existing)
-    }
-
-    return {
+    return await loadGraphPageFromEntityRelations({
       page,
-      sections: pageSections
-        .map((pageSection) => {
-          const section = sectionById.get(pageSection.section_id)
-          if (!section) return null
-          return mapSection(
-            pageSection,
-            section,
-            itemsBySectionId.get(section.id) ?? [],
-          )
-        })
-        .filter((section): section is GraphSection => Boolean(section)),
-    }
+      supabase,
+      includeDrafts,
+    })
   } catch {
     return null
   }
@@ -1382,7 +1266,6 @@ export async function loadDraftPreviewPage(
   const page = await loadGraphPageUncached({
     id: pageId,
     includeDrafts: true,
-    relationSource: "entity_graph",
   })
 
   if (!page) return null
@@ -1494,7 +1377,6 @@ export async function loadDraftCompositionPage(
   const page = await loadGraphPageUncached({
     id: pageId,
     includeDrafts: true,
-    relationSource: "entity_graph",
   })
 
   if (!page) return null
