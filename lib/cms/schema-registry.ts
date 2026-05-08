@@ -162,6 +162,7 @@ export const cmsSchemaRegistry: CmsSchemaDefinition[] = [
     table: "pages",
     label: "Page",
     description: "Routable page record and page-level metadata.",
+    relationSlots: ["sections"],
     fields: [
       field("column", "slug", "Slug", "text", { readOnly: true, required: true }),
       field("column", "title", "Title", "text", { required: true }),
@@ -566,9 +567,10 @@ export const cmsSchemaRegistry: CmsSchemaDefinition[] = [
   {
     schemaKey: "relation/section-entity/v1",
     kind: "relation",
-    table: "section_entities",
+    table: "entity_relations",
     label: "Section entity link",
     description: "Ordered relation between a section and an entity.",
+    relationSlots: ["default"],
     fields: [
       field("column", "relation_type", "Relation type", "text", { required: true }),
       field("column", "slot", "Slot", "text", { required: true }),
@@ -577,11 +579,29 @@ export const cmsSchemaRegistry: CmsSchemaDefinition[] = [
     ],
   },
   {
-    schemaKey: "relation/entity-relation/v1",
+    schemaKey: "relation/page-section/v1",
+    kind: "relation",
+    table: "entity_relations",
+    label: "Page section link",
+    description: "Ordered relation between a page and a section.",
+    relationSlots: ["sections"],
+    fields: [
+      field("column", "relation_type", "Relation type", "text", {
+        readOnly: true,
+        required: true,
+      }),
+      field("column", "slot", "Slot", "text", { readOnly: true, required: true }),
+      field("column", "sort_order", "Sort order", "number", { required: true }),
+      field("relation_props", "metadata", "Relation props", "json"),
+    ],
+  },
+  {
+    schemaKey: "relation/default/v1",
     kind: "relation",
     table: "entity_relations",
     label: "Entity relation",
     description: "Domain relation such as performance to recording or photo.",
+    relationSlots: ["default"],
     fields: [
       field("column", "relation_type", "Relation type", "text", { required: true }),
       field("column", "slot", "Slot", "text", { required: true }),
