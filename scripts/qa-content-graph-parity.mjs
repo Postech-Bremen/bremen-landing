@@ -54,6 +54,10 @@ function stable(value) {
   )
 }
 
+function stableJson(value) {
+  return JSON.stringify(stable(value ?? {}))
+}
+
 function entitySnapshot(entity, relation) {
   return {
     entityId: entity.id,
@@ -101,6 +105,165 @@ function pageSnapshot(page, sections) {
       props: stable(page.props ?? {}),
     },
     sections,
+  }
+}
+
+function bridgeMismatch(message, context) {
+  return {
+    message,
+    context: stable(context),
+  }
+}
+
+function entitySourceId(entity, sourceTable) {
+  return entity?.source_table === sourceTable ? entity.source_id : null
+}
+
+async function checkPageSectionBridge(supabase) {
+  const legacyRows = requireOk(
+    await supabase.from("page_sections").select("id, page_id, section_id, sort_order, props"),
+    "bridge page_sections",
+  )
+  const graphRows = requireOk(
+    await supabase
+      .from("entity_relations")
+      .select(
+        `
+          id,
+          schema_key,
+          relation_type,
+          slot,
+          sort_order,
+          props,
+          source_id,
+          fromEntity:entities!entity_relations_from_entity_id_fkey(source_table, source_id),
+          toEntity:entities!entity_relations_to_entity_id_fkey(source_table, source_id)
+        `,
+      )
+      .eq("source_table", "page_sections"),
+    "bridge page-section graph relations",
+  )
+  const legacyById = new Map(legacyRows.map((row) => [row.id, row]))
+  const graphBySourceId = new Map(graphRows.map((row) => [row.source_id, row]))
+  const mismatches = []
+
+  for (const row of legacyRows) {
+    const graph = graphBySourceId.get(row.id)
+    if (!graph) {
+      mismatches.push(bridgeMismatch("page_sections row is missing graph mirror", row))
+      continue
+    }
+
+    const graphPageId = entitySourceId(graph.fromEntity, "pages")
+    const graphSectionId = entitySourceId(graph.toEntity, "sections")
+    if (
+      graph.schema_key !== "relation/page-section/v1" ||
+      graph.relation_type !== "contains_section" ||
+      graph.slot !== "sections" ||
+      graphPageId !== row.page_id ||
+      graphSectionId !== row.section_id ||
+      Number(graph.sort_order ?? 0) !== Number(row.sort_order ?? 0) ||
+      stableJson(graph.props) !== stableJson(row.props)
+    ) {
+      mismatches.push(
+        bridgeMismatch("page_sections row does not match graph mirror", {
+          legacy: row,
+          graph,
+          graphPageId,
+          graphSectionId,
+        }),
+      )
+    }
+  }
+
+  for (const graph of graphRows) {
+    if (!graph.source_id || !legacyById.has(graph.source_id)) {
+      mismatches.push(
+        bridgeMismatch("page-section graph relation is missing legacy mirror", graph),
+      )
+    }
+  }
+
+  return {
+    name: "page-section bridge",
+    legacy: legacyRows.length,
+    graph: graphRows.length,
+    ok: mismatches.length === 0,
+    mismatches,
+  }
+}
+
+async function checkSectionEntityBridge(supabase) {
+  const legacyRows = requireOk(
+    await supabase
+      .from("section_entities")
+      .select("id, section_id, entity_id, relation_type, slot, sort_order, props"),
+    "bridge section_entities",
+  )
+  const graphRows = requireOk(
+    await supabase
+      .from("entity_relations")
+      .select(
+        `
+          id,
+          schema_key,
+          relation_type,
+          slot,
+          sort_order,
+          props,
+          source_id,
+          to_entity_id,
+          fromEntity:entities!entity_relations_from_entity_id_fkey(source_table, source_id)
+        `,
+      )
+      .eq("source_table", "section_entities"),
+    "bridge section-entity graph relations",
+  )
+  const legacyById = new Map(legacyRows.map((row) => [row.id, row]))
+  const graphBySourceId = new Map(graphRows.map((row) => [row.source_id, row]))
+  const mismatches = []
+
+  for (const row of legacyRows) {
+    const graph = graphBySourceId.get(row.id)
+    if (!graph) {
+      mismatches.push(bridgeMismatch("section_entities row is missing graph mirror", row))
+      continue
+    }
+
+    const graphSectionId = entitySourceId(graph.fromEntity, "sections")
+    if (
+      graph.schema_key !== "relation/section-entity/v1" ||
+      graph.relation_type !== row.relation_type ||
+      graph.slot !== row.slot ||
+      graphSectionId !== row.section_id ||
+      graph.to_entity_id !== row.entity_id ||
+      Number(graph.sort_order ?? 0) !== Number(row.sort_order ?? 0) ||
+      stableJson(graph.props) !== stableJson(row.props)
+    ) {
+      mismatches.push(
+        bridgeMismatch("section_entities row does not match graph mirror", {
+          legacy: row,
+          graph,
+          graphSectionId,
+        }),
+      )
+    }
+  }
+
+  for (const graph of graphRows) {
+    if (!graph.source_id || !legacyById.has(graph.source_id)) {
+      mismatches.push(
+        bridgeMismatch("section-entity graph relation is missing legacy mirror", graph),
+      )
+    }
+  }
+
+  return {
+    name: "section-entity bridge",
+    legacy: legacyRows.length,
+    graph: graphRows.length,
+    ok: mismatches.length === 0,
+    mismatches,
   }
 }
 
@@ -379,6 +542,29 @@ async function main() {
     for (const result of failed) {
       console.error(`\n${result.slug} first mismatch:`)
       console.error(JSON.stringify(result.diff, null, 2))
+    }
+    process.exit(1)
+  }
+
+  const bridgeResults = [
+    await checkPageSectionBridge(supabase),
+    await checkSectionEntityBridge(supabase),
+  ]
+
+  console.table(
+    bridgeResults.map((result) => ({
+      bridge: result.name,
+      legacy: result.legacy,
+      graph: result.graph,
+      parity: result.ok ? "ok" : "mismatch",
+    })),
+  )
+
+  const failedBridges = bridgeResults.filter((result) => !result.ok)
+  if (failedBridges.length) {
+    for (const result of failedBridges) {
+      console.error(`\n${result.name} first mismatch:`)
+      console.error(JSON.stringify(result.mismatches[0], null, 2))
     }
     process.exit(1)
   }

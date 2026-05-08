@@ -60,6 +60,8 @@ Current PONIX contract:
   `section_entities`.
 - Code that mutates page or section composition must pass the graph relation id,
   not the legacy `source_id`.
+- `pnpm run qa:content-graph` checks both page-render parity and global
+  graph/legacy mirror integrity for page-section and section-entity relations.
 
 ## Tables
 
