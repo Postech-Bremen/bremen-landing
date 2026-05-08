@@ -8,6 +8,7 @@
     "start": "next start",
     "lint": "eslint .",
     "qa:content-graph": "node scripts/qa-content-graph-parity.mjs",
+    "qa:cms-db-first-loaders": "node scripts/qa-cms-db-first-loaders.mjs",
     "qa:cms-schema-registry": "node scripts/qa-cms-schema-registry.mjs"
   },
   "dependencies": {
