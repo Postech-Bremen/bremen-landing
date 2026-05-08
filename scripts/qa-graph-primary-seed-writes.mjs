@@ -5,6 +5,8 @@ import { readFileSync } from "node:fs"
 const scanFiles = [
   "scripts/apply-instagram-feed.mjs",
   "scripts/apply-scraped-content.mjs",
+  "scripts/generate-instagram-feed-migration.mjs",
+  "scripts/generate-scraped-content-migration.mjs",
 ]
 
 const forbiddenPatterns = [
@@ -23,6 +25,30 @@ const forbiddenPatterns = [
   {
     label: "direct section_entities upsert helper target",
     pattern: /upsertChunked\(\s*supabase\s*,\s*["'`]section_entities["'`]/,
+  },
+  {
+    label: "generated page_sections insert SQL",
+    pattern: /insert\s+into\s+public\.page_sections/i,
+  },
+  {
+    label: "generated section_entities insert SQL",
+    pattern: /insert\s+into\s+public\.section_entities/i,
+  },
+  {
+    label: "generated page_sections delete SQL",
+    pattern: /delete\s+from\s+public\.page_sections/i,
+  },
+  {
+    label: "generated section_entities delete SQL",
+    pattern: /delete\s+from\s+public\.section_entities/i,
+  },
+  {
+    label: "generated page_sections update SQL",
+    pattern: /update\s+public\.page_sections/i,
+  },
+  {
+    label: "generated section_entities update SQL",
+    pattern: /update\s+public\.section_entities/i,
   },
 ]
 
@@ -50,12 +76,19 @@ function runSelfTest() {
     "scripts/apply-example.mjs",
     'await supabase.from("section_entities").upsert(rows)',
   )
+  const sqlShouldFail = scanText(
+    "scripts/generate-example.mjs",
+    "insert into public.section_entities (section_id, entity_id) select ...",
+  )
   const shouldPass = scanText(
     "scripts/apply-example.mjs",
-    'await upsertSectionEntityRelations(supabase, rows, "seed links")',
+    `
+await upsertSectionEntityRelations(supabase, rows, "seed links")
+insert into public.entity_relations (source_table) values ('section_entities')
+`,
   )
 
-  if (shouldFail.length !== 1 || shouldPass.length !== 0) {
+  if (shouldFail.length !== 1 || sqlShouldFail.length !== 1 || shouldPass.length !== 0) {
     throw new Error("Self-test failed for graph-primary seed write guard.")
   }
 }
@@ -75,7 +108,7 @@ console.table([
 ])
 
 if (violations.length) {
-  console.error("\nLegacy composition writes found in seed apply scripts:")
+  console.error("\nLegacy composition writes found in seed scripts:")
   for (const violation of violations) {
     console.error(
       `- ${violation.file}:${violation.line} ${violation.rule}: ${violation.text}`,
