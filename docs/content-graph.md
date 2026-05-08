@@ -58,10 +58,15 @@ Current PONIX contract:
 - Routine CMS composition writes target `entity_relations`; graph-to-legacy
   triggers mirror those writes back into `page_sections` and
   `section_entities`.
+- Maintenance apply scripts that refresh scraped or Instagram content should
+  also write section placement through `entity_relations`, not directly through
+  `page_sections` or `section_entities`.
 - Code that mutates page or section composition must pass the graph relation id,
   not the legacy `source_id`.
 - `pnpm run qa:content-graph` checks both page-render parity and global
   graph/legacy mirror integrity for page-section and section-entity relations.
+- `pnpm run qa:graph-primary-seed-writes` checks that seed apply scripts do not
+  reintroduce direct legacy composition writes.
 
 ## Tables
 

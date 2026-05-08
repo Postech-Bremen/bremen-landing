@@ -1,5 +1,10 @@
 import { createClient } from "@supabase/supabase-js"
 import { readFileSync } from "node:fs"
+import {
+  deleteSectionEntityRelations,
+  upsertPageSectionRelations,
+  upsertSectionEntityRelations,
+} from "./content-graph-write-helpers.mjs"
 
 const rowsPath = process.argv[2] ?? "/tmp/bremen_instagram_seed_rows.json"
 const envPath = ".env.local"
@@ -113,16 +118,16 @@ async function main() {
   )
 
   if (page && performanceUpdatesSection) {
-    requireOk(
-      await supabase.from("page_sections").upsert(
+    await upsertPageSectionRelations(
+      supabase,
+      [
         {
           page_id: page.id,
           section_id: performanceUpdatesSection.id,
           sort_order: 25,
           props: {},
         },
-        { onConflict: "page_id,section_id" },
-      ),
+      ],
       "upsert performances page section",
     )
   }
@@ -218,17 +223,12 @@ async function main() {
   )
 
   const sectionIds = [gallerySection?.id, performanceUpdatesSection?.id].filter(Boolean)
-  for (const sectionId of sectionIds) {
-    for (const ids of chunk(instagramIds)) {
-      requireOk(
-        await supabase
-          .from("section_entities")
-          .delete()
-          .eq("section_id", sectionId)
-          .in("entity_id", ids),
-        "delete old Instagram section links",
-      )
-    }
+  if (sectionIds.length && instagramIds.length) {
+    await deleteSectionEntityRelations(supabase, {
+      sectionIds,
+      entityIds: instagramIds,
+      label: "delete old Instagram section links",
+    })
   }
 
   const photos = entities
@@ -275,11 +275,9 @@ async function main() {
   ]
 
   if (sectionEntities.length) {
-    await upsertChunked(
+    await upsertSectionEntityRelations(
       supabase,
-      "section_entities",
       sectionEntities,
-      { onConflict: "section_id,entity_id,relation_type,slot" },
       "upsert Instagram section links",
     )
   }

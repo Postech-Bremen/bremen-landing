@@ -1,5 +1,10 @@
 import { createClient } from "@supabase/supabase-js"
 import { readFileSync } from "node:fs"
+import {
+  deleteSectionEntityRelations,
+  upsertPageSectionRelations,
+  upsertSectionEntityRelations,
+} from "./content-graph-write-helpers.mjs"
 
 const envPath = ".env.local"
 const rowsPath = process.argv[2] ?? "/tmp/bremen_seed_rows.json"
@@ -151,24 +156,22 @@ async function main() {
   const pageBySlug = new Map(pages.map((page) => [page.slug, page]))
   const sectionByKey = new Map(sections.map((section) => [section.key, section]))
 
-  requireOk(
-    await supabase.from("page_sections").upsert(
-      [
-        {
-          page_id: pageBySlug.get("videos").id,
-          section_id: sectionByKey.get("videos-by-event").id,
-          sort_order: 25,
-          props: {},
-        },
-        {
-          page_id: pageBySlug.get("history").id,
-          section_id: sectionByKey.get("history-timeline").id,
-          sort_order: 10,
-          props: {},
-        },
-      ],
-      { onConflict: "page_id,section_id" },
-    ),
+  await upsertPageSectionRelations(
+    supabase,
+    [
+      {
+        page_id: pageBySlug.get("videos").id,
+        section_id: sectionByKey.get("videos-by-event").id,
+        sort_order: 25,
+        props: {},
+      },
+      {
+        page_id: pageBySlug.get("history").id,
+        section_id: sectionByKey.get("history-timeline").id,
+        sort_order: 10,
+        props: {},
+      },
+    ],
     "upsert page sections",
   )
 
@@ -288,10 +291,10 @@ async function main() {
   const seededSectionByKey = new Map(seededSections.map((section) => [section.key, section]))
   const sectionIds = seededSections.map((section) => section.id)
 
-  requireOk(
-    await supabase.from("section_entities").delete().in("section_id", sectionIds),
-    "clear section entities",
-  )
+  await deleteSectionEntityRelations(supabase, {
+    sectionIds,
+    label: "clear section entities",
+  })
 
   const allPerformances = requireOk(
     await supabase
@@ -387,11 +390,9 @@ async function main() {
   )
   addSectionItems("history-timeline", allHistory.sort(sortByRank))
 
-  await upsertChunked(
+  await upsertSectionEntityRelations(
     supabase,
-    "section_entities",
     sectionEntities,
-    { onConflict: "section_id,entity_id,relation_type,slot" },
     "upsert section entities",
   )
 
