@@ -48,6 +48,9 @@ forms, audits, migrations, and generated types have moved to the entity graph.
 
 Current PONIX contract:
 
+- Public page composition reads use the `entity_relations` bridge by default.
+  The legacy `page_sections` / `section_entities` path is kept only as a
+  parity check while the transition is in progress.
 - CMS relation lists read page/section placement through `entity_relations`
   bridge rows.
 - Those bridge rows expose both the `entity_relations.id` and the legacy

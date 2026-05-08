@@ -513,6 +513,7 @@ async function loadGraphPageUncached(
   try {
     const options = typeof query === "string" ? { slug: query } : query
     const includeDrafts = Boolean(options.includeDrafts)
+    const relationSource = options.relationSource ?? "entity_graph"
     const supabase = createPublicClient()
     let pageQuery = supabase
       .from("pages")
@@ -534,7 +535,7 @@ async function loadGraphPageUncached(
 
     if (pageError || !page) return null
 
-    if (options.relationSource === "entity_graph") {
+    if (relationSource === "entity_graph") {
       return await loadGraphPageFromEntityRelations({
         supabase,
         page,
