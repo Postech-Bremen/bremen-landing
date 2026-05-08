@@ -8,19 +8,33 @@ import { PUBLIC_CONTENT_CACHE_TAG } from "@/lib/data/public-cache"
 import { createClient } from "@/lib/supabase/server"
 import type { Database, Json } from "@/lib/supabase/types"
 
-type PageSectionInsert =
-  Database["public"]["Tables"]["page_sections"]["Insert"]
-type PageSectionUpdate =
-  Database["public"]["Tables"]["page_sections"]["Update"]
-type SectionEntityInsert =
-  Database["public"]["Tables"]["section_entities"]["Insert"]
-type SectionEntityUpdate =
-  Database["public"]["Tables"]["section_entities"]["Update"]
 type EntityRelationInsert =
   Database["public"]["Tables"]["entity_relations"]["Insert"]
 type EntityRelationUpdate =
   Database["public"]["Tables"]["entity_relations"]["Update"]
 type ServerSupabaseClient = Awaited<ReturnType<typeof createClient>>
+
+type SourceEntityLink = {
+  source_table: string | null
+  source_id: string | null
+}
+
+type PageSectionGraphRelation = {
+  id: string
+  from_entity_id: string
+  to_entity_id: string
+  source_id: string | null
+  fromEntity?: SourceEntityLink | null
+  toEntity?: SourceEntityLink | null
+}
+
+type SectionEntityGraphRelation = {
+  id: string
+  from_entity_id: string
+  to_entity_id: string
+  source_id: string | null
+  fromEntity?: SourceEntityLink | null
+}
 
 type ActionResult =
   | {
@@ -137,88 +151,166 @@ function revalidateRelationSurfaces(paths: string[]) {
   }
 }
 
-async function loadPageSectionSourceRelation(
+function sourceIdFromLink(
+  link: SourceEntityLink | null | undefined,
+  sourceTable: "pages" | "sections",
+) {
+  return link?.source_table === sourceTable ? link.source_id : null
+}
+
+async function loadShadowEntityId({
+  supabase,
+  sourceTable,
+  sourceId,
+  label,
+}: {
+  supabase: ServerSupabaseClient
+  sourceTable: "pages" | "sections"
+  sourceId: string
+  label: string
+}) {
+  const { data, error } = await supabase
+    .from("entities")
+    .select("id")
+    .eq("source_table", sourceTable)
+    .eq("source_id", sourceId)
+    .maybeSingle()
+
+  if (error || !data?.id) {
+    throw new Error(error?.message ?? `${label} graph entity not found.`)
+  }
+
+  return data.id
+}
+
+async function loadPageSectionGraphRelation(
   supabase: ServerSupabaseClient,
   graphRelationId: string,
 ) {
-  const { data: bridge, error: bridgeError } = await supabase
+  const { data, error } = await supabase
     .from("entity_relations")
-    .select("source_id")
+    .select(
+      `
+        id,
+        from_entity_id,
+        to_entity_id,
+        source_id,
+        fromEntity:entities!entity_relations_from_entity_id_fkey(source_table, source_id),
+        toEntity:entities!entity_relations_to_entity_id_fkey(source_table, source_id)
+      `,
+    )
     .eq("id", graphRelationId)
     .eq("source_table", "page_sections")
     .maybeSingle()
 
-  if (bridgeError || !bridge?.source_id) {
-    throw new Error(
-      bridgeError?.message ?? "Page section graph relation not found.",
-    )
+  const relation = data as unknown as PageSectionGraphRelation | null
+  const pageId = sourceIdFromLink(relation?.fromEntity, "pages")
+  const sectionId = sourceIdFromLink(relation?.toEntity, "sections")
+
+  if (error || !relation || !pageId || !sectionId) {
+    throw new Error(error?.message ?? "Page section graph relation not found.")
   }
 
-  const { data: relation, error: relationError } = await supabase
-    .from("page_sections")
-    .select("id, page_id, section_id")
-    .eq("id", bridge.source_id)
-    .maybeSingle()
-
-  if (relationError || !relation) {
-    throw new Error(
-      relationError?.message ?? "Page section source row not found.",
-    )
+  return {
+    ...relation,
+    pageId,
+    sectionId,
   }
-
-  return relation
 }
 
-async function loadSectionEntitySourceRelation(
+async function loadSectionEntityGraphRelation(
   supabase: ServerSupabaseClient,
   graphRelationId: string,
 ) {
-  const { data: bridge, error: bridgeError } = await supabase
+  const { data, error } = await supabase
     .from("entity_relations")
-    .select("source_id")
+    .select(
+      `
+        id,
+        from_entity_id,
+        to_entity_id,
+        source_id,
+        fromEntity:entities!entity_relations_from_entity_id_fkey(source_table, source_id)
+      `,
+    )
     .eq("id", graphRelationId)
     .eq("source_table", "section_entities")
     .maybeSingle()
 
-  if (bridgeError || !bridge?.source_id) {
-    throw new Error(bridgeError?.message ?? "Section graph relation not found.")
+  const relation = data as unknown as SectionEntityGraphRelation | null
+  const sectionId = sourceIdFromLink(relation?.fromEntity, "sections")
+
+  if (error || !relation || !sectionId) {
+    throw new Error(error?.message ?? "Section graph relation not found.")
   }
 
-  const { data: relation, error: relationError } = await supabase
-    .from("section_entities")
-    .select("id, section_id, entity_id")
-    .eq("id", bridge.source_id)
-    .maybeSingle()
-
-  if (relationError || !relation) {
-    throw new Error(relationError?.message ?? "Section source row not found.")
+  return {
+    ...relation,
+    sectionId,
+    entityId: relation.to_entity_id,
   }
-
-  return relation
 }
 
 export async function addPageSectionRelationAction(formData: FormData) {
   const redirectTo = safeRedirectPath(formData)
 
   try {
-    await requireCmsAdmin(redirectTo)
+    const admin = await requireCmsAdmin(redirectTo)
     const supabase = await createClient()
-    const payload: PageSectionInsert = {
-      page_id: parseUuid(formData, "page_id", "Page"),
-      section_id: parseUuid(formData, "section_id", "Section"),
+    const pageId = parseUuid(formData, "page_id", "Page")
+    const sectionId = parseUuid(formData, "section_id", "Section")
+    const [pageEntityId, sectionEntityId] = await Promise.all([
+      loadShadowEntityId({
+        supabase,
+        sourceTable: "pages",
+        sourceId: pageId,
+        label: "Page",
+      }),
+      loadShadowEntityId({
+        supabase,
+        sourceTable: "sections",
+        sourceId: sectionId,
+        label: "Section",
+      }),
+    ])
+    const payload: EntityRelationInsert = {
+      from_entity_id: pageEntityId,
+      to_entity_id: sectionEntityId,
+      schema_key: "relation/page-section/v1",
+      relation_type: "contains_section",
+      slot: "sections",
       sort_order: parseSortOrder(formData),
+      props: {},
+      source_table: "page_sections",
+      created_by_member_id: admin.id,
     }
-    const { error } = await supabase
-      .from("page_sections")
-      .upsert(payload, {
-        onConflict: "page_id,section_id",
-      })
+    const { data: existing, error: existingError } = await supabase
+      .from("entity_relations")
+      .select("id")
+      .eq("source_table", "page_sections")
+      .eq("from_entity_id", pageEntityId)
+      .eq("to_entity_id", sectionEntityId)
+      .eq("relation_type", "contains_section")
+      .eq("slot", "sections")
+      .maybeSingle()
+
+    if (existingError) throw new Error(existingError.message)
+
+    const { error } = existing
+      ? await supabase
+          .from("entity_relations")
+          .update({
+            sort_order: payload.sort_order,
+            props: payload.props,
+          } satisfies EntityRelationUpdate)
+          .eq("id", existing.id)
+      : await supabase.from("entity_relations").insert(payload)
 
     if (error) throw new Error(error.message)
 
     revalidateRelationSurfaces([
-      `/ponix/pages/${payload.page_id}`,
-      `/ponix/sections/${payload.section_id}`,
+      `/ponix/pages/${pageId}`,
+      `/ponix/sections/${sectionId}`,
     ])
     relationSuccess(redirectTo, "Page section saved.")
   } catch (error) {
@@ -233,24 +325,24 @@ export async function updatePageSectionRelationAction(formData: FormData) {
     await requireCmsAdmin(redirectTo)
     const supabase = await createClient()
     const graphRelationId = parseUuid(formData, "relation_id", "Relation")
-    const update: PageSectionUpdate = {
+    const update: EntityRelationUpdate = {
       sort_order: parseSortOrder(formData),
     }
-    const relation = await loadPageSectionSourceRelation(
+    const relation = await loadPageSectionGraphRelation(
       supabase,
       graphRelationId,
     )
 
     const { error } = await supabase
-      .from("page_sections")
+      .from("entity_relations")
       .update(update)
       .eq("id", relation.id)
 
     if (error) throw new Error(error.message)
 
     revalidateRelationSurfaces([
-      `/ponix/pages/${relation.page_id}`,
-      `/ponix/sections/${relation.section_id}`,
+      `/ponix/pages/${relation.pageId}`,
+      `/ponix/sections/${relation.sectionId}`,
     ])
     relationSuccess(redirectTo, "Page section order saved.")
   } catch (error) {
@@ -265,21 +357,21 @@ export async function deletePageSectionRelationAction(formData: FormData) {
     await requireCmsAdmin(redirectTo)
     const supabase = await createClient()
     const graphRelationId = parseUuid(formData, "relation_id", "Relation")
-    const relation = await loadPageSectionSourceRelation(
+    const relation = await loadPageSectionGraphRelation(
       supabase,
       graphRelationId,
     )
 
     const { error } = await supabase
-      .from("page_sections")
+      .from("entity_relations")
       .delete()
       .eq("id", relation.id)
 
     if (error) throw new Error(error.message)
 
     revalidateRelationSurfaces([
-      `/ponix/pages/${relation.page_id}`,
-      `/ponix/sections/${relation.section_id}`,
+      `/ponix/pages/${relation.pageId}`,
+      `/ponix/sections/${relation.sectionId}`,
     ])
     relationSuccess(redirectTo, "Page section removed.")
   } catch (error) {
@@ -291,21 +383,37 @@ export async function addSectionEntityRelationAction(formData: FormData) {
   const redirectTo = safeRedirectPath(formData)
 
   try {
-    await requireCmsAdmin(redirectTo)
+    const admin = await requireCmsAdmin(redirectTo)
     const supabase = await createClient()
-    const payload: SectionEntityInsert = {
-      section_id: parseUuid(formData, "section_id", "Section"),
-      entity_id: parseUuid(formData, "entity_id", "Entity"),
-      relation_type: parseText(formData, "relation_type", "Relation type"),
-      slot: stringField(formData, "slot") || "default",
+    const sectionId = parseUuid(formData, "section_id", "Section")
+    const entityId = parseUuid(formData, "entity_id", "Entity")
+    const relationType = parseText(formData, "relation_type", "Relation type")
+    const slot = stringField(formData, "slot") || "default"
+    const sectionEntityId = await loadShadowEntityId({
+      supabase,
+      sourceTable: "sections",
+      sourceId: sectionId,
+      label: "Section",
+    })
+    const payload: EntityRelationInsert = {
+      from_entity_id: sectionEntityId,
+      to_entity_id: entityId,
+      schema_key: "relation/section-entity/v1",
+      relation_type: relationType,
+      slot,
       sort_order: parseSortOrder(formData),
       props: parseProps(formData),
+      source_table: "section_entities",
+      created_by_member_id: admin.id,
     }
     const { data: existing, error: existingError } = await supabase
-      .from("section_entities")
+      .from("entity_relations")
       .select("id")
-      .eq("section_id", payload.section_id)
-      .eq("entity_id", payload.entity_id)
+      .eq("source_table", "section_entities")
+      .eq("from_entity_id", payload.from_entity_id)
+      .eq("to_entity_id", payload.to_entity_id)
+      .eq("relation_type", relationType)
+      .eq("slot", slot)
       .order("sort_order", { ascending: true })
       .limit(1)
       .maybeSingle()
@@ -314,21 +422,21 @@ export async function addSectionEntityRelationAction(formData: FormData) {
 
     const { error } = existing
       ? await supabase
-          .from("section_entities")
+          .from("entity_relations")
           .update({
             relation_type: payload.relation_type,
             slot: payload.slot,
             sort_order: payload.sort_order,
             props: payload.props,
-          } satisfies SectionEntityUpdate)
+          } satisfies EntityRelationUpdate)
           .eq("id", existing.id)
-      : await supabase.from("section_entities").insert(payload)
+      : await supabase.from("entity_relations").insert(payload)
 
     if (error) throw new Error(error.message)
 
     revalidateRelationSurfaces([
-      `/ponix/sections/${payload.section_id}`,
-      `/ponix/entities/${payload.entity_id}`,
+      `/ponix/sections/${sectionId}`,
+      `/ponix/entities/${entityId}`,
     ])
     relationSuccess(redirectTo, "Section relation saved.")
   } catch (error) {
@@ -343,7 +451,7 @@ export async function updateSectionEntityRelationAction(formData: FormData) {
     await requireCmsAdmin(redirectTo)
     const supabase = await createClient()
     const graphRelationId = parseUuid(formData, "relation_id", "Relation")
-    const update: SectionEntityUpdate = {
+    const update: EntityRelationUpdate = {
       sort_order: parseSortOrder(formData),
     }
 
@@ -363,21 +471,21 @@ export async function updateSectionEntityRelationAction(formData: FormData) {
       update.props = parseProps(formData)
     }
 
-    const relation = await loadSectionEntitySourceRelation(
+    const relation = await loadSectionEntityGraphRelation(
       supabase,
       graphRelationId,
     )
 
     const { error } = await supabase
-      .from("section_entities")
+      .from("entity_relations")
       .update(update)
       .eq("id", relation.id)
 
     if (error) throw new Error(error.message)
 
     revalidateRelationSurfaces([
-      `/ponix/sections/${relation.section_id}`,
-      `/ponix/entities/${relation.entity_id}`,
+      `/ponix/sections/${relation.sectionId}`,
+      `/ponix/entities/${relation.entityId}`,
     ])
     relationSuccess(redirectTo, "Section relation saved.")
   } catch (error) {
@@ -392,7 +500,7 @@ export async function updateSectionEntityRelationInlineAction(
     await requireCmsAdmin("/ponix/relations")
     const supabase = await createClient()
     const graphRelationId = parseUuid(formData, "relation_id", "Relation")
-    const update: SectionEntityUpdate = {
+    const update: EntityRelationUpdate = {
       sort_order: parseSortOrder(formData),
     }
 
@@ -412,21 +520,21 @@ export async function updateSectionEntityRelationInlineAction(
       update.props = parseProps(formData)
     }
 
-    const relation = await loadSectionEntitySourceRelation(
+    const relation = await loadSectionEntityGraphRelation(
       supabase,
       graphRelationId,
     )
 
     const { error } = await supabase
-      .from("section_entities")
+      .from("entity_relations")
       .update(update)
       .eq("id", relation.id)
 
     if (error) throw new Error(error.message)
 
     revalidateRelationSurfaces([
-      `/ponix/sections/${relation.section_id}`,
-      `/ponix/entities/${relation.entity_id}`,
+      `/ponix/sections/${relation.sectionId}`,
+      `/ponix/entities/${relation.entityId}`,
     ])
 
     return { ok: true }
@@ -476,7 +584,7 @@ export async function reorderSectionEntityRelationsAction({
 
     const { data: relations, error: loadError } = await supabase
       .from("entity_relations")
-      .select("id, source_id, to_entity_id")
+      .select("id, to_entity_id")
       .eq("source_table", "section_entities")
       .eq("from_entity_id", sectionShadow.id)
       .in("id", orderedIds)
@@ -490,23 +598,13 @@ export async function reorderSectionEntityRelationsAction({
       throw new Error("Some relations do not belong to this section.")
     }
 
-    const sourceIdByGraphId = new Map(
-      (relations ?? []).map((relation) => [relation.id, relation.source_id]),
-    )
-    const orderedSourceIds = orderedIds
-      .map((graphRelationId) => sourceIdByGraphId.get(graphRelationId))
-      .filter((id): id is string => Boolean(id))
-
-    if (orderedSourceIds.length !== orderedIds.length) {
-      throw new Error("Some graph relations are missing source rows.")
-    }
-
-    const updates = orderedSourceIds.map((relationId, index) =>
+    const updates = orderedIds.map((relationId, index) =>
       supabase
-        .from("section_entities")
-        .update({ sort_order: (index + 1) * 10 } satisfies SectionEntityUpdate)
+        .from("entity_relations")
+        .update({ sort_order: (index + 1) * 10 } satisfies EntityRelationUpdate)
         .eq("id", relationId)
-        .eq("section_id", sectionId),
+        .eq("source_table", "section_entities")
+        .eq("from_entity_id", sectionShadow.id),
     )
     const results = await Promise.all(updates)
     const updateError = results.find((result) => result.error)?.error
@@ -537,21 +635,21 @@ export async function deleteSectionEntityRelationAction(formData: FormData) {
     await requireCmsAdmin(redirectTo)
     const supabase = await createClient()
     const graphRelationId = parseUuid(formData, "relation_id", "Relation")
-    const relation = await loadSectionEntitySourceRelation(
+    const relation = await loadSectionEntityGraphRelation(
       supabase,
       graphRelationId,
     )
 
     const { error } = await supabase
-      .from("section_entities")
+      .from("entity_relations")
       .delete()
       .eq("id", relation.id)
 
     if (error) throw new Error(error.message)
 
     revalidateRelationSurfaces([
-      `/ponix/sections/${relation.section_id}`,
-      `/ponix/entities/${relation.entity_id}`,
+      `/ponix/sections/${relation.sectionId}`,
+      `/ponix/entities/${relation.entityId}`,
     ])
     relationSuccess(redirectTo, "Section relation removed.")
   } catch (error) {
