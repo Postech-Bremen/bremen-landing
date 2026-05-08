@@ -41,10 +41,10 @@ The bridge uses `source_table` and `source_id` columns on `entities` and
 Sync triggers keep the shadow graph updated while the app still writes through
 the current CMS screens.
 
-Until the public loaders and PONIX editors are explicitly migrated, the bridge
-is a compatibility read model, not the only source of truth. Do not remove
-`pages`, `sections`, `page_sections`, or `section_entities` until all renderers,
-forms, audits, migrations, and generated types have moved to the entity graph.
+The bridge is now the primary runtime composition path. The legacy composition
+tables remain compatibility mirrors. Do not remove `pages`, `sections`,
+`page_sections`, or `section_entities` until all forms, audits, migrations, and
+generated types have moved to the entity graph.
 
 Current PONIX contract:
 
@@ -55,9 +55,9 @@ Current PONIX contract:
   bridge rows.
 - Those bridge rows expose both the `entity_relations.id` and the legacy
   `source_id`.
-- Routine CMS writes resolve `entity_relations.id` back to `source_id`, then
-  target `page_sections` and `section_entities`; bridge triggers mirror those
-  writes back into `entity_relations`.
+- Routine CMS composition writes target `entity_relations`; graph-to-legacy
+  triggers mirror those writes back into `page_sections` and
+  `section_entities`.
 - Code that mutates page or section composition must pass the graph relation id,
   not the legacy `source_id`.
 
