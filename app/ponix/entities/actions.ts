@@ -7,13 +7,15 @@ import { requireCmsAdmin } from "@/lib/cms/auth"
 import {
   cmsEntityFieldInputName,
   entityTypeFromSchemaKey,
-  getEditableEntityFields,
-  getEntityCreationSchema,
-  getEntityEditorSchema,
+  editableEntityFieldsForSchema,
   jsonObject,
   type CmsEditableEntityField,
   type CmsJsonObject,
 } from "@/lib/cms/entity-editor"
+import {
+  loadEntityCreationSchema,
+  loadEntityEditorSchema,
+} from "@/lib/cms/entity-editor.server"
 import { PUBLIC_CONTENT_CACHE_TAG } from "@/lib/data/public-cache"
 import { createClient } from "@/lib/supabase/server"
 import type { Database, Json } from "@/lib/supabase/types"
@@ -324,7 +326,7 @@ async function buildEntityUpdate({
   editPath: string
   redirectOnError: boolean
 }) {
-  const schema = getEntityEditorSchema(entity.schema_key)
+  const schema = await loadEntityEditorSchema(entity.schema_key)
   if (!schema) {
     const error = "This entity schema is not registered for editing."
     if (redirectOnError) {
@@ -333,7 +335,7 @@ async function buildEntityUpdate({
     throw new Error(error)
   }
 
-  const fields = getEditableEntityFields(entity.schema_key)
+  const fields = editableEntityFieldsForSchema(schema)
   const data = jsonObject(entity.data)
   const update: EntityUpdate = {}
 
@@ -395,14 +397,14 @@ export async function createCmsEntityAction(formData: FormData) {
     : "/ponix/entities/new"
   const admin = await requireCmsAdmin(createPath)
 
-  const schema = getEntityCreationSchema(schemaKey)
+  const schema = await loadEntityCreationSchema(schemaKey)
   if (!schema) {
     redirectWithParams("/ponix/entities/new", {
       error: "Choose a schema that can be created from CMS.",
     })
   }
 
-  const fields = getEditableEntityFields(schema.schemaKey)
+  const fields = editableEntityFieldsForSchema(schema)
   const data: CmsJsonObject = {}
   const insert: EntityInsert = {
     data,

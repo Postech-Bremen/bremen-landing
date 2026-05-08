@@ -22,10 +22,10 @@ import {
 import type { CmsAuditEventList } from "@/lib/cms/audit"
 import type { CmsContentDetail } from "@/lib/cms/content"
 import {
-  getCmsSchema,
   type CmsFieldDefinition,
   type CmsFieldSource,
 } from "@/lib/cms/schema-registry"
+import { loadCmsSchema } from "@/lib/cms/schema-registry.server"
 
 import { CmsAuditTrailCard } from "./cms-audit-card"
 import { formatCmsDate, PublishBadge, SchemaBadge } from "./cms-list"
@@ -37,7 +37,7 @@ const sourceLabels: Record<CmsFieldSource, string> = {
   relation_props: "Relation props",
 }
 
-export function CmsDetailPage({
+export async function CmsDetailPage({
   detail,
   backHref,
   backLabel,
@@ -52,7 +52,7 @@ export function CmsDetailPage({
   audit?: CmsAuditEventList
   children?: ReactNode
 }) {
-  const schema = getCmsSchema(detail.schemaKey)
+  const schema = await loadCmsSchema(detail.schemaKey)
   const fieldCount = schema?.fields.length ?? 0
 
   return (

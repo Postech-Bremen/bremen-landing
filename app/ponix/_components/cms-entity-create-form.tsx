@@ -18,7 +18,7 @@ import type { CmsSchemaDefinition } from "@/lib/cms/schema-registry"
 import {
   cmsEntityFieldInputName,
   entityTypeFromSchemaKey,
-  getEditableEntityFields,
+  editableEntityFieldsForSchema,
   type CmsEditableEntityField,
 } from "@/lib/cms/entity-editor"
 
@@ -29,7 +29,7 @@ export function CmsEntityCreatePage({
   schema: CmsSchemaDefinition
   error?: string
 }) {
-  const editableFields = getEditableEntityFields(schema.schemaKey)
+  const editableFields = editableEntityFieldsForSchema(schema)
   const columnFields = editableFields.filter((field) => field.source === "column")
   const dataFields = editableFields.filter((field) => field.source === "data")
   const formId = `cms-entity-create-${schema.schemaKey.replace(/[^a-z0-9]+/gi, "-")}`

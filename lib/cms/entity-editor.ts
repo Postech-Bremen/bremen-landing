@@ -32,11 +32,15 @@ export function getEntityEditorSchema(
 ): CmsSchemaDefinition | null {
   const schema = getCmsSchema(schemaKey)
 
-  if (!schema || schema.kind !== "entity" || schema.table !== "entities") {
+  if (!schema || !isEntityEditorSchema(schema)) {
     return null
   }
 
   return schema
+}
+
+export function isEntityEditorSchema(schema: CmsSchemaDefinition) {
+  return schema.kind === "entity" && schema.table === "entities"
 }
 
 export function entityTypeFromSchemaKey(schemaKey: string) {
@@ -53,12 +57,16 @@ function hasRequiredReadOnlyField(schema: CmsSchemaDefinition) {
   })
 }
 
+export function canCreateEntitySchema(schema: CmsSchemaDefinition) {
+  return isEntityEditorSchema(schema) && !hasRequiredReadOnlyField(schema)
+}
+
 export function getEntityCreationSchema(
   schemaKey: string,
 ): CmsSchemaDefinition | null {
   const schema = getEntityEditorSchema(schemaKey)
 
-  if (!schema || hasRequiredReadOnlyField(schema)) {
+  if (!schema || !canCreateEntitySchema(schema)) {
     return null
   }
 
@@ -78,6 +86,10 @@ export function getEditableEntityFields(schemaKey: string) {
     return []
   }
 
+  return editableEntityFieldsForSchema(schema)
+}
+
+export function editableEntityFieldsForSchema(schema: CmsSchemaDefinition) {
   return schema.fields.filter((field): field is CmsEditableEntityField => {
     if (field.readOnly) {
       return false

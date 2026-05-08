@@ -23,17 +23,17 @@ import { Textarea } from "@/components/ui/textarea"
 import type { CmsContentDetail } from "@/lib/cms/content"
 import {
   cmsEntityFieldInputName,
-  getEditableEntityFields,
-  getEntityEditorSchema,
   getEntityFieldValue,
+  editableEntityFieldsForSchema,
   type CmsEditableEntityField,
 } from "@/lib/cms/entity-editor"
+import { loadEntityEditorSchema } from "@/lib/cms/entity-editor.server"
 
 import { CmsEntityLivePreview } from "./cms-live-preview"
 
 type CmsEntityDetail = Extract<CmsContentDetail, { kind: "entity" }>
 
-export function CmsEntityEditorPage({
+export async function CmsEntityEditorPage({
   detail,
   error,
   saved,
@@ -42,8 +42,8 @@ export function CmsEntityEditorPage({
   error?: string
   saved?: boolean
 }) {
-  const schema = getEntityEditorSchema(detail.schemaKey)
-  const editableFields = getEditableEntityFields(detail.schemaKey)
+  const schema = await loadEntityEditorSchema(detail.schemaKey)
+  const editableFields = schema ? editableEntityFieldsForSchema(schema) : []
   const columnFields = editableFields.filter((field) => field.source === "column")
   const dataFields = editableFields.filter((field) => field.source === "data")
   const formId = `cms-entity-form-${detail.row.id}`

@@ -102,12 +102,12 @@ CMS forms should not infer editable fields directly from arbitrary JSONB.
 
 There are now two layers:
 
-- `entity_schemas` is the DB-backed registry foundation. It stores stable
-  `schema_key`, `kind`, version, label, renderer hint, relation slots, and future
-  JSON field/validation definitions.
-- `lib/cms/schema-registry.ts` is still the active code-level field contract for
-  PONIX forms until the DB-backed registry is fully populated and wired into the
-  editor.
+- `entity_schemas` is the DB-backed registry used by PONIX server-rendered
+  editor/detail flows. It stores stable `schema_key`, `kind`, version, label,
+  renderer hint, relation slots, and JSON field metadata.
+- `lib/cms/schema-registry.ts` remains the reviewed code fallback and renderer
+  compatibility contract. Keep it in sync until DB-only schema editing has its
+  own review and QA path.
 
 Use the registry contract for:
 
@@ -117,14 +117,14 @@ Use the registry contract for:
 - `entity_relations.props`
 
 Each registry entry defines the schema key, field source, field type,
-required/read-only status, and select options. Future CMS editor screens should
-prefer `entity_schemas` as the metadata source, with the code registry as the
-reviewed renderer/field fallback.
+required/read-only status, and select options. CMS editor screens should prefer
+`entity_schemas` as the metadata source, with the code registry as the reviewed
+renderer/field fallback.
 
-Use `pnpm run qa:cms-schema-registry` to compare the code registry with active
-DB `entity_schemas`. The command is intentionally read-only and reports the
-current DB-primary readiness state. A schema with `dbFields = 0` still depends on
-`lib/cms/schema-registry.ts` for PONIX editor fields.
+Use `pnpm run qa:cms-schema-registry -- --strict` to compare the code registry
+with active DB `entity_schemas`. The command is intentionally read-only and
+should report `dbFieldMissing = 0` before DB-first editor behavior is considered
+safe.
 
 ## Entity Schema Direction
 
