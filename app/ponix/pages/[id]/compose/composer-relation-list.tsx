@@ -79,18 +79,20 @@ export function ComposerRelationList({
   slotOptions: string[]
 }) {
   const [orderedRelations, setOrderedRelations] = useState(relations)
-  const [draggingSourceId, setDraggingSourceId] = useState<string | null>(null)
-  const [dropTargetSourceId, setDropTargetSourceId] = useState<string | null>(
-    null,
-  )
+  const [draggingGraphId, setDraggingGraphId] = useState<string | null>(null)
+  const [dropTargetGraphId, setDropTargetGraphId] = useState<string | null>(null)
   const [saveState, setSaveState] = useState<SaveState>({ status: "idle" })
   const [isPending, startTransition] = useTransition()
 
-  function moveRelation(sourceRowId: string, targetSourceRowId: string) {
-    if (sourceRowId === targetSourceRowId) return
+  function moveRelation(graphRelationId: string, targetGraphRelationId: string) {
+    if (graphRelationId === targetGraphRelationId) return
 
     const previous = orderedRelations
-    const next = reorderBySourceId(previous, sourceRowId, targetSourceRowId)
+    const next = reorderByGraphRelationId(
+      previous,
+      graphRelationId,
+      targetGraphRelationId,
+    )
     if (next === previous) return
 
     setOrderedRelations(next)
@@ -99,7 +101,7 @@ export function ComposerRelationList({
     startTransition(() => {
       void reorderSectionEntityRelationsAction({
         sectionId,
-        relationIds: next.map((relation) => relation.sourceId),
+        graphRelationIds: next.map((relation) => relation.graphRelationId),
       }).then((result) => {
         if (!result.ok) {
           setOrderedRelations(previous)
@@ -153,29 +155,29 @@ export function ComposerRelationList({
             redirectTo={redirectTo}
             typeOptions={typeOptions}
             slotOptions={slotOptions}
-            dragging={draggingSourceId === relation.sourceId}
-            dropTarget={dropTargetSourceId === relation.sourceId}
-            onDragStart={() => setDraggingSourceId(relation.sourceId)}
+            dragging={draggingGraphId === relation.graphRelationId}
+            dropTarget={dropTargetGraphId === relation.graphRelationId}
+            onDragStart={() => setDraggingGraphId(relation.graphRelationId)}
             onDragEnd={() => {
-              setDraggingSourceId(null)
-              setDropTargetSourceId(null)
+              setDraggingGraphId(null)
+              setDropTargetGraphId(null)
             }}
             onDragOver={(event) => {
               event.preventDefault()
               if (
-                draggingSourceId &&
-                draggingSourceId !== relation.sourceId
+                draggingGraphId &&
+                draggingGraphId !== relation.graphRelationId
               ) {
-                setDropTargetSourceId(relation.sourceId)
+                setDropTargetGraphId(relation.graphRelationId)
               }
             }}
             onDrop={(event) => {
               event.preventDefault()
-              if (draggingSourceId) {
-                moveRelation(draggingSourceId, relation.sourceId)
+              if (draggingGraphId) {
+                moveRelation(draggingGraphId, relation.graphRelationId)
               }
-              setDraggingSourceId(null)
-              setDropTargetSourceId(null)
+              setDraggingGraphId(null)
+              setDropTargetGraphId(null)
             }}
           />
         ))}
@@ -250,10 +252,10 @@ function SectionEntityRelationEditor({
             draggable
             aria-label="순서 끌어서 변경"
             className="grid size-9 shrink-0 cursor-grab place-items-center self-center rounded-full border bg-muted/40 text-muted-foreground transition hover:border-accent hover:text-foreground active:cursor-grabbing"
-            data-composer-drag-handle={relation.sourceId}
+            data-composer-drag-handle={relation.graphRelationId}
             onDragStart={(event) => {
               event.dataTransfer.effectAllowed = "move"
-              event.dataTransfer.setData("text/plain", relation.sourceId)
+              event.dataTransfer.setData("text/plain", relation.graphRelationId)
               onDragStart()
             }}
             onDragEnd={onDragEnd}
@@ -387,7 +389,7 @@ function SectionEntityRelationEditor({
                 <input
                   type="hidden"
                   name="relation_id"
-                  value={relation.sourceId}
+                  value={relation.graphRelationId}
                 />
                 <div className="grid gap-3 sm:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_7rem]">
                   <div className="space-y-1.5">
@@ -463,7 +465,7 @@ function SectionEntityRelationEditor({
               <input
                 type="hidden"
                 name="relation_id"
-                value={relation.sourceId}
+                value={relation.graphRelationId}
               />
               <Button
                 type="submit"
@@ -876,16 +878,16 @@ function RelationDatalists({
   )
 }
 
-function reorderBySourceId(
+function reorderByGraphRelationId(
   relations: Relation[],
-  sourceRowId: string,
-  targetSourceRowId: string,
+  graphRelationId: string,
+  targetGraphRelationId: string,
 ) {
   const sourceIndex = relations.findIndex(
-    (relation) => relation.sourceId === sourceRowId,
+    (relation) => relation.graphRelationId === graphRelationId,
   )
   const targetIndex = relations.findIndex(
-    (relation) => relation.sourceId === targetSourceRowId,
+    (relation) => relation.graphRelationId === targetGraphRelationId,
   )
 
   if (sourceIndex < 0 || targetIndex < 0) {
