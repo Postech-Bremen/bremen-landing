@@ -126,6 +126,12 @@ with active DB `entity_schemas`. The command is intentionally read-only and
 should report `dbFieldMissing = 0` before DB-first editor behavior is considered
 safe.
 
+Use `pnpm run qa:cms-db-first-loaders` after PONIX editor or CMS loader changes.
+It is a read-only static guard that fails if server-rendered PONIX surfaces
+reintroduce direct code-only schema lookup helpers instead of the DB-first
+server loaders. The sync registry remains allowed only in reviewed fallback
+modules.
+
 ## Entity Schema Direction
 
 The long-term content contract is:
