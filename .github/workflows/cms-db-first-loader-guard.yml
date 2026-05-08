@@ -1,0 +1,41 @@
+name: CMS DB-first loader guard
+
+on:
+  pull_request:
+    paths:
+      - ".github/workflows/cms-db-first-loader-guard.yml"
+      - "app/ponix/**"
+      - "app/ponix-canvas/**"
+      - "lib/cms/**"
+      - "scripts/qa-cms-db-first-loaders.mjs"
+      - "package.json"
+      - "pnpm-lock.yaml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  cms-db-first-loaders:
+    name: CMS DB-first loaders
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10.27.0
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Run CMS DB-first loader guard
+        run: pnpm run qa:cms-db-first-loaders
