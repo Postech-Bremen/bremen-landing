@@ -121,6 +121,11 @@ required/read-only status, and select options. Future CMS editor screens should
 prefer `entity_schemas` as the metadata source, with the code registry as the
 reviewed renderer/field fallback.
 
+Use `pnpm run qa:cms-schema-registry` to compare the code registry with active
+DB `entity_schemas`. The command is intentionally read-only and reports the
+current DB-primary readiness state. A schema with `dbFields = 0` still depends on
+`lib/cms/schema-registry.ts` for PONIX editor fields.
+
 ## Entity Schema Direction
 
 The long-term content contract is:
