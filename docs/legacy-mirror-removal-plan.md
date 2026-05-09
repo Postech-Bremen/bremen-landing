@@ -17,6 +17,8 @@ Completed:
 - Public page composition reads from `entity_relations`.
 - PONIX relation loaders read from `entity_relations`.
 - Runtime CMS code no longer reads `page_sections` or `section_entities`.
+- Runtime composition now identifies graph relations by relation `schema_key`
+  instead of legacy table-name markers.
 - Routine CMS composition writes target `entity_relations`.
 - Legacy mirrors are still maintained by bridge triggers.
 - Parity QA still compares graph rows against legacy mirror rows.

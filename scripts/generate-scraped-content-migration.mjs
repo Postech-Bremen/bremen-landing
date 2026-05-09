@@ -768,7 +768,7 @@ set sort_order = excluded.sort_order,
 
 delete from public.entity_relations relation
 using public.entities section_entity, public.sections section_ref
-where relation.source_table = 'section_entities'
+where relation.schema_key = 'relation/section-entity/v1'
   and relation.from_entity_id = section_entity.id
   and section_entity.source_table = 'sections'
   and section_entity.source_id = section_ref.id
