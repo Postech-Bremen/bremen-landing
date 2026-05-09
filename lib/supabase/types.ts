@@ -338,51 +338,6 @@ export type Database = {
           },
         ]
       }
-      page_sections: {
-        Row: {
-          created_at: string
-          id: string
-          page_id: string
-          props: Json
-          section_id: string
-          sort_order: number
-          updated_at: string
-        }
-        Insert: {
-          created_at?: string
-          id?: string
-          page_id: string
-          props?: Json
-          section_id: string
-          sort_order?: number
-          updated_at?: string
-        }
-        Update: {
-          created_at?: string
-          id?: string
-          page_id?: string
-          props?: Json
-          section_id?: string
-          sort_order?: number
-          updated_at?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "page_sections_page_id_fkey"
-            columns: ["page_id"]
-            isOneToOne: false
-            referencedRelation: "pages"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "page_sections_section_id_fkey"
-            columns: ["section_id"]
-            isOneToOne: false
-            referencedRelation: "sections"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       pages: {
         Row: {
           created_at: string
@@ -524,57 +479,6 @@ export type Database = {
             columns: ["performance_id"]
             isOneToOne: false
             referencedRelation: "performances"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      section_entities: {
-        Row: {
-          created_at: string
-          entity_id: string
-          id: string
-          props: Json
-          relation_type: string
-          section_id: string
-          slot: string
-          sort_order: number
-          updated_at: string
-        }
-        Insert: {
-          created_at?: string
-          entity_id: string
-          id?: string
-          props?: Json
-          relation_type?: string
-          section_id: string
-          slot?: string
-          sort_order?: number
-          updated_at?: string
-        }
-        Update: {
-          created_at?: string
-          entity_id?: string
-          id?: string
-          props?: Json
-          relation_type?: string
-          section_id?: string
-          slot?: string
-          sort_order?: number
-          updated_at?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "section_entities_entity_id_fkey"
-            columns: ["entity_id"]
-            isOneToOne: false
-            referencedRelation: "entities"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "section_entities_section_id_fkey"
-            columns: ["section_id"]
-            isOneToOne: false
-            referencedRelation: "sections"
             referencedColumns: ["id"]
           },
         ]

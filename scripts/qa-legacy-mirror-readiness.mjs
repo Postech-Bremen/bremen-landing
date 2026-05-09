@@ -40,6 +40,9 @@ const bridgeCompatibilityMarkerFiles = new Set([
   "scripts/generate-instagram-feed-migration.mjs",
   "scripts/generate-scraped-content-migration.mjs",
 ])
+const stage5RemovalMigration =
+  "supabase/migrations/20260509000048_drop_legacy_mirror_tables.sql"
+const stage5RemovalCommitted = existsSync(path.join(repoRoot, stage5RemovalMigration))
 
 const removalStages = {
   1: {
@@ -66,10 +69,14 @@ const removalStages = {
 
 const categories = {
   legacy_mirror_compatibility_migration: {
-    label: "Legacy mirror compatibility migrations",
-    stage: 5,
-    removalBlocker: true,
-    note: "Legacy mirror compatibility migrations remain until the mirror tables are removed.",
+    label: stage5RemovalCommitted
+      ? "Legacy mirror compatibility migration history"
+      : "Legacy mirror compatibility migrations",
+    stage: stage5RemovalCommitted ? null : 5,
+    removalBlocker: !stage5RemovalCommitted,
+    note: stage5RemovalCommitted
+      ? "Compatibility migration references are retained so fresh database replays still work."
+      : "Legacy mirror compatibility migrations remain until the mirror tables are removed.",
   },
   legacy_mirror_removal_migration: {
     label: "Legacy mirror removal migration",
@@ -198,7 +205,7 @@ function classify(file, line = "") {
     return "legacy_mirror_compatibility_migration"
   }
 
-  if (file === "supabase/migrations/20260509000048_drop_legacy_mirror_tables.sql") {
+  if (file === stage5RemovalMigration) {
     return "legacy_mirror_removal_migration"
   }
 
@@ -317,8 +324,16 @@ const blockerRows = Object.entries(categories)
     nextStep: metadata.note,
   }))
 
-console.log("\nRemoval blockers to clear before dropping legacy mirrors")
-console.table(blockerRows)
+console.log(
+  stage5RemovalCommitted
+    ? "\nActive legacy mirror blockers after Stage 5 removal"
+    : "\nRemoval blockers to clear before dropping legacy mirrors",
+)
+if (blockerRows.length) {
+  console.table(blockerRows)
+} else {
+  console.log("No active blocker categories remain.")
+}
 
 if (failBeforeStage !== null) {
   if (!Number.isInteger(failBeforeStage) || failBeforeStage < 1) {
