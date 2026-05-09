@@ -37,7 +37,6 @@ import {
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import type {
-  CmsBridgeHealth,
   CmsEntityRelation,
   CmsLinkedEntity,
   CmsLinkedPage,
@@ -138,7 +137,6 @@ export function PageSectionRelationsCard({
       visible={rows.length}
       count={relationList?.count ?? rows.length}
       limit={relationList?.limit}
-      bridgeHealth={relationList?.bridgeHealth}
     >
       {editable && editorOptions && (
         <PageSectionAddForm
@@ -192,7 +190,6 @@ export function SectionEntityRelationsCard({
       visible={rows.length}
       count={relationList?.count ?? rows.length}
       limit={relationList?.limit}
-      bridgeHealth={relationList?.bridgeHealth}
     >
       {editable && editorOptions && (
         <SectionEntityAddForm
@@ -245,7 +242,6 @@ export function EntityRelationsCard({
       visible={rows.length}
       count={relationList?.count ?? rows.length}
       limit={relationList?.limit}
-      bridgeHealth={relationList?.bridgeHealth}
     >
       {editable && allowAdd && editorOptions && (
         <EntityRelationAddForm
@@ -545,7 +541,6 @@ function RelationCard({
   visible,
   count,
   limit,
-  bridgeHealth,
   children,
 }: {
   title: string
@@ -553,7 +548,6 @@ function RelationCard({
   visible: number
   count: number | null
   limit?: number
-  bridgeHealth?: CmsBridgeHealth
   children: ReactNode
 }) {
   return (
@@ -568,41 +562,9 @@ function RelationCard({
           </div>
           <RelationCount visible={visible} count={count} limit={limit} />
         </div>
-        {bridgeHealth && (
-          <BridgeHealthNotice health={bridgeHealth} />
-        )}
       </CardHeader>
       <CardContent className="p-0">{children}</CardContent>
     </Card>
-  )
-}
-
-function BridgeHealthNotice({ health }: { health: CmsBridgeHealth }) {
-  if (health.ok) {
-    return (
-      <div className="mt-3 flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
-        <Badge variant="outline" className="rounded-full">
-          읽기: 그래프 미러
-        </Badge>
-        <Badge variant="outline" className="rounded-full">
-          저장: 원본 관계 행
-        </Badge>
-        <span>
-          {health.mirrored}
-          {health.expected !== null ? ` / ${health.expected}` : ""}개 동기화
-        </span>
-      </div>
-    )
-  }
-
-  return (
-    <Alert variant="destructive" className="mt-3 rounded-md">
-      <AlertDescription>
-        그래프 미러 동기화가 아직 맞지 않습니다: {health.mirrored}
-        {health.expected !== null ? ` / ${health.expected}` : ""}개 행이
-        확인되었습니다. 동기화가 끝난 뒤 관계를 수정하세요.
-      </AlertDescription>
-    </Alert>
   )
 }
 

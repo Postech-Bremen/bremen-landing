@@ -6,7 +6,7 @@ import path from "node:path"
 const repoRoot = process.cwd()
 const scanRoots = ["app/ponix", "app/ponix-canvas", "lib/cms"]
 const codeExtensions = new Set([".ts", ".tsx", ".js", ".jsx", ".mjs"])
-const allowedFiles = new Set(["lib/cms/legacy-bridge-health.ts"])
+const allowedFiles = new Set()
 
 const forbiddenPatterns = [
   {
@@ -65,7 +65,7 @@ function runSelfTest() {
     "lib/cms/content.ts",
     'await supabase.from("page_sections").select("id")',
   )
-  const allowed = findViolations(
+  const retiredBoundary = findViolations(
     "lib/cms/legacy-bridge-health.ts",
     'await supabase.from("page_sections").select("id")',
   )
@@ -74,7 +74,11 @@ function runSelfTest() {
     'source_table: "section_entities"',
   )
 
-  if (blocked.length !== 1 || allowed.length !== 0 || sourceMarker.length !== 0) {
+  if (
+    blocked.length !== 1 ||
+    retiredBoundary.length !== 1 ||
+    sourceMarker.length !== 0
+  ) {
     throw new Error("Self-test failed for CMS legacy bridge boundary guard.")
   }
 }
@@ -98,14 +102,14 @@ console.table([
 ])
 
 if (violations.length) {
-  console.error("\nDirect legacy composition table access found outside the health boundary:")
+  console.error("\nDirect legacy composition table access found in runtime CMS code:")
   for (const violation of violations) {
     console.error(
       `- ${violation.file}:${violation.line} ${violation.rule}: ${violation.text}`,
     )
   }
   console.error(
-    "\nUse lib/cms/legacy-bridge-health.ts for temporary mirror health reads. Runtime composition loading should stay graph-primary through entity_relations.",
+    "\nRuntime CMS code must stay graph-primary through entity_relations. Keep legacy mirror parity checks in QA scripts only.",
   )
   process.exitCode = 1
 }

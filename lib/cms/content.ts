@@ -3,10 +3,6 @@ import type { Database, Json } from "@/lib/supabase/types"
 
 import type { CmsSchemaDefinition } from "./schema-registry"
 import {
-  countLegacyPageSectionMirrorRows,
-  countLegacySectionEntityMirrorRows,
-} from "./legacy-bridge-health"
-import {
   loadCmsSchemaRegistryMap,
   loadCmsSchemasByKind,
 } from "./schema-registry.server"
@@ -84,15 +80,6 @@ export type CmsRelationList<T> = {
   relations: T[]
   count: number | null
   limit: number
-  bridgeHealth?: CmsBridgeHealth
-}
-
-export type CmsBridgeHealth = {
-  source: "entity_graph"
-  expected: number | null
-  mirrored: number
-  missing: number | null
-  ok: boolean
 }
 
 export type CmsLinkedPage = {
@@ -303,31 +290,11 @@ function relationList<T>(
   relations: T[],
   count: number | null,
   limit = RELATION_LIST_LIMIT,
-  bridgeHealth?: CmsBridgeHealth,
 ): CmsRelationList<T> {
   return {
     relations,
     count,
     limit,
-    bridgeHealth,
-  }
-}
-
-function bridgeHealth({
-  expected,
-  mirrored,
-}: {
-  expected: number | null
-  mirrored: number
-}): CmsBridgeHealth {
-  const missing = expected === null ? null : Math.max(0, expected - mirrored)
-
-  return {
-    source: "entity_graph",
-    expected,
-    mirrored,
-    missing,
-    ok: expected === null ? true : expected === mirrored,
   }
 }
 
@@ -871,7 +838,7 @@ async function loadPageSectionRelationsFromEntityGraph({
   sectionId?: string
   limit?: number
 }): Promise<CmsRelationList<CmsPageSectionRelation>> {
-  const [pageShadowId, sectionShadowId, expected] = await Promise.all([
+  const [pageShadowId, sectionShadowId] = await Promise.all([
     pageId
       ? loadShadowEntityId({ supabase, sourceTable: "pages", sourceId: pageId })
       : Promise.resolve(null),
@@ -882,16 +849,10 @@ async function loadPageSectionRelationsFromEntityGraph({
           sourceId: sectionId,
         })
       : Promise.resolve(null),
-    countLegacyPageSectionMirrorRows({ supabase, pageId, sectionId }),
   ])
 
   if ((pageId && !pageShadowId) || (sectionId && !sectionShadowId)) {
-    return relationList(
-      [],
-      0,
-      limit,
-      bridgeHealth({ expected, mirrored: 0 }),
-    )
+    return relationList([], 0, limit)
   }
 
   let query = supabase
@@ -950,12 +911,7 @@ async function loadPageSectionRelationsFromEntityGraph({
     .filter((relation): relation is CmsPageSectionRelation => Boolean(relation))
     .sort(byPageSectionOrder)
 
-  return relationList(
-    relations,
-    count,
-    limit,
-    bridgeHealth({ expected, mirrored: count ?? relations.length }),
-  )
+  return relationList(relations, count, limit)
 }
 
 async function loadSectionEntityRelationsFromEntityGraph({
@@ -969,24 +925,16 @@ async function loadSectionEntityRelationsFromEntityGraph({
   entityId?: string
   limit?: number
 }): Promise<CmsRelationList<CmsSectionEntityRelation>> {
-  const [sectionShadowId, expected] = await Promise.all([
-    sectionId
-      ? loadShadowEntityId({
-          supabase,
-          sourceTable: "sections",
-          sourceId: sectionId,
-        })
-      : Promise.resolve(null),
-    countLegacySectionEntityMirrorRows({ supabase, sectionId, entityId }),
-  ])
+  const sectionShadowId = sectionId
+    ? await loadShadowEntityId({
+        supabase,
+        sourceTable: "sections",
+        sourceId: sectionId,
+      })
+    : null
 
   if (sectionId && !sectionShadowId) {
-    return relationList(
-      [],
-      0,
-      limit,
-      bridgeHealth({ expected, mirrored: 0 }),
-    )
+    return relationList([], 0, limit)
   }
 
   let query = supabase
@@ -1045,12 +993,7 @@ async function loadSectionEntityRelationsFromEntityGraph({
     .filter((relation): relation is CmsSectionEntityRelation => Boolean(relation))
     .sort(bySectionEntityOrder)
 
-  return relationList(
-    relations,
-    count,
-    limit,
-    bridgeHealth({ expected, mirrored: count ?? relations.length }),
-  )
+  return relationList(relations, count, limit)
 }
 
 async function loadEntityRelations({

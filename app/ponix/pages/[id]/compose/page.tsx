@@ -18,7 +18,6 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from "@/components/ui/accordion"
-import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import {
@@ -392,11 +391,6 @@ function SectionEntityWorkspace({
         <CardDescription>
           이 섹션에 보여줄 영상, 사진, 공연, 기록을 고릅니다.
         </CardDescription>
-        {relations.sectionEntityList.bridgeHealth && (
-          <ComposerBridgeHealth
-            health={relations.sectionEntityList.bridgeHealth}
-          />
-        )}
       </CardHeader>
       <CardContent className="space-y-5 p-5">
         <form
@@ -524,38 +518,6 @@ function SectionAdvancedSettingsCard({ section }: { section: GraphSection }) {
         </AccordionItem>
       </Accordion>
     </Card>
-  )
-}
-
-function ComposerBridgeHealth({
-  health,
-}: {
-  health: NonNullable<CmsSectionRelationContext["sectionEntityList"]["bridgeHealth"]>
-}) {
-  if (health.ok) {
-    return (
-      <div className="mt-3 flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
-        <Badge variant="outline" className="rounded-full">
-          읽기: 그래프 미러
-        </Badge>
-        <Badge variant="outline" className="rounded-full">
-          저장: 섹션 원본 행
-        </Badge>
-        <span>
-          {health.mirrored}
-          {health.expected !== null ? ` / ${health.expected}` : ""}개 동기화
-        </span>
-      </div>
-    )
-  }
-
-  return (
-    <Alert variant="destructive" className="mt-3 rounded-md">
-      <AlertDescription>
-        Entity graph mirror is out of sync: {health.mirrored}
-        {health.expected !== null ? ` / ${health.expected}` : ""} rows available.
-      </AlertDescription>
-    </Alert>
   )
 }
 
