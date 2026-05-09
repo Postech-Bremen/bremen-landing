@@ -58,7 +58,6 @@ const schemaTables = new Set<CmsSchemaDefinition["table"]>([
   "pages",
   "sections",
   "entities",
-  "section_entities",
   "entity_relations",
 ])
 

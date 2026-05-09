@@ -258,7 +258,10 @@ console.log("\nReference categories")
 console.table(summaryRows)
 
 const blockerRows = Object.entries(categories)
-  .filter(([, metadata]) => metadata.removalBlocker)
+  .filter(
+    ([category, metadata]) =>
+      metadata.removalBlocker && (byCategory.get(category) ?? 0) > 0,
+  )
   .map(([category, metadata]) => ({
     category,
     count: byCategory.get(category) ?? 0,
