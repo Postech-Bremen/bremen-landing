@@ -11,6 +11,9 @@ const ENTITY_LIST_LIMIT = 200
 const RELATION_ENTITY_OPTION_LIMIT = 80
 const RELATION_ENTITY_SEARCH_LIMIT = 60
 const RELATION_LIST_LIMIT = 300
+const DEFAULT_RELATION_SCHEMA_KEY = "relation/default/v1"
+const PAGE_SECTION_RELATION_SCHEMA_KEY = "relation/page-section/v1"
+const SECTION_ENTITY_RELATION_SCHEMA_KEY = "relation/section-entity/v1"
 
 type PageRow = Database["public"]["Tables"]["pages"]["Row"]
 type SectionRow = Database["public"]["Tables"]["sections"]["Row"]
@@ -113,8 +116,7 @@ export type CmsLinkedEntity = SchemaSummary & {
 export type CmsPageSectionRelation = {
   id: string
   graphRelationId: string
-  sourceTable: "page_sections"
-  sourceId: string
+  sourceId: string | null
   pageId: string
   sectionId: string
   sortOrder: number
@@ -127,8 +129,7 @@ export type CmsPageSectionRelation = {
 export type CmsSectionEntityRelation = {
   id: string
   graphRelationId: string
-  sourceTable: "section_entities"
-  sourceId: string
+  sourceId: string | null
   sectionId: string
   entityId: string
   relationType: string
@@ -858,7 +859,7 @@ async function loadPageSectionRelationsFromEntityGraph({
   let query = supabase
     .from("entity_relations")
     .select(ENTITY_RELATION_SELECT, { count: "exact" })
-    .eq("source_table", "page_sections")
+    .eq("schema_key", PAGE_SECTION_RELATION_SCHEMA_KEY)
 
   if (pageShadowId) query = query.eq("from_entity_id", pageShadowId)
   if (sectionShadowId) query = query.eq("to_entity_id", sectionShadowId)
@@ -892,12 +893,11 @@ async function loadPageSectionRelationsFromEntityGraph({
       const mappedPageId = sourceId(relation.fromEntity, "pages") ?? pageId
       const mappedSectionId = sourceId(relation.toEntity, "sections") ?? sectionId
 
-      if (!mappedPageId || !mappedSectionId || !relation.source_id) return null
+      if (!mappedPageId || !mappedSectionId) return null
 
       return {
-        id: relation.source_id,
+        id: relation.id,
         graphRelationId: relation.id,
-        sourceTable: "page_sections",
         sourceId: relation.source_id,
         pageId: mappedPageId,
         sectionId: mappedSectionId,
@@ -940,7 +940,7 @@ async function loadSectionEntityRelationsFromEntityGraph({
   let query = supabase
     .from("entity_relations")
     .select(ENTITY_RELATION_SELECT, { count: "exact" })
-    .eq("source_table", "section_entities")
+    .eq("schema_key", SECTION_ENTITY_RELATION_SCHEMA_KEY)
 
   if (sectionShadowId) query = query.eq("from_entity_id", sectionShadowId)
   if (entityId) query = query.eq("to_entity_id", entityId)
@@ -970,14 +970,13 @@ async function loadSectionEntityRelationsFromEntityGraph({
       const mappedSectionId =
         sourceId(relation.fromEntity, "sections") ?? sectionId
 
-      if (!mappedSectionId || !relation.source_id || !relation.toEntity) {
+      if (!mappedSectionId || !relation.toEntity) {
         return null
       }
 
       return {
-        id: relation.source_id,
+        id: relation.id,
         graphRelationId: relation.id,
-        sourceTable: "section_entities",
         sourceId: relation.source_id,
         sectionId: mappedSectionId,
         entityId: relation.to_entity_id,
@@ -1010,7 +1009,7 @@ async function loadEntityRelations({
   let query = supabase
     .from("entity_relations")
     .select(ENTITY_RELATION_SELECT, { count: "exact" })
-    .is("source_table", null)
+    .eq("schema_key", DEFAULT_RELATION_SCHEMA_KEY)
 
   if (fromEntityId) {
     query = query.eq("from_entity_id", fromEntityId)

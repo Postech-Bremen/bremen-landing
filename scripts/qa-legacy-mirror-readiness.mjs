@@ -30,6 +30,9 @@ const graphSourceMarkerFiles = new Set([
   "lib/cms/content.ts",
   "lib/data/content-graph.ts",
   "app/ponix/relations/actions.ts",
+])
+const bridgeCompatibilityMarkerFiles = new Set([
+  "app/ponix/relations/actions.ts",
   "scripts/content-graph-write-helpers.mjs",
   "scripts/generate-instagram-feed-migration.mjs",
   "scripts/generate-scraped-content-migration.mjs",
@@ -64,6 +67,12 @@ const categories = {
     stage: 2,
     removalBlocker: true,
     note: "Drop/supersede graph<->legacy bridge triggers before removing mirrors.",
+  },
+  bridge_compatibility_marker: {
+    label: "Bridge compatibility markers",
+    stage: 2,
+    removalBlocker: true,
+    note: "Runtime and maintenance writes still populate legacy source_table markers for bridge triggers.",
   },
   active_audit_migration: {
     label: "Audit migration compatibility",
@@ -144,7 +153,7 @@ function listFiles(dir) {
   })
 }
 
-function classify(file) {
+function classify(file, line = "") {
   if (file === "scripts/qa-legacy-mirror-readiness.mjs") {
     return "readiness_guard"
   }
@@ -188,6 +197,17 @@ function classify(file) {
     file === "supabase/migrations/20260508000043_graph_primary_composition_writes.sql"
   ) {
     return "active_bridge_migration"
+  }
+
+  if (bridgeCompatibilityMarkerFiles.has(file)) {
+    if (
+      /\.eq\(\s*["'`]source_table["'`]/.test(line) ||
+      /where\s+relation\.source_table\s*=/.test(line)
+    ) {
+      return "graph_source_marker"
+    }
+
+    return "bridge_compatibility_marker"
   }
 
   if (graphSourceMarkerFiles.has(file)) {

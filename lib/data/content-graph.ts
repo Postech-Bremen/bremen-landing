@@ -21,6 +21,9 @@ type EntityRow = Database["public"]["Tables"]["entities"]["Row"]
 type PageRow = Database["public"]["Tables"]["pages"]["Row"]
 type EntityRelationRow = Database["public"]["Tables"]["entity_relations"]["Row"]
 
+const PAGE_SECTION_RELATION_SCHEMA_KEY = "relation/page-section/v1"
+const SECTION_ENTITY_RELATION_SCHEMA_KEY = "relation/section-entity/v1"
+
 export type GraphSectionItem = {
   entity: EntityRow
   relationType: string
@@ -543,7 +546,7 @@ async function loadGraphPageFromEntityRelations({
         toEntity:entities!entity_relations_to_entity_id_fkey(id, source_table, source_id)
       `,
     )
-    .eq("source_table", "page_sections")
+    .eq("schema_key", PAGE_SECTION_RELATION_SCHEMA_KEY)
     .eq("from_entity_id", pageEntity.id)
     .order("sort_order", { ascending: true })
 
@@ -583,7 +586,7 @@ async function loadGraphPageFromEntityRelations({
       ? await supabase
           .from("entity_relations")
           .select("*")
-          .eq("source_table", "section_entities")
+          .eq("schema_key", SECTION_ENTITY_RELATION_SCHEMA_KEY)
           .in("from_entity_id", sectionShadowIds)
       : { data: [], error: null }
 

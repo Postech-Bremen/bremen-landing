@@ -146,7 +146,7 @@ export async function deleteSectionEntityRelations(
     let query = supabase
       .from("entity_relations")
       .delete()
-      .eq("source_table", "section_entities")
+      .eq("schema_key", "relation/section-entity/v1")
 
     if (fromEntityIds.length) {
       query = query.in("from_entity_id", fromEntityIds)

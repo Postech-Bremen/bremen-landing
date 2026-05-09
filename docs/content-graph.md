@@ -52,7 +52,8 @@ Current PONIX contract:
   The legacy `page_sections` / `section_entities` path is kept in QA scripts
   only as a parity check while the transition is in progress.
 - CMS relation lists read page/section placement through `entity_relations`
-  bridge rows.
+  bridge rows, using relation `schema_key` values as the runtime identity:
+  `relation/page-section/v1` and `relation/section-entity/v1`.
 - Those bridge rows expose both the `entity_relations.id` and the legacy
   `source_id`.
 - Routine CMS composition writes target `entity_relations`; graph-to-legacy

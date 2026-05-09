@@ -47,6 +47,8 @@ type ActionResult =
 
 const uuidPattern =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
+const PAGE_SECTION_RELATION_SCHEMA_KEY = "relation/page-section/v1"
+const SECTION_ENTITY_RELATION_SCHEMA_KEY = "relation/section-entity/v1"
 
 function stringField(formData: FormData, key: string) {
   const value = formData.get(key)
@@ -200,7 +202,7 @@ async function loadPageSectionGraphRelation(
       `,
     )
     .eq("id", graphRelationId)
-    .eq("source_table", "page_sections")
+    .eq("schema_key", PAGE_SECTION_RELATION_SCHEMA_KEY)
     .maybeSingle()
 
   const relation = data as unknown as PageSectionGraphRelation | null
@@ -234,7 +236,7 @@ async function loadSectionEntityGraphRelation(
       `,
     )
     .eq("id", graphRelationId)
-    .eq("source_table", "section_entities")
+    .eq("schema_key", SECTION_ENTITY_RELATION_SCHEMA_KEY)
     .maybeSingle()
 
   const relation = data as unknown as SectionEntityGraphRelation | null
@@ -276,7 +278,7 @@ export async function addPageSectionRelationAction(formData: FormData) {
     const payload: EntityRelationInsert = {
       from_entity_id: pageEntityId,
       to_entity_id: sectionEntityId,
-      schema_key: "relation/page-section/v1",
+      schema_key: PAGE_SECTION_RELATION_SCHEMA_KEY,
       relation_type: "contains_section",
       slot: "sections",
       sort_order: parseSortOrder(formData),
@@ -287,7 +289,7 @@ export async function addPageSectionRelationAction(formData: FormData) {
     const { data: existing, error: existingError } = await supabase
       .from("entity_relations")
       .select("id")
-      .eq("source_table", "page_sections")
+      .eq("schema_key", PAGE_SECTION_RELATION_SCHEMA_KEY)
       .eq("from_entity_id", pageEntityId)
       .eq("to_entity_id", sectionEntityId)
       .eq("relation_type", "contains_section")
@@ -398,7 +400,7 @@ export async function addSectionEntityRelationAction(formData: FormData) {
     const payload: EntityRelationInsert = {
       from_entity_id: sectionEntityId,
       to_entity_id: entityId,
-      schema_key: "relation/section-entity/v1",
+      schema_key: SECTION_ENTITY_RELATION_SCHEMA_KEY,
       relation_type: relationType,
       slot,
       sort_order: parseSortOrder(formData),
@@ -409,7 +411,7 @@ export async function addSectionEntityRelationAction(formData: FormData) {
     const { data: existing, error: existingError } = await supabase
       .from("entity_relations")
       .select("id")
-      .eq("source_table", "section_entities")
+      .eq("schema_key", SECTION_ENTITY_RELATION_SCHEMA_KEY)
       .eq("from_entity_id", payload.from_entity_id)
       .eq("to_entity_id", payload.to_entity_id)
       .eq("relation_type", relationType)
@@ -585,7 +587,7 @@ export async function reorderSectionEntityRelationsAction({
     const { data: relations, error: loadError } = await supabase
       .from("entity_relations")
       .select("id, to_entity_id")
-      .eq("source_table", "section_entities")
+      .eq("schema_key", SECTION_ENTITY_RELATION_SCHEMA_KEY)
       .eq("from_entity_id", sectionShadow.id)
       .in("id", orderedIds)
 
@@ -603,7 +605,7 @@ export async function reorderSectionEntityRelationsAction({
         .from("entity_relations")
         .update({ sort_order: (index + 1) * 10 } satisfies EntityRelationUpdate)
         .eq("id", relationId)
-        .eq("source_table", "section_entities")
+        .eq("schema_key", SECTION_ENTITY_RELATION_SCHEMA_KEY)
         .eq("from_entity_id", sectionShadow.id),
     )
     const results = await Promise.all(updates)

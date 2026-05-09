@@ -882,7 +882,7 @@ function BridgeSourceHint({
 }) {
   return (
     <div className="mt-1 space-y-0.5 text-[10px] leading-tight text-muted-foreground">
-      <div>저장 행: {shortId(relation.sourceId)}</div>
+      <div>미러 행: {relation.sourceId ? shortId(relation.sourceId) : "없음"}</div>
       <div>그래프 행: {shortId(relation.graphRelationId)}</div>
     </div>
   )
