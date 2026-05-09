@@ -22,13 +22,14 @@ Completed:
 - Routine CMS composition writes target `entity_relations`.
 - Graph-to-legacy mirror writes are retired by replacing the source bridge
   function with a no-op.
+- Legacy mirror audit writes, admin write policies, and legacy-only query
+  indexes are superseded by the Stage 3 operational cleanup migration.
 - Legacy mirror compatibility triggers remain for the legacy tables themselves.
 - Parity QA still compares graph rows against legacy mirror rows.
 
 Remaining blocker classes:
 
 - Legacy mirror compatibility migrations still mention the legacy tables.
-- Audit, index, RLS helper, and schema compatibility migrations still mention the legacy tables.
 - Parity QA still depends on the legacy mirrors as the comparison target.
 
 ## Stage 1: Canonical Graph Identity
