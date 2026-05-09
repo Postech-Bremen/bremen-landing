@@ -114,7 +114,6 @@ export async function upsertPageSectionRelations(
         slot: "sections",
         sort_order: relationNumber(row, "sortOrder", "sort_order"),
         props: relationProps(row),
-        source_table: "page_sections",
       }
     }),
     label,
@@ -194,7 +193,6 @@ export async function upsertSectionEntityRelations(
         slot: row.slot ?? "default",
         sort_order: relationNumber(row, "sortOrder", "sort_order"),
         props: relationProps(row),
-        source_table: "section_entities",
       }
     }),
     label,

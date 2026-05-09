@@ -57,16 +57,16 @@ const removalStages = {
   },
   5: {
     stage: "Legacy table removal",
-    goal: "Drop the legacy mirror tables after all blockers are gone.",
+    goal: "Drop the legacy mirror tables and remaining legacy bridge definitions after all blockers are gone.",
   },
 }
 
 const categories = {
-  active_bridge_migration: {
-    label: "Active bridge migrations",
-    stage: 2,
+  legacy_mirror_compatibility_migration: {
+    label: "Legacy mirror compatibility migrations",
+    stage: 5,
     removalBlocker: true,
-    note: "Drop/supersede graph<->legacy bridge triggers before removing mirrors.",
+    note: "Legacy mirror compatibility migrations remain until the mirror tables are removed.",
   },
   bridge_compatibility_marker: {
     label: "Bridge compatibility markers",
@@ -196,7 +196,7 @@ function classify(file, line = "") {
     file === "supabase/migrations/20260506000042_entity_graph_bridge.sql" ||
     file === "supabase/migrations/20260508000043_graph_primary_composition_writes.sql"
   ) {
-    return "active_bridge_migration"
+    return "legacy_mirror_compatibility_migration"
   }
 
   if (bridgeCompatibilityMarkerFiles.has(file)) {
