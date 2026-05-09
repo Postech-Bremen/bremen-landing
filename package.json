@@ -13,7 +13,8 @@
     "qa:cms-legacy-bridge-boundary": "node scripts/qa-cms-legacy-bridge-boundary.mjs",
     "qa:cms-native-controls": "node scripts/qa-cms-native-controls.mjs",
     "qa:graph-primary-seed-writes": "node scripts/qa-graph-primary-seed-writes.mjs",
-    "qa:legacy-mirror-readiness": "node scripts/qa-legacy-mirror-readiness.mjs"
+    "qa:legacy-mirror-readiness": "node scripts/qa-legacy-mirror-readiness.mjs",
+    "qa:legacy-mirror-stage5-preflight": "node scripts/qa-legacy-mirror-readiness.mjs --fail-before-stage 5"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.9.1",
