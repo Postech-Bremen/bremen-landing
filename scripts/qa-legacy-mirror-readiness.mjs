@@ -51,11 +51,6 @@ const categories = {
     removalBlocker: true,
     note: "Indexes, policies, or helper functions target legacy mirrors.",
   },
-  runtime_health_boundary: {
-    label: "Runtime health boundary",
-    removalBlocker: true,
-    note: "Temporary mirror counts live here until parity health is retired.",
-  },
   parity_qa: {
     label: "Parity QA",
     removalBlocker: true,
@@ -136,10 +131,6 @@ function classify(file) {
     return "static_guard"
   }
 
-  if (file === "lib/cms/legacy-bridge-health.ts") {
-    return "runtime_health_boundary"
-  }
-
   if (
     file === "lib/cms/schema-registry.ts" ||
     file === "lib/cms/schema-registry.server.ts"
@@ -199,7 +190,6 @@ function findReferences(filePath) {
 
 function runSelfTest() {
   const expected = [
-    classify("lib/cms/legacy-bridge-health.ts", 'from("page_sections")'),
     classify("scripts/qa-content-graph-parity.mjs", 'from("section_entities")'),
     classify("lib/cms/content.ts", '.eq("source_table", "page_sections")'),
     classify("scripts/generate-instagram-feed-migration.mjs", "'section_entities'"),

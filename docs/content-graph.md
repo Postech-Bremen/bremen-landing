@@ -66,9 +66,9 @@ Current PONIX contract:
   not the legacy `source_id`.
 - `pnpm run qa:content-graph` checks both page-render parity and global
   graph/legacy mirror integrity for page-section and section-entity relations.
-- Runtime CMS code may read `page_sections` and `section_entities` only through
-  `lib/cms/legacy-bridge-health.ts`, and only for temporary mirror health
-  counts. Use `pnpm run qa:cms-legacy-bridge-boundary` after CMS loader changes.
+- Runtime CMS code must not read `page_sections` or `section_entities`.
+  Legacy mirror checks belong to QA scripts only. Use
+  `pnpm run qa:cms-legacy-bridge-boundary` after CMS loader changes.
 - Use `pnpm run qa:legacy-mirror-readiness` before any legacy mirror removal
   work. The command classifies every remaining `page_sections` /
   `section_entities` reference and fails only on unclassified references.
