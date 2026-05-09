@@ -4,6 +4,7 @@ import {
   CmsSaveNotice,
   CmsSubmitButton,
 } from "@/app/ponix/_components/cms-save-controls"
+import { CmsSelectField } from "@/app/ponix/_components/cms-select-field"
 import { updateCmsEntityAction } from "@/app/ponix/entities/actions"
 import { ProfileImageInput } from "@/components/profile-image-input"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
@@ -319,19 +320,14 @@ export function renderFieldInput({
 
   if (field.type === "select") {
     return (
-      <select
+      <CmsSelectField
         id={id}
         name={name}
         defaultValue={fieldDefaultText(field, value)}
-        className="border-input h-11 w-full rounded-md border bg-background/70 px-3 text-sm shadow-xs outline-none focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50"
-      >
-        {!field.required && <option value="">Empty</option>}
-        {(field.options ?? []).map((option) => (
-          <option key={option.value} value={option.value}>
-            {option.label}
-          </option>
-        ))}
-      </select>
+        options={field.options ?? []}
+        placeholder={`Select ${field.label}`}
+        required={field.required}
+      />
     )
   }
 
