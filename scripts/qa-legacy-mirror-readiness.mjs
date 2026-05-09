@@ -180,21 +180,15 @@ function classify(file, line = "") {
     return "schema_registry_compatibility"
   }
 
-  if (file === "supabase/migrations/20260505000039_cms_audit_events.sql") {
-    return "active_audit_migration"
-  }
-
   if (
     file === "supabase/migrations/20260430000034_private_rls_helpers.sql" ||
-    file === "supabase/migrations/20260506000041_cms_query_indexes.sql"
-  ) {
-    return "active_index_policy_migration"
-  }
-
-  if (
+    file === "supabase/migrations/20260505000039_cms_audit_events.sql" ||
     file === "supabase/migrations/20260506000040_entity_schema_registry.sql" ||
+    file === "supabase/migrations/20260506000041_cms_query_indexes.sql" ||
     file === "supabase/migrations/20260506000042_entity_graph_bridge.sql" ||
-    file === "supabase/migrations/20260508000043_graph_primary_composition_writes.sql"
+    file === "supabase/migrations/20260508000043_graph_primary_composition_writes.sql" ||
+    file ===
+      "supabase/migrations/20260509000047_retire_legacy_mirror_operational_dependencies.sql"
   ) {
     return "legacy_mirror_compatibility_migration"
   }
