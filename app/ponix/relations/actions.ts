@@ -283,7 +283,6 @@ export async function addPageSectionRelationAction(formData: FormData) {
       slot: "sections",
       sort_order: parseSortOrder(formData),
       props: {},
-      source_table: "page_sections",
       created_by_member_id: admin.id,
     }
     const { data: existing, error: existingError } = await supabase
@@ -405,7 +404,6 @@ export async function addSectionEntityRelationAction(formData: FormData) {
       slot,
       sort_order: parseSortOrder(formData),
       props: parseProps(formData),
-      source_table: "section_entities",
       created_by_member_id: admin.id,
     }
     const { data: existing, error: existingError } = await supabase

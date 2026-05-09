@@ -17,6 +17,10 @@ const forbiddenPatterns = [
     label: "direct section_entities Supabase access",
     pattern: /(?:^|[^\w])from\(\s*["'`]section_entities["'`]\s*\)/,
   },
+  {
+    label: "legacy relation source_table marker",
+    pattern: /source_table\s*:\s*["'`](page_sections|section_entities)["'`]/,
+  },
 ]
 
 function repoRelative(filePath) {
@@ -77,7 +81,7 @@ function runSelfTest() {
   if (
     blocked.length !== 1 ||
     retiredBoundary.length !== 1 ||
-    sourceMarker.length !== 0
+    sourceMarker.length !== 1
   ) {
     throw new Error("Self-test failed for CMS legacy bridge boundary guard.")
   }

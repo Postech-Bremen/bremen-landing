@@ -356,8 +356,7 @@ insert into public.entity_relations (
   relation_type,
   slot,
   sort_order,
-  props,
-  source_table
+  props
 )
 select
   page_entity_id,
@@ -366,15 +365,12 @@ select
   'contains_section',
   'sections',
   25,
-  '{}'::jsonb,
-  'page_sections'
+  '{}'::jsonb
 from target
 on conflict (from_entity_id, to_entity_id, relation_type, slot) do update
 set schema_key = excluded.schema_key,
     sort_order = excluded.sort_order,
-    props = excluded.props,
-    source_table = excluded.source_table,
-    source_id = excluded.source_id;
+    props = excluded.props;
 
 insert into public.entities (
   entity_type,
@@ -478,8 +474,7 @@ insert into public.entity_relations (
   relation_type,
   slot,
   sort_order,
-  props,
-  source_table
+  props
 )
 select
   target_section.section_entity_id,
@@ -488,16 +483,13 @@ select
   'features_photo',
   'gallery',
   ordered.rank * 10,
-  '{}'::jsonb,
-  'section_entities'
+  '{}'::jsonb
 from target_section
 cross join ordered
 on conflict (from_entity_id, to_entity_id, relation_type, slot) do update
 set schema_key = excluded.schema_key,
     sort_order = excluded.sort_order,
-    props = excluded.props,
-    source_table = excluded.source_table,
-    source_id = excluded.source_id;
+    props = excluded.props;
 
 delete from public.entity_relations relation
 using public.entities section_entity, public.sections section_ref, public.entities entity
@@ -535,8 +527,7 @@ insert into public.entity_relations (
   relation_type,
   slot,
   sort_order,
-  props,
-  source_table
+  props
 )
 select
   target_section.section_entity_id,
@@ -545,16 +536,13 @@ select
   'features_post',
   ordered.content_kind,
   ordered.rank * 10,
-  '{}'::jsonb,
-  'section_entities'
+  '{}'::jsonb
 from target_section
 cross join ordered
 on conflict (from_entity_id, to_entity_id, relation_type, slot) do update
 set schema_key = excluded.schema_key,
     sort_order = excluded.sort_order,
-    props = excluded.props,
-    source_table = excluded.source_table,
-    source_id = excluded.source_id;
+    props = excluded.props;
 `
 
 writeFileSync(outputPath, sql)

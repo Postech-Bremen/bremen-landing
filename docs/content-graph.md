@@ -54,11 +54,12 @@ Current PONIX contract:
 - CMS relation lists read page/section placement through `entity_relations`
   bridge rows, using relation `schema_key` values as the runtime identity:
   `relation/page-section/v1` and `relation/section-entity/v1`.
-- Those bridge rows expose both the `entity_relations.id` and the legacy
-  `source_id`.
-- Routine CMS composition writes target `entity_relations`; graph-to-legacy
-  triggers mirror those writes back into `page_sections` and
-  `section_entities`.
+- Existing mirrored rows may still expose a legacy `source_id`; new runtime
+  composition writes use `entity_relations.id` and do not require one.
+- Routine CMS composition writes target `entity_relations` without legacy
+  relation `source_table` markers. The graph-to-legacy source bridge is retired
+  as a no-op migration; legacy tables remain only for transition compatibility
+  and parity QA.
 - Maintenance apply scripts and generated seed migrations that refresh scraped
   or Instagram content should also write section placement through
   `entity_relations`, not directly through `page_sections` or

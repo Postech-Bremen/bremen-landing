@@ -20,13 +20,14 @@ Completed:
 - Runtime composition now identifies graph relations by relation `schema_key`
   instead of legacy table-name markers.
 - Routine CMS composition writes target `entity_relations`.
-- Legacy mirrors are still maintained by bridge triggers.
+- Graph-to-legacy mirror writes are retired by replacing the source bridge
+  function with a no-op.
+- Legacy mirror compatibility triggers remain for the legacy tables themselves.
 - Parity QA still compares graph rows against legacy mirror rows.
 
 Remaining blocker classes:
 
-- Graph source markers still use legacy table names as `entity_relations.source_table`.
-- Bridge triggers still mirror graph writes into legacy tables.
+- Legacy mirror compatibility migrations still mention the legacy tables.
 - Audit, index, RLS helper, and schema compatibility migrations still mention the legacy tables.
 - Parity QA still depends on the legacy mirrors as the comparison target.
 
@@ -70,7 +71,7 @@ Current blocker category:
 
 Work:
 
-- Add a migration that supersedes the graph-to-legacy bridge triggers.
+- Add a migration that supersedes the graph-to-legacy source bridge behavior.
 - Preserve reversibility: keep data intact and drop/disable only the sync path
   after Stage 1 proves runtime no longer needs legacy identity.
 - Run parity QA before and after the migration so data drift is visible.
@@ -80,8 +81,9 @@ Exit checks:
 
 - Graph writes no longer attempt to maintain `page_sections` or
   `section_entities`.
-- Bridge trigger references are historical only or moved to a clearly retired
-  migration path.
+- Runtime and maintenance writes no longer populate legacy relation
+  `source_table` markers.
+- The graph-to-legacy source bridge function is superseded by a no-op migration.
 - Supabase advisors do not report new RLS or performance regressions.
 
 ## Stage 3: Audit, Policy, And Index Cleanup
@@ -143,6 +145,7 @@ Work:
 
 - Apply a reviewed migration that drops only the legacy tables and obsolete
   constraints/functions proven unused by the previous stages.
+- Remove remaining legacy mirror compatibility trigger/function definitions.
 - Regenerate Supabase types.
 - Run security and performance advisors.
 

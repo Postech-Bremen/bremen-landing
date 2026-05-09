@@ -50,6 +50,22 @@ const forbiddenPatterns = [
     label: "generated section_entities update SQL",
     pattern: /update\s+public\.section_entities/i,
   },
+  {
+    label: "legacy relation source_table object marker",
+    pattern: /source_table\s*:\s*["'`](page_sections|section_entities)["'`]/,
+  },
+  {
+    label: "generated legacy relation source_table value",
+    pattern: /^\s*["'`](page_sections|section_entities)["'`]/,
+  },
+  {
+    label: "inline generated legacy relation source_table value",
+    pattern: /source_table\)\s*values\s*\(\s*["'`](page_sections|section_entities)["'`]/i,
+  },
+  {
+    label: "generated legacy relation source_table upsert",
+    pattern: /source_table\s*=\s*excluded\.source_table/i,
+  },
 ]
 
 function scanText(file, text) {
@@ -80,15 +96,21 @@ function runSelfTest() {
     "scripts/generate-example.mjs",
     "insert into public.section_entities (section_id, entity_id) select ...",
   )
+  const sourceMarkerShouldFail = scanText(
+    "scripts/apply-example.mjs",
+    "insert into public.entity_relations (source_table) values ('section_entities')",
+  )
   const shouldPass = scanText(
     "scripts/apply-example.mjs",
-    `
-await upsertSectionEntityRelations(supabase, rows, "seed links")
-insert into public.entity_relations (source_table) values ('section_entities')
-`,
+    'await upsertSectionEntityRelations(supabase, rows, "seed links")',
   )
 
-  if (shouldFail.length !== 1 || sqlShouldFail.length !== 1 || shouldPass.length !== 0) {
+  if (
+    shouldFail.length !== 1 ||
+    sqlShouldFail.length !== 1 ||
+    sourceMarkerShouldFail.length !== 1 ||
+    shouldPass.length !== 0
+  ) {
     throw new Error("Self-test failed for graph-primary seed write guard.")
   }
 }
@@ -115,7 +137,7 @@ if (violations.length) {
     )
   }
   console.error(
-    "\nUse scripts/content-graph-write-helpers.mjs so writes target entity_relations and database triggers maintain the legacy mirrors.",
+    "\nUse scripts/content-graph-write-helpers.mjs so writes target entity_relations without legacy relation source markers.",
   )
   process.exitCode = 1
 }

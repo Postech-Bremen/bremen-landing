@@ -611,8 +611,7 @@ insert into public.entity_relations (
   relation_type,
   slot,
   sort_order,
-  props,
-  source_table
+  props
 )
 select
   page_entity.id,
@@ -621,8 +620,7 @@ select
   'contains_section',
   'sections',
   links.sort_order,
-  '{}'::jsonb,
-  'page_sections'
+  '{}'::jsonb
 from links
 join public.pages page_ref on page_ref.slug = links.page_slug
 join public.sections section_ref on section_ref.key = links.section_key
@@ -635,9 +633,7 @@ join public.entities section_entity
 on conflict (from_entity_id, to_entity_id, relation_type, slot) do update
 set schema_key = excluded.schema_key,
     sort_order = excluded.sort_order,
-    props = excluded.props,
-    source_table = excluded.source_table,
-    source_id = excluded.source_id;
+    props = excluded.props;
 
 insert into public.entities (entity_type, schema_key, slug, title, subtitle, summary, thumbnail_url, sort_at, data, published)
 values
@@ -798,8 +794,7 @@ insert into public.entity_relations (
   relation_type,
   slot,
   sort_order,
-  props,
-  source_table
+  props
 )
 select
   target_section.section_entity_id,
@@ -808,15 +803,12 @@ select
   'item',
   'default',
   (ordered.rank * 10)::int,
-  '{}'::jsonb,
-  'section_entities'
+  '{}'::jsonb
 from target_section cross join ordered
 on conflict (from_entity_id, to_entity_id, relation_type, slot) do update
 set schema_key = excluded.schema_key,
     sort_order = excluded.sort_order,
-    props = excluded.props,
-    source_table = excluded.source_table,
-    source_id = excluded.source_id;
+    props = excluded.props;
 
 with target_section as (
   select section_entity.id as section_entity_id
@@ -845,8 +837,7 @@ insert into public.entity_relations (
   relation_type,
   slot,
   sort_order,
-  props,
-  source_table
+  props
 )
 select
   target_section.section_entity_id,
@@ -855,15 +846,12 @@ select
   'item',
   ordered.slot,
   (ordered.rank * 10)::int,
-  '{}'::jsonb,
-  'section_entities'
+  '{}'::jsonb
 from target_section cross join ordered
 on conflict (from_entity_id, to_entity_id, relation_type, slot) do update
 set schema_key = excluded.schema_key,
     sort_order = excluded.sort_order,
-    props = excluded.props,
-    source_table = excluded.source_table,
-    source_id = excluded.source_id;
+    props = excluded.props;
 
 with target_section as (
   select section_entity.id as section_entity_id
@@ -890,8 +878,7 @@ insert into public.entity_relations (
   relation_type,
   slot,
   sort_order,
-  props,
-  source_table
+  props
 )
 select
   target_section.section_entity_id,
@@ -900,15 +887,12 @@ select
   'item',
   'default',
   (ordered.rank * 10)::int,
-  '{}'::jsonb,
-  'section_entities'
+  '{}'::jsonb
 from target_section cross join ordered
 on conflict (from_entity_id, to_entity_id, relation_type, slot) do update
 set schema_key = excluded.schema_key,
     sort_order = excluded.sort_order,
-    props = excluded.props,
-    source_table = excluded.source_table,
-    source_id = excluded.source_id;
+    props = excluded.props;
 
 with target_section as (
   select section_entity.id as section_entity_id
@@ -936,8 +920,7 @@ insert into public.entity_relations (
   relation_type,
   slot,
   sort_order,
-  props,
-  source_table
+  props
 )
 select
   target_section.section_entity_id,
@@ -946,15 +929,12 @@ select
   'item',
   'default',
   (ordered.rank * 10)::int,
-  '{}'::jsonb,
-  'section_entities'
+  '{}'::jsonb
 from target_section cross join ordered
 on conflict (from_entity_id, to_entity_id, relation_type, slot) do update
 set schema_key = excluded.schema_key,
     sort_order = excluded.sort_order,
-    props = excluded.props,
-    source_table = excluded.source_table,
-    source_id = excluded.source_id;
+    props = excluded.props;
 
 with target_section as (
   select section_entity.id as section_entity_id
@@ -979,8 +959,7 @@ insert into public.entity_relations (
   relation_type,
   slot,
   sort_order,
-  props,
-  source_table
+  props
 )
 select
   target_section.section_entity_id,
@@ -989,15 +968,12 @@ select
   'item',
   'default',
   (ordered.rank * 10)::int,
-  '{}'::jsonb,
-  'section_entities'
+  '{}'::jsonb
 from target_section cross join ordered
 on conflict (from_entity_id, to_entity_id, relation_type, slot) do update
 set schema_key = excluded.schema_key,
     sort_order = excluded.sort_order,
-    props = excluded.props,
-    source_table = excluded.source_table,
-    source_id = excluded.source_id;
+    props = excluded.props;
 
 with target_section as (
   select section_entity.id as section_entity_id
@@ -1022,8 +998,7 @@ insert into public.entity_relations (
   relation_type,
   slot,
   sort_order,
-  props,
-  source_table
+  props
 )
 select
   target_section.section_entity_id,
@@ -1032,15 +1007,12 @@ select
   'item',
   'default',
   (ordered.rank * 10)::int,
-  '{}'::jsonb,
-  'section_entities'
+  '{}'::jsonb
 from target_section cross join ordered
 on conflict (from_entity_id, to_entity_id, relation_type, slot) do update
 set schema_key = excluded.schema_key,
     sort_order = excluded.sort_order,
-    props = excluded.props,
-    source_table = excluded.source_table,
-    source_id = excluded.source_id;
+    props = excluded.props;
 
 with target_section as (
   select section_entity.id as section_entity_id
@@ -1066,8 +1038,7 @@ insert into public.entity_relations (
   relation_type,
   slot,
   sort_order,
-  props,
-  source_table
+  props
 )
 select
   target_section.section_entity_id,
@@ -1076,15 +1047,12 @@ select
   'item',
   ordered.slot,
   (ordered.rank * 10)::int,
-  '{}'::jsonb,
-  'section_entities'
+  '{}'::jsonb
 from target_section cross join ordered
 on conflict (from_entity_id, to_entity_id, relation_type, slot) do update
 set schema_key = excluded.schema_key,
     sort_order = excluded.sort_order,
-    props = excluded.props,
-    source_table = excluded.source_table,
-    source_id = excluded.source_id;
+    props = excluded.props;
 
 with target_section as (
   select section_entity.id as section_entity_id
@@ -1109,8 +1077,7 @@ insert into public.entity_relations (
   relation_type,
   slot,
   sort_order,
-  props,
-  source_table
+  props
 )
 select
   target_section.section_entity_id,
@@ -1119,15 +1086,12 @@ select
   'item',
   'default',
   (ordered.rank * 10)::int,
-  '{}'::jsonb,
-  'section_entities'
+  '{}'::jsonb
 from target_section cross join ordered
 on conflict (from_entity_id, to_entity_id, relation_type, slot) do update
 set schema_key = excluded.schema_key,
     sort_order = excluded.sort_order,
-    props = excluded.props,
-    source_table = excluded.source_table,
-    source_id = excluded.source_id;
+    props = excluded.props;
 `
 
 writeFileSync(outputPath, sql)
