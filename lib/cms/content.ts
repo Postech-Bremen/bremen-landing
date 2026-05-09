@@ -3,6 +3,10 @@ import type { Database, Json } from "@/lib/supabase/types"
 
 import type { CmsSchemaDefinition } from "./schema-registry"
 import {
+  countLegacyPageSectionMirrorRows,
+  countLegacySectionEntityMirrorRows,
+} from "./legacy-bridge-health"
+import {
   loadCmsSchemaRegistryMap,
   loadCmsSchemasByKind,
 } from "./schema-registry.server"
@@ -823,54 +827,6 @@ async function loadShadowEntityId({
   return data?.id ?? null
 }
 
-async function countLegacyPageSections({
-  supabase,
-  pageId,
-  sectionId,
-}: {
-  supabase: SupabaseClient
-  pageId?: string
-  sectionId?: string
-}) {
-  let query = supabase
-    .from("page_sections")
-    .select("id", { count: "exact", head: true })
-
-  if (pageId) query = query.eq("page_id", pageId)
-  if (sectionId) query = query.eq("section_id", sectionId)
-
-  const { error, count } = await query
-  if (error) {
-    throw new Error(`Failed to count page-section bridge rows: ${error.message}`)
-  }
-
-  return count
-}
-
-async function countLegacySectionEntities({
-  supabase,
-  sectionId,
-  entityId,
-}: {
-  supabase: SupabaseClient
-  sectionId?: string
-  entityId?: string
-}) {
-  let query = supabase
-    .from("section_entities")
-    .select("id", { count: "exact", head: true })
-
-  if (sectionId) query = query.eq("section_id", sectionId)
-  if (entityId) query = query.eq("entity_id", entityId)
-
-  const { error, count } = await query
-  if (error) {
-    throw new Error(`Failed to count section-entity bridge rows: ${error.message}`)
-  }
-
-  return count
-}
-
 async function loadPageLinksById(supabase: SupabaseClient, pageIds: string[]) {
   if (!pageIds.length) return new Map<string, RawPageLink>()
 
@@ -926,7 +882,7 @@ async function loadPageSectionRelationsFromEntityGraph({
           sourceId: sectionId,
         })
       : Promise.resolve(null),
-    countLegacyPageSections({ supabase, pageId, sectionId }),
+    countLegacyPageSectionMirrorRows({ supabase, pageId, sectionId }),
   ])
 
   if ((pageId && !pageShadowId) || (sectionId && !sectionShadowId)) {
@@ -1021,7 +977,7 @@ async function loadSectionEntityRelationsFromEntityGraph({
           sourceId: sectionId,
         })
       : Promise.resolve(null),
-    countLegacySectionEntities({ supabase, sectionId, entityId }),
+    countLegacySectionEntityMirrorRows({ supabase, sectionId, entityId }),
   ])
 
   if (sectionId && !sectionShadowId) {
