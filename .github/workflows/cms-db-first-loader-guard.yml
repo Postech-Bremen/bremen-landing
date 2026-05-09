@@ -8,6 +8,7 @@ on:
       - "app/ponix-canvas/**"
       - "lib/cms/**"
       - "scripts/qa-cms-db-first-loaders.mjs"
+      - "scripts/qa-cms-legacy-bridge-boundary.mjs"
       - "package.json"
       - "pnpm-lock.yaml"
   workflow_dispatch:
@@ -39,3 +40,6 @@ jobs:
 
       - name: Run CMS DB-first loader guard
         run: pnpm run qa:cms-db-first-loaders
+
+      - name: Run CMS legacy bridge boundary guard
+        run: pnpm run qa:cms-legacy-bridge-boundary
