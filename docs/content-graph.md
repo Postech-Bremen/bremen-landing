@@ -1,16 +1,6 @@
 # Content Graph
 
-The site is currently built around a CMS-friendly graph:
-
-```txt
-pages
-  -> page_sections
-    -> sections
-      -> section_entities
-        -> entities
-```
-
-The target model is a smaller entity graph:
+The site is currently built around a compact entity graph:
 
 ```txt
 entity_schemas
@@ -19,33 +9,32 @@ entity_schemas
       -> entities
 ```
 
-`pages`, `sections`, `page_sections`, and `section_entities` remain in the
-database during the transition. New CMS architecture work should avoid deepening
-those special tables unless the change is explicitly about preserving the
-bridge.
+`pages` and `sections` remain domain tables because they are routable and
+renderer-facing records. Ordered page/section composition is stored in
+`entity_relations`; the legacy `page_sections` and `section_entities` mirror
+tables have been removed.
+
+The older media domain tables `performances`, `videos`, and `photos` are no
+longer runtime content sources. They remain only until the legacy media removal
+runbook proves every row is represented by `entities` and `entity_relations`.
 
 ## Entity Graph Bridge
 
-Migration `20260506000042_entity_graph_bridge.sql` starts the safe transition by
-mirroring page and section records into the generic graph without deleting the
-legacy tables:
+Migration `20260506000042_entity_graph_bridge.sql` started the safe transition
+by mirroring page and section records into the generic graph:
 
 - `pages` rows get shadow `entities` rows with `entity_type = 'page'`.
 - `sections` rows get shadow `entities` rows with `entity_type = 'section'`.
-- `page_sections` rows get shadow `entity_relations` rows from page entity to
+- Page-to-section composition uses `entity_relations` rows from page entity to
   section entity.
-- `section_entities` rows get shadow `entity_relations` rows from section entity
-  to content entity.
+- Section-to-content composition uses `entity_relations` rows from section
+  entity to content entity.
 
 The bridge uses `source_table` and `source_id` columns on `entities` and
-`entity_relations` so each shadow record can be traced back to the legacy row.
-Sync triggers keep the shadow graph updated while the app still writes through
-the current CMS screens.
+`entity_relations` so older mirrored rows can still be traced back to their
+source. New runtime composition writes do not need a legacy `source_id`.
 
-The bridge is now the primary runtime composition path. The legacy composition
-tables remain compatibility mirrors. Do not remove `pages`, `sections`,
-`page_sections`, or `section_entities` until all forms, audits, migrations, and
-generated types have moved to the entity graph.
+The bridge is now the primary runtime composition path.
 
 Current PONIX contract:
 
@@ -58,9 +47,7 @@ Current PONIX contract:
 - Existing mirrored rows may still expose a legacy `source_id`; new runtime
   composition writes use `entity_relations.id` and do not require one.
 - Routine CMS composition writes target `entity_relations` without legacy
-  relation `source_table` markers. The graph-to-legacy source bridge is retired
-  as a no-op migration; legacy tables remain only for transition compatibility
-  until the final destructive removal stage.
+  relation `source_table` markers.
 - Maintenance apply scripts and generated seed migrations that refresh scraped
   or Instagram content should also write section placement through
   `entity_relations`, not directly through `page_sections` or
@@ -72,13 +59,12 @@ Current PONIX contract:
   unpublished section/entity references.
 - Runtime CMS code must not read `page_sections` or `section_entities`.
   Use `pnpm run qa:cms-legacy-bridge-boundary` after CMS loader changes.
-- Use `pnpm run qa:legacy-mirror-readiness` before any legacy mirror removal
-  work. The command classifies every remaining `page_sections` /
-  `section_entities` reference and fails only on unclassified references.
-  Treat reported bridge triggers, audit/RLS/index references, `source_table`
-  markers, and schema registry compatibility entries as the
-  removal blocker list. The staged cleanup sequence lives in
-  `docs/legacy-mirror-removal-plan.md`.
+- Use `pnpm run qa:legacy-mirror-readiness` when touching historical mirror
+  references. The command now reports no active blockers after Stage 5 removal.
+- Use `pnpm run qa:legacy-media-table-readiness` before any
+  `performances`/`videos`/`photos` removal work. It verifies runtime code does
+  not read those tables and that visible legacy media rows are represented in
+  the entity graph.
 - `pnpm run qa:graph-primary-seed-writes` checks that seed apply scripts and
   migration generators do not reintroduce direct legacy composition writes.
 
@@ -89,11 +75,10 @@ Current PONIX contract:
 | `entity_schemas` | DB-backed schema registry for page, section, entity, and relation records. This is the long-term source for CMS form metadata and validation. |
 | `pages` | Routable page records such as `home`, `performances`, `videos`, `photos`, `history`, and `site`. |
 | `sections` | Renderer blocks with `section_type`, copy, and renderer props. |
-| `page_sections` | Ordered section placement on pages. |
 | `entities` | Reusable content units such as videos, photos, stats, posts, history milestones, activities, nav items, and social links. |
-| `section_entities` | Ordered links between a section and the entities displayed in that section. |
-| `entity_relations` | Domain relations such as performance to recording, performance to photo, performance to post. |
+| `entity_relations` | Ordered page-to-section, section-to-entity, and domain relations such as performance to recording/photo/post. |
 | `members` | Domain-specific member/auth/profile table. This intentionally remains separate from generic entities. |
+| `performances`, `videos`, `photos` | Legacy media domain tables. Runtime content has moved to `entities`; remove these only through the guarded legacy media table workflow. |
 
 ## Renderer Contract
 
@@ -132,7 +117,6 @@ Use the registry contract for:
 
 - `sections.props`
 - `entities.data`
-- `section_entities.props`
 - `entity_relations.props`
 
 Each registry entry defines the schema key, field source, field type,
