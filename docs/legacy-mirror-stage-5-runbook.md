@@ -150,6 +150,15 @@ Recommended order:
 7. Regenerate `lib/supabase/types.ts`.
 8. Run Supabase security and performance advisors.
 
+Reviewed draft migration:
+
+- `supabase/migrations/20260509000048_drop_legacy_mirror_tables.sql`
+
+Do not apply this migration to production until the maintainer gives explicit
+production-write approval in the active session. The migration is intentionally
+plain `drop table if exists` without `cascade`; if it fails, stop and inspect
+the dependency instead of broadening the destructive operation.
+
 ## Rollback Plan
 
 Preferred rollback is Supabase point-in-time recovery if the destructive
