@@ -6,6 +6,7 @@ import { Database, Layers3, PencilLine } from "lucide-react"
 import { CmsEntityPicker } from "@/app/ponix/_components/cms-entity-picker"
 import { renderFieldInput } from "@/app/ponix/_components/cms-section-form"
 import { CmsSubmitButton } from "@/app/ponix/_components/cms-save-controls"
+import { CmsComboboxField } from "@/app/ponix/_components/cms-select-field"
 import { ComposerRelationList } from "@/app/ponix/pages/[id]/compose/composer-relation-list"
 import { ComposerSaveFeedback } from "@/app/ponix/pages/[id]/compose/composer-save-feedback"
 import { PonixComposerWorkspace } from "@/app/ponix/pages/[id]/compose/composer-workspace"
@@ -414,22 +415,36 @@ function SectionEntityWorkspace({
           <div className="grid grid-cols-3 gap-2">
             <div className="space-y-2">
               <Label htmlFor="composer-relation-type">관계</Label>
-              <Input
+              <CmsComboboxField
                 id="composer-relation-type"
                 name="relation_type"
                 defaultValue="item"
-                list="composer-relation-types"
-                className="h-10 bg-background/80"
+                options={relationTypeOptions.map((option) => ({
+                  value: option,
+                  label: option,
+                }))}
+                placeholder="관계 선택"
+                searchPlaceholder="관계 검색 또는 입력"
+                emptyLabel="새 관계 이름을 입력하세요"
+                customLabel="사용"
+                triggerClassName="h-10 bg-background/80"
               />
             </div>
             <div className="space-y-2">
               <Label htmlFor="composer-slot">슬롯</Label>
-              <Input
+              <CmsComboboxField
                 id="composer-slot"
                 name="slot"
                 defaultValue={slotOptions[0] ?? "default"}
-                list="composer-slots"
-                className="h-10 bg-background/80"
+                options={slotOptions.map((option) => ({
+                  value: option,
+                  label: option,
+                }))}
+                placeholder="슬롯 선택"
+                searchPlaceholder="슬롯 검색 또는 입력"
+                emptyLabel="새 슬롯 이름을 입력하세요"
+                customLabel="사용"
+                triggerClassName="h-10 bg-background/80"
               />
             </div>
             <div className="space-y-2">
@@ -446,10 +461,6 @@ function SectionEntityWorkspace({
           <CmsSubmitButton className="w-full rounded-full">
             데이터 연결
           </CmsSubmitButton>
-          <RelationDatalists
-            typeOptions={relationTypeOptions}
-            slotOptions={slotOptions}
-          />
         </form>
 
         <Separator />
@@ -513,33 +524,6 @@ function SectionAdvancedSettingsCard({ section }: { section: GraphSection }) {
         </AccordionItem>
       </Accordion>
     </Card>
-  )
-}
-
-function RelationDatalists({
-  typeOptions,
-  slotOptions,
-  typeListId = "composer-relation-types",
-  slotListId = "composer-slots",
-}: {
-  typeOptions: string[]
-  slotOptions: string[]
-  typeListId?: string
-  slotListId?: string
-}) {
-  return (
-    <>
-      <datalist id={typeListId}>
-        {typeOptions.map((option) => (
-          <option key={option} value={option} />
-        ))}
-      </datalist>
-      <datalist id={slotListId}>
-        {slotOptions.map((option) => (
-          <option key={option} value={option} />
-        ))}
-      </datalist>
-    </>
   )
 }
 

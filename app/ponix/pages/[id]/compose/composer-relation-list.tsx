@@ -13,6 +13,10 @@ import {
 
 import { updateCmsEntityInlineAction } from "@/app/ponix/entities/actions"
 import {
+  CmsComboboxField,
+  CmsSelectField,
+} from "@/app/ponix/_components/cms-select-field"
+import {
   deleteSectionEntityRelationAction,
   reorderSectionEntityRelationsAction,
   updateSectionEntityRelationInlineAction,
@@ -213,8 +217,6 @@ function SectionEntityRelationEditor({
   onDragOver: React.DragEventHandler<HTMLDivElement>
   onDrop: React.DragEventHandler<HTMLDivElement>
 }) {
-  const typeListId = `relation-types-${relation.id}`
-  const slotListId = `relation-slots-${relation.id}`
   const [saveState, setSaveState] = useState<SaveState>({ status: "idle" })
   const [isPending, startTransition] = useTransition()
 
@@ -406,12 +408,19 @@ function SectionEntityRelationEditor({
                     >
                       Type
                     </Label>
-                    <Input
+                    <CmsComboboxField
                       id={`relation-type-${relation.id}`}
                       name="relation_type"
                       defaultValue={relation.relationType}
-                      list={typeListId}
-                      className="h-10 bg-card"
+                      options={typeOptions.map((option) => ({
+                        value: option,
+                        label: option,
+                      }))}
+                      placeholder="Select type"
+                      searchPlaceholder="Search or type a relation type"
+                      emptyLabel="Type a relation type to add it"
+                      customLabel="Use"
+                      triggerClassName="h-10 bg-card"
                     />
                   </div>
                   <div className="space-y-1.5">
@@ -421,12 +430,19 @@ function SectionEntityRelationEditor({
                     >
                       Slot
                     </Label>
-                    <Input
+                    <CmsComboboxField
                       id={`relation-slot-${relation.id}`}
                       name="slot"
                       defaultValue={relation.slot}
-                      list={slotListId}
-                      className="h-10 bg-card"
+                      options={slotOptions.map((option) => ({
+                        value: option,
+                        label: option,
+                      }))}
+                      placeholder="Select slot"
+                      searchPlaceholder="Search or type a slot"
+                      emptyLabel="Type a slot to add it"
+                      customLabel="Use"
+                      triggerClassName="h-10 bg-card"
                     />
                   </div>
                   <div className="space-y-1.5">
@@ -445,12 +461,6 @@ function SectionEntityRelationEditor({
                     />
                   </div>
                 </div>
-                <RelationDatalists
-                  typeOptions={typeOptions}
-                  slotOptions={slotOptions}
-                  typeListId={typeListId}
-                  slotListId={slotListId}
-                />
                 <SaveFeedbackBar
                   state={saveState}
                   pending={isPending}
@@ -839,19 +849,14 @@ function renderInlineFieldInput({
 
   if (field.type === "select") {
     return (
-      <select
+      <CmsSelectField
         id={id}
         name={name}
         defaultValue={inlineFieldDefaultText(field, value)}
-        className="border-input h-11 w-full rounded-md border bg-background/70 px-3 text-sm shadow-xs outline-none focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50"
-      >
-        {!field.required && <option value="">Empty</option>}
-        {(field.options ?? []).map((option) => (
-          <option key={option.value} value={option.value}>
-            {option.label}
-          </option>
-        ))}
-      </select>
+        options={field.options ?? []}
+        placeholder={`Select ${field.label}`}
+        required={field.required}
+      />
     )
   }
 
@@ -863,33 +868,6 @@ function renderInlineFieldInput({
       defaultValue={inlineFieldDefaultText(field, value)}
       className="h-11 bg-background/70"
     />
-  )
-}
-
-function RelationDatalists({
-  typeOptions,
-  slotOptions,
-  typeListId = "composer-relation-types",
-  slotListId = "composer-slots",
-}: {
-  typeOptions: string[]
-  slotOptions: string[]
-  typeListId?: string
-  slotListId?: string
-}) {
-  return (
-    <>
-      <datalist id={typeListId}>
-        {typeOptions.map((option) => (
-          <option key={option} value={option} />
-        ))}
-      </datalist>
-      <datalist id={slotListId}>
-        {slotOptions.map((option) => (
-          <option key={option} value={option} />
-        ))}
-      </datalist>
-    </>
   )
 }
 

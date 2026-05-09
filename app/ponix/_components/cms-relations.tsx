@@ -12,6 +12,10 @@ import {
   updateEntityRelationAction,
   updateSectionEntityRelationAction,
 } from "@/app/ponix/relations/actions"
+import {
+  CmsComboboxField,
+  CmsSelectField,
+} from "@/app/ponix/_components/cms-select-field"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -354,12 +358,20 @@ function SectionEntityAddForm({
         </FieldGroup>
       )}
       <FieldGroup label="Type">
-        <Input
+        <CmsComboboxField
           name="relation_type"
           defaultValue="item"
-          list="section-relation-types"
-          required
-          className="h-10 bg-background/80"
+          options={[
+            { value: "item", label: "item" },
+            { value: "features_photo", label: "features_photo" },
+            { value: "features_post", label: "features_post" },
+            { value: "contains_video", label: "contains_video" },
+          ]}
+          placeholder="Select type"
+          searchPlaceholder="Search or type a relation type"
+          emptyLabel="Type a relation type to add it"
+          customLabel="Use"
+          triggerClassName="h-10 bg-background/80"
         />
       </FieldGroup>
       <FieldGroup label="Slot">
@@ -382,12 +394,6 @@ function SectionEntityAddForm({
           Add
         </Button>
       </div>
-      <datalist id="section-relation-types">
-        <option value="item" />
-        <option value="features_photo" />
-        <option value="features_post" />
-        <option value="contains_video" />
-      </datalist>
     </form>
   )
 }
@@ -434,12 +440,20 @@ function EntityRelationAddForm({
         </FieldGroup>
       )}
       <FieldGroup label="Type">
-        <Input
+        <CmsComboboxField
           name="relation_type"
           defaultValue="has_recording"
-          list="entity-relation-types"
-          required
-          className="h-10 bg-background/80"
+          options={[
+            { value: "has_recording", label: "has_recording" },
+            { value: "has_photo", label: "has_photo" },
+            { value: "has_post", label: "has_post" },
+            { value: "related", label: "related" },
+          ]}
+          placeholder="Select type"
+          searchPlaceholder="Search or type a relation type"
+          emptyLabel="Type a relation type to add it"
+          customLabel="Use"
+          triggerClassName="h-10 bg-background/80"
         />
       </FieldGroup>
       <FieldGroup label="Slot">
@@ -462,12 +476,6 @@ function EntityRelationAddForm({
           Add
         </Button>
       </div>
-      <datalist id="entity-relation-types">
-        <option value="has_recording" />
-        <option value="has_photo" />
-        <option value="has_post" />
-        <option value="related" />
-      </datalist>
     </form>
   )
 }
@@ -495,21 +503,17 @@ function PageSelect({
   pages: CmsRelationEditorOptions["pages"]
 }) {
   return (
-    <select
+    <CmsSelectField
       name={name}
       required
-      className={selectClassName}
       defaultValue=""
-    >
-      <option value="" disabled>
-        Select page
-      </option>
-      {pages.map((page) => (
-        <option key={page.id} value={page.id}>
-          {page.slug} · {page.title}
-        </option>
-      ))}
-    </select>
+      placeholder="Select page"
+      triggerClassName="h-10 bg-background/80"
+      options={pages.map((page) => ({
+        value: page.id,
+        label: `${page.slug} · ${page.title}`,
+      }))}
+    />
   )
 }
 
@@ -521,26 +525,19 @@ function SectionSelect({
   sections: CmsRelationEditorOptions["sections"]
 }) {
   return (
-    <select
+    <CmsSelectField
       name={name}
       required
-      className={selectClassName}
       defaultValue=""
-    >
-      <option value="" disabled>
-        Select section
-      </option>
-      {sections.map((section) => (
-        <option key={section.id} value={section.id}>
-          {section.key} · {section.title ?? "Untitled"}
-        </option>
-      ))}
-    </select>
+      placeholder="Select section"
+      triggerClassName="h-10 bg-background/80"
+      options={sections.map((section) => ({
+        value: section.id,
+        label: `${section.key} · ${section.title ?? "Untitled"}`,
+      }))}
+    />
   )
 }
-
-const selectClassName =
-  "flex h-10 w-full rounded-md border border-input bg-background/80 px-3 py-2 text-sm shadow-xs outline-none transition-[color,box-shadow] focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50 disabled:cursor-not-allowed disabled:opacity-50"
 
 function RelationCard({
   title,
