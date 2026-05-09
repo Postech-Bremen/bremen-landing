@@ -6,9 +6,10 @@ This document stages the removal of the legacy composition mirror tables:
 - `section_entities`
 
 The current production-safe state is graph-primary runtime composition with
-legacy mirrors kept for compatibility, triggers, and parity QA. Do not drop the
-legacy tables until every blocker reported by `pnpm run qa:legacy-mirror-readiness`
-has moved out of the removal-blocker categories.
+legacy mirrors kept only for compatibility and their own transition triggers.
+Do not drop the legacy tables until every pre-Stage-5 blocker reported by
+`pnpm run qa:legacy-mirror-stage5-preflight` is clear and a maintainer has
+explicitly approved the destructive migration.
 
 ## Current State
 
@@ -142,7 +143,8 @@ Goal: remove `page_sections` and `section_entities`.
 Preconditions:
 
 - Stages 1-4 are complete.
-- `qa:legacy-mirror-readiness` reports zero removal-blocker references.
+- `qa:legacy-mirror-stage5-preflight` reports no blockers before Stage 5.
+- Production catalog preflight has been run with Supabase MCP.
 - Supabase types, app build, and all CMS QA pass.
 - A maintainer explicitly approves the destructive migration.
 
@@ -151,6 +153,8 @@ Work:
 - Apply a reviewed migration that drops only the legacy tables and obsolete
   constraints/functions proven unused by the previous stages.
 - Remove remaining legacy mirror compatibility trigger/function definitions.
+- Preserve historical audit rows as text records; do not delete
+  `cms_audit_events` rows for legacy table names.
 - Regenerate Supabase types.
 - Run security and performance advisors.
 

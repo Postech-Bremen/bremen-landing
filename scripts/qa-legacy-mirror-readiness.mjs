@@ -12,6 +12,9 @@ const scanRoots = [
   ".github",
   "supabase/migrations",
 ]
+const failBeforeStageIndex = process.argv.indexOf("--fail-before-stage")
+const failBeforeStage =
+  failBeforeStageIndex === -1 ? null : Number(process.argv[failBeforeStageIndex + 1])
 const ignoredFiles = new Set(["lib/supabase/types.ts", "supabase/_apply_all.sql"])
 const codeExtensions = new Set([
   ".md",
@@ -305,6 +308,27 @@ const blockerRows = Object.entries(categories)
 
 console.log("\nRemoval blockers to clear before dropping legacy mirrors")
 console.table(blockerRows)
+
+if (failBeforeStage !== null) {
+  if (!Number.isInteger(failBeforeStage) || failBeforeStage < 1) {
+    console.error("--fail-before-stage must be a positive integer.")
+    process.exitCode = 1
+  } else {
+    const earlyBlockers = blockerRows.filter(
+      (row) => row.stage !== null && row.stage < failBeforeStage,
+    )
+
+    if (earlyBlockers.length) {
+      console.error(
+        `\nStage preflight failed: blocker categories remain before stage ${failBeforeStage}.`,
+      )
+      console.table(earlyBlockers)
+      process.exitCode = 1
+    } else {
+      console.log(`\nStage preflight ok: no blockers remain before stage ${failBeforeStage}.`)
+    }
+  }
+}
 
 const stageRows = Object.entries(removalStages).map(([stage, metadata]) => {
   const stageCategories = Object.entries(categories).filter(
