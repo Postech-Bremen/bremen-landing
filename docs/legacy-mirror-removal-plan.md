@@ -24,13 +24,13 @@ Completed:
   function with a no-op.
 - Legacy mirror audit writes, admin write policies, and legacy-only query
   indexes are superseded by the Stage 3 operational cleanup migration.
+- Content graph QA validates graph-internal page composition integrity without
+  reading the legacy mirrors.
 - Legacy mirror compatibility triggers remain for the legacy tables themselves.
-- Parity QA still compares graph rows against legacy mirror rows.
 
 Remaining blocker classes:
 
 - Legacy mirror compatibility migrations still mention the legacy tables.
-- Parity QA still depends on the legacy mirrors as the comparison target.
 
 ## Stage 1: Canonical Graph Identity
 
@@ -114,7 +114,7 @@ Exit checks:
 
 Goal: stop using legacy mirrors as the truth source.
 
-Current blocker category:
+Cleared blocker category:
 
 - `parity_qa`
 
@@ -130,6 +130,10 @@ Exit checks:
 - `qa:content-graph` no longer requires legacy mirror table reads.
 - A graph-only QA command covers the integrity checks previously provided by
   parity comparisons.
+
+Status: complete. `qa:content-graph` now reads published page composition from
+`entity_relations` and checks page/section shadow cardinality, relation
+contracts, ordering, and missing or unpublished targets directly from the graph.
 
 ## Stage 5: Legacy Table Removal
 

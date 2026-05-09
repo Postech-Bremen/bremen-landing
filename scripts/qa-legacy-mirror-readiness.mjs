@@ -90,7 +90,7 @@ const categories = {
     label: "Parity QA",
     stage: 4,
     removalBlocker: true,
-    note: "Current QA compares graph rows with legacy mirror rows.",
+    note: "A QA script still compares graph rows with legacy mirror rows.",
   },
   graph_source_marker: {
     label: "Graph source markers",
@@ -160,10 +160,6 @@ function classify(file, line = "") {
 
   if (file.startsWith("docs/")) {
     return "docs"
-  }
-
-  if (file === "scripts/qa-content-graph-parity.mjs") {
-    return "parity_qa"
   }
 
   if (
@@ -237,7 +233,6 @@ function findReferences(filePath) {
 
 function runSelfTest() {
   const expected = [
-    classify("scripts/qa-content-graph-parity.mjs", 'from("section_entities")'),
     classify("lib/cms/content.ts", '.eq("source_table", "page_sections")'),
     classify("scripts/generate-instagram-feed-migration.mjs", "'section_entities'"),
     classify("supabase/migrations/20260430000034_private_rls_helpers.sql", "section_entities"),
