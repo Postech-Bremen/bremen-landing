@@ -19,9 +19,10 @@ entity_schemas
       -> entities
 ```
 
-`pages`, `sections`, `page_sections`, and `section_entities` remain in use during
-the transition. New CMS architecture work should avoid deepening those special
-tables unless the change is explicitly about preserving the bridge.
+`pages`, `sections`, `page_sections`, and `section_entities` remain in the
+database during the transition. New CMS architecture work should avoid deepening
+those special tables unless the change is explicitly about preserving the
+bridge.
 
 ## Entity Graph Bridge
 
@@ -49,8 +50,8 @@ generated types have moved to the entity graph.
 Current PONIX contract:
 
 - Public page composition reads use the `entity_relations` bridge by default.
-  The legacy `page_sections` / `section_entities` path is kept in QA scripts
-  only as a parity check while the transition is in progress.
+  Content graph QA now validates the graph directly instead of comparing
+  against the legacy mirrors.
 - CMS relation lists read page/section placement through `entity_relations`
   bridge rows, using relation `schema_key` values as the runtime identity:
   `relation/page-section/v1` and `relation/section-entity/v1`.
@@ -59,23 +60,23 @@ Current PONIX contract:
 - Routine CMS composition writes target `entity_relations` without legacy
   relation `source_table` markers. The graph-to-legacy source bridge is retired
   as a no-op migration; legacy tables remain only for transition compatibility
-  and parity QA.
+  until the final destructive removal stage.
 - Maintenance apply scripts and generated seed migrations that refresh scraped
   or Instagram content should also write section placement through
   `entity_relations`, not directly through `page_sections` or
   `section_entities`.
 - Code that mutates page or section composition must pass the graph relation id,
   not the legacy `source_id`.
-- `pnpm run qa:content-graph` checks both page-render parity and global
-  graph/legacy mirror integrity for page-section and section-entity relations.
+- `pnpm run qa:content-graph` checks graph-only page composition integrity:
+  page shadow cardinality, section ordering, relation contracts, and missing or
+  unpublished section/entity references.
 - Runtime CMS code must not read `page_sections` or `section_entities`.
-  Legacy mirror checks belong to QA scripts only. Use
-  `pnpm run qa:cms-legacy-bridge-boundary` after CMS loader changes.
+  Use `pnpm run qa:cms-legacy-bridge-boundary` after CMS loader changes.
 - Use `pnpm run qa:legacy-mirror-readiness` before any legacy mirror removal
   work. The command classifies every remaining `page_sections` /
   `section_entities` reference and fails only on unclassified references.
-  Treat reported bridge triggers, audit/RLS/index references, parity QA,
-  `source_table` markers, and schema registry compatibility entries as the
+  Treat reported bridge triggers, audit/RLS/index references, `source_table`
+  markers, and schema registry compatibility entries as the
   removal blocker list. The staged cleanup sequence lives in
   `docs/legacy-mirror-removal-plan.md`.
 - `pnpm run qa:graph-primary-seed-writes` checks that seed apply scripts and
