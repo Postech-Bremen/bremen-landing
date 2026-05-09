@@ -35,54 +35,87 @@ const graphSourceMarkerFiles = new Set([
   "scripts/generate-scraped-content-migration.mjs",
 ])
 
+const removalStages = {
+  1: {
+    stage: "Canonical graph identity",
+    goal: "Replace legacy table-name relation markers with durable graph semantics.",
+  },
+  2: {
+    stage: "Bridge trigger retirement",
+    goal: "Stop graph writes from maintaining legacy mirror rows.",
+  },
+  3: {
+    stage: "Audit, policy, and index cleanup",
+    goal: "Remove active operational dependencies on legacy mirror tables.",
+  },
+  4: {
+    stage: "Parity QA retirement",
+    goal: "Replace graph-vs-legacy checks with graph-internal integrity QA.",
+  },
+  5: {
+    stage: "Legacy table removal",
+    goal: "Drop the legacy mirror tables after all blockers are gone.",
+  },
+}
+
 const categories = {
   active_bridge_migration: {
     label: "Active bridge migrations",
+    stage: 2,
     removalBlocker: true,
     note: "Drop/supersede graph<->legacy bridge triggers before removing mirrors.",
   },
   active_audit_migration: {
     label: "Audit migration compatibility",
+    stage: 3,
     removalBlocker: true,
     note: "Audit target-table checks and triggers still mention legacy mirrors.",
   },
   active_index_policy_migration: {
     label: "Legacy indexes/RLS helpers",
+    stage: 3,
     removalBlocker: true,
     note: "Indexes, policies, or helper functions target legacy mirrors.",
   },
   parity_qa: {
     label: "Parity QA",
+    stage: 4,
     removalBlocker: true,
     note: "Current QA compares graph rows with legacy mirror rows.",
   },
   graph_source_marker: {
     label: "Graph source markers",
+    stage: 1,
     removalBlocker: true,
     note: "Graph rows still use legacy table names as source_table markers.",
   },
   schema_registry_compatibility: {
     label: "Schema registry compatibility",
+    stage: 1,
     removalBlocker: true,
     note: "Registry metadata still allows/mentions legacy relation tables.",
   },
   static_guard: {
     label: "Static guard self-tests",
+    stage: null,
     removalBlocker: false,
     note: "Guard patterns intentionally mention legacy names.",
   },
   docs: {
     label: "Documentation",
+    stage: null,
     removalBlocker: false,
     note: "Docs describe the transition and must be updated during removal.",
   },
   historical_migration: {
     label: "Historical migrations",
+    stage: null,
     removalBlocker: false,
     note: "Committed history remains as-is; do not rewrite old migrations.",
   },
   readiness_guard: {
     label: "Readiness guard",
+    stage: null,
     removalBlocker: false,
     note: "This inventory script intentionally names legacy mirrors.",
   },
@@ -224,6 +257,7 @@ const summaryRows = [...byCategory.entries()]
   .map(([category, count]) => ({
     category,
     count,
+    stage: categories[category]?.stage ?? null,
     removalBlocker: categories[category]?.removalBlocker ?? true,
     label: categories[category]?.label ?? "Unclassified",
   }))
@@ -252,7 +286,9 @@ const blockerRows = Object.entries(categories)
     ([category, metadata]) =>
       metadata.removalBlocker && (byCategory.get(category) ?? 0) > 0,
   )
+  .sort(([, left], [, right]) => (left.stage ?? 99) - (right.stage ?? 99))
   .map(([category, metadata]) => ({
+    stage: metadata.stage,
     category,
     count: byCategory.get(category) ?? 0,
     nextStep: metadata.note,
@@ -260,6 +296,27 @@ const blockerRows = Object.entries(categories)
 
 console.log("\nRemoval blockers to clear before dropping legacy mirrors")
 console.table(blockerRows)
+
+const stageRows = Object.entries(removalStages).map(([stage, metadata]) => {
+  const stageCategories = Object.entries(categories).filter(
+    ([, category]) => category.stage === Number(stage),
+  )
+  const referenceCount = stageCategories.reduce(
+    (total, [category]) => total + (byCategory.get(category) ?? 0),
+    0,
+  )
+
+  return {
+    stage: Number(stage),
+    name: metadata.stage,
+    blockerReferences: referenceCount,
+    categories: stageCategories.map(([category]) => category).join(", "),
+    goal: metadata.goal,
+  }
+})
+
+console.log("\nSuggested removal stages")
+console.table(stageRows)
 
 if (unclassified.length) {
   console.error("\nUnclassified legacy mirror references:")
