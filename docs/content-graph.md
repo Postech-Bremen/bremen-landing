@@ -74,7 +74,8 @@ Current PONIX contract:
   `section_entities` reference and fails only on unclassified references.
   Treat reported bridge triggers, audit/RLS/index references, parity QA,
   `source_table` markers, and schema registry compatibility entries as the
-  removal blocker list.
+  removal blocker list. The staged cleanup sequence lives in
+  `docs/legacy-mirror-removal-plan.md`.
 - `pnpm run qa:graph-primary-seed-writes` checks that seed apply scripts and
   migration generators do not reintroduce direct legacy composition writes.
 

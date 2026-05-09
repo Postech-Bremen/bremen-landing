@@ -1,0 +1,160 @@
+# Legacy Mirror Removal Plan
+
+This document stages the removal of the legacy composition mirror tables:
+
+- `page_sections`
+- `section_entities`
+
+The current production-safe state is graph-primary runtime composition with
+legacy mirrors kept for compatibility, triggers, and parity QA. Do not drop the
+legacy tables until every blocker reported by `pnpm run qa:legacy-mirror-readiness`
+has moved out of the removal-blocker categories.
+
+## Current State
+
+Completed:
+
+- Public page composition reads from `entity_relations`.
+- PONIX relation loaders read from `entity_relations`.
+- Runtime CMS code no longer reads `page_sections` or `section_entities`.
+- Routine CMS composition writes target `entity_relations`.
+- Legacy mirrors are still maintained by bridge triggers.
+- Parity QA still compares graph rows against legacy mirror rows.
+
+Remaining blocker classes:
+
+- Graph source markers still use legacy table names as `entity_relations.source_table`.
+- Bridge triggers still mirror graph writes into legacy tables.
+- Audit, index, RLS helper, and schema compatibility migrations still mention the legacy tables.
+- Parity QA still depends on the legacy mirrors as the comparison target.
+
+## Stage 1: Canonical Graph Identity
+
+Goal: make graph composition independent from legacy table identity.
+
+Current blocker category:
+
+- `graph_source_marker`
+- `schema_registry_compatibility`
+
+Work:
+
+- Stop treating `page_sections` and `section_entities` as runtime relation
+  kinds. They are table names, not long-term graph semantics.
+- Decide the canonical replacement before migrating data. Likely candidates are
+  relation schema keys, relation kinds, or a new compatibility column that can
+  be removed later.
+- Ensure UI/actions use `entity_relations.id` as the primary mutation id and do
+  not depend on legacy `source_id` for composition editing.
+- Keep the migration additive first. Do not overwrite or delete the legacy
+  markers until code and QA can read the canonical representation.
+
+Exit checks:
+
+- Runtime loaders and actions no longer filter composition by legacy table-name
+  markers except through an explicitly named compatibility layer.
+- `qa:legacy-mirror-readiness` no longer reports runtime graph source marker
+  blockers outside that compatibility layer.
+- `qa:cms-legacy-bridge-boundary`, `qa:cms-db-first-loaders`, typecheck, lint,
+  and build pass.
+
+## Stage 2: Bridge Trigger Retirement
+
+Goal: stop writing legacy mirror rows from graph writes.
+
+Current blocker category:
+
+- `active_bridge_migration`
+
+Work:
+
+- Add a migration that supersedes the graph-to-legacy bridge triggers.
+- Preserve reversibility: keep data intact and drop/disable only the sync path
+  after Stage 1 proves runtime no longer needs legacy identity.
+- Run parity QA before and after the migration so data drift is visible.
+- Regenerate Supabase types if schema-level constraints or columns change.
+
+Exit checks:
+
+- Graph writes no longer attempt to maintain `page_sections` or
+  `section_entities`.
+- Bridge trigger references are historical only or moved to a clearly retired
+  migration path.
+- Supabase advisors do not report new RLS or performance regressions.
+
+## Stage 3: Audit, Policy, And Index Cleanup
+
+Goal: remove active operational dependencies on the legacy mirrors.
+
+Current blocker categories:
+
+- `active_audit_migration`
+- `active_index_policy_migration`
+
+Work:
+
+- Update audit trigger target allowlists so they no longer require the legacy
+  tables.
+- Remove active indexes and helper policies that exist only for mirror reads or
+  writes.
+- Preserve RLS. Never disable row level security to make cleanup easier.
+
+Exit checks:
+
+- `qa:legacy-mirror-readiness` no longer reports active audit, policy, or index
+  blockers.
+- Supabase security and performance advisors are checked after the migration.
+
+## Stage 4: Parity QA Retirement
+
+Goal: stop using legacy mirrors as the truth source.
+
+Current blocker category:
+
+- `parity_qa`
+
+Work:
+
+- Replace graph-vs-legacy parity QA with graph-internal integrity QA.
+- Validate page composition, section ordering, relation cardinality, and missing
+  entity references directly from `entity_relations`.
+- Keep historical migrations untouched.
+
+Exit checks:
+
+- `qa:content-graph` no longer requires legacy mirror table reads.
+- A graph-only QA command covers the integrity checks previously provided by
+  parity comparisons.
+
+## Stage 5: Legacy Table Removal
+
+Goal: remove `page_sections` and `section_entities`.
+
+Preconditions:
+
+- Stages 1-4 are complete.
+- `qa:legacy-mirror-readiness` reports zero removal-blocker references.
+- Supabase types, app build, and all CMS QA pass.
+- A maintainer explicitly approves the destructive migration.
+
+Work:
+
+- Apply a reviewed migration that drops only the legacy tables and obsolete
+  constraints/functions proven unused by the previous stages.
+- Regenerate Supabase types.
+- Run security and performance advisors.
+
+Exit checks:
+
+- No runtime, QA, migration, docs, or generated-code path expects live legacy
+  mirror tables.
+- Production pages and PONIX CMS composition editing still pass smoke tests.
+
+## Guardrails
+
+- Do not run destructive SQL without explicit maintainer approval.
+- Do not disable RLS.
+- Do not rewrite historical migrations.
+- Do not remove parity QA before graph-only QA exists.
+- Do not collapse all stages into one migration. Each stage should leave a
+  reversible, testable state.
