@@ -34,7 +34,7 @@ export type CmsFieldDefinition = {
 export type CmsSchemaDefinition = {
   schemaKey: string
   kind: CmsSchemaKind
-  table: "pages" | "sections" | "entities" | "section_entities" | "entity_relations"
+  table: "pages" | "sections" | "entities" | "entity_relations"
   label: string
   description: string
   fields: CmsFieldDefinition[]
