@@ -69,6 +69,12 @@ Current PONIX contract:
 - Runtime CMS code may read `page_sections` and `section_entities` only through
   `lib/cms/legacy-bridge-health.ts`, and only for temporary mirror health
   counts. Use `pnpm run qa:cms-legacy-bridge-boundary` after CMS loader changes.
+- Use `pnpm run qa:legacy-mirror-readiness` before any legacy mirror removal
+  work. The command classifies every remaining `page_sections` /
+  `section_entities` reference and fails only on unclassified references.
+  Treat reported bridge triggers, audit/RLS/index references, parity QA,
+  `source_table` markers, and schema registry compatibility entries as the
+  removal blocker list.
 - `pnpm run qa:graph-primary-seed-writes` checks that seed apply scripts and
   migration generators do not reintroduce direct legacy composition writes.
 

@@ -11,7 +11,8 @@
     "qa:cms-db-first-loaders": "node scripts/qa-cms-db-first-loaders.mjs",
     "qa:cms-schema-registry": "node scripts/qa-cms-schema-registry.mjs",
     "qa:cms-legacy-bridge-boundary": "node scripts/qa-cms-legacy-bridge-boundary.mjs",
-    "qa:graph-primary-seed-writes": "node scripts/qa-graph-primary-seed-writes.mjs"
+    "qa:graph-primary-seed-writes": "node scripts/qa-graph-primary-seed-writes.mjs",
+    "qa:legacy-mirror-readiness": "node scripts/qa-legacy-mirror-readiness.mjs"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.9.1",
