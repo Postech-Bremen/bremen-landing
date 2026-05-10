@@ -14,9 +14,8 @@ renderer-facing records. Ordered page/section composition is stored in
 `entity_relations`; the legacy `page_sections` and `section_entities` mirror
 tables have been removed.
 
-The older media domain tables `performances`, `videos`, and `photos` are no
-longer runtime content sources. They remain only until the legacy media removal
-runbook proves every row is represented by `entities` and `entity_relations`.
+The older media domain tables `performances`, `videos`, and `photos` have been
+removed. Media/archive content now lives in `entities` and `entity_relations`.
 
 ## Entity Graph Bridge
 
@@ -61,10 +60,9 @@ Current PONIX contract:
   Use `pnpm run qa:cms-legacy-bridge-boundary` after CMS loader changes.
 - Use `pnpm run qa:legacy-mirror-readiness` when touching historical mirror
   references. The command now reports no active blockers after Stage 5 removal.
-- Use `pnpm run qa:legacy-media-table-readiness` before any
-  `performances`/`videos`/`photos` removal work. It verifies runtime code does
-  not read those tables and that visible legacy media rows are represented in
-  the entity graph.
+- Use `pnpm run qa:legacy-media-table-readiness` after media graph changes to
+  verify runtime code does not reintroduce direct legacy media table reads and
+  the post-drop entity graph still exposes performance/video/photo content.
 - `pnpm run qa:graph-primary-seed-writes` checks that seed apply scripts and
   migration generators do not reintroduce direct legacy composition writes.
 
@@ -78,7 +76,6 @@ Current PONIX contract:
 | `entities` | Reusable content units such as videos, photos, stats, posts, history milestones, activities, nav items, and social links. |
 | `entity_relations` | Ordered page-to-section, section-to-entity, and domain relations such as performance to recording/photo/post. |
 | `members` | Domain-specific member/auth/profile table. This intentionally remains separate from generic entities. |
-| `performances`, `videos`, `photos` | Legacy media domain tables. Runtime content has moved to `entities`; remove these only through the guarded legacy media table workflow. |
 
 ## Renderer Contract
 

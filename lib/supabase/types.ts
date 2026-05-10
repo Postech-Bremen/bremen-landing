@@ -385,104 +385,6 @@ export type Database = {
           },
         ]
       }
-      performances: {
-        Row: {
-          created_at: string
-          event_date: string
-          id: string
-          notes: string | null
-          poster_url: string | null
-          published: boolean
-          slug: string
-          subtitle: string | null
-          title: string
-          type: Database["public"]["Enums"]["performance_type"]
-          updated_at: string
-          venue: string | null
-        }
-        Insert: {
-          created_at?: string
-          event_date: string
-          id?: string
-          notes?: string | null
-          poster_url?: string | null
-          published?: boolean
-          slug: string
-          subtitle?: string | null
-          title: string
-          type?: Database["public"]["Enums"]["performance_type"]
-          updated_at?: string
-          venue?: string | null
-        }
-        Update: {
-          created_at?: string
-          event_date?: string
-          id?: string
-          notes?: string | null
-          poster_url?: string | null
-          published?: boolean
-          slug?: string
-          subtitle?: string | null
-          title?: string
-          type?: Database["public"]["Enums"]["performance_type"]
-          updated_at?: string
-          venue?: string | null
-        }
-        Relationships: []
-      }
-      photos: {
-        Row: {
-          aspect: Database["public"]["Enums"]["photo_aspect"]
-          caption: string | null
-          category: Database["public"]["Enums"]["photo_category"]
-          created_at: string
-          display_order: number
-          id: string
-          performance_id: string | null
-          published: boolean
-          storage_path: string
-          taken_at: string | null
-          title: string
-          updated_at: string
-        }
-        Insert: {
-          aspect?: Database["public"]["Enums"]["photo_aspect"]
-          caption?: string | null
-          category?: Database["public"]["Enums"]["photo_category"]
-          created_at?: string
-          display_order?: number
-          id?: string
-          performance_id?: string | null
-          published?: boolean
-          storage_path: string
-          taken_at?: string | null
-          title: string
-          updated_at?: string
-        }
-        Update: {
-          aspect?: Database["public"]["Enums"]["photo_aspect"]
-          caption?: string | null
-          category?: Database["public"]["Enums"]["photo_category"]
-          created_at?: string
-          display_order?: number
-          id?: string
-          performance_id?: string | null
-          published?: boolean
-          storage_path?: string
-          taken_at?: string | null
-          title?: string
-          updated_at?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "photos_performance_id_fkey"
-            columns: ["performance_id"]
-            isOneToOne: false
-            referencedRelation: "performances"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       sections: {
         Row: {
           created_at: string
@@ -536,92 +438,12 @@ export type Database = {
           },
         ]
       }
-      videos: {
-        Row: {
-          artist: string | null
-          created_at: string
-          display_order: number
-          duration: string | null
-          id: string
-          is_highlight: boolean
-          last_fetched_at: string | null
-          performance_id: string | null
-          published: boolean
-          song: string | null
-          team: string | null
-          title: string
-          updated_at: string
-          views: number | null
-          youtube_id: string
-        }
-        Insert: {
-          artist?: string | null
-          created_at?: string
-          display_order?: number
-          duration?: string | null
-          id?: string
-          is_highlight?: boolean
-          last_fetched_at?: string | null
-          performance_id?: string | null
-          published?: boolean
-          song?: string | null
-          team?: string | null
-          title: string
-          updated_at?: string
-          views?: number | null
-          youtube_id: string
-        }
-        Update: {
-          artist?: string | null
-          created_at?: string
-          display_order?: number
-          duration?: string | null
-          id?: string
-          is_highlight?: boolean
-          last_fetched_at?: string | null
-          performance_id?: string | null
-          published?: boolean
-          song?: string | null
-          team?: string | null
-          title?: string
-          updated_at?: string
-          views?: number | null
-          youtube_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "videos_performance_id_fkey"
-            columns: ["performance_id"]
-            isOneToOne: false
-            referencedRelation: "performances"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
     }
     Views: { [_ in never]: never }
-    Functions: {
-      current_member_id: { Args: never; Returns: string }
-      is_active_member: { Args: never; Returns: boolean }
-      is_admin: { Args: never; Returns: boolean }
-    }
+    Functions: { [_ in never]: never }
     Enums: {
       member_role: "member" | "admin"
       member_status: "inactive" | "active" | "alumni"
-      performance_type:
-        | "regular"
-        | "festival"
-        | "special"
-        | "stadium"
-        | "welcome"
-      photo_aspect: "portrait" | "landscape"
-      photo_category:
-        | "live"
-        | "practice"
-        | "studio"
-        | "events"
-        | "group"
-        | "backstage"
     }
     CompositeTypes: { [_ in never]: never }
   }
@@ -632,22 +454,6 @@ export const Constants = {
     Enums: {
       member_role: ["member", "admin"],
       member_status: ["inactive", "active", "alumni"],
-      performance_type: [
-        "regular",
-        "festival",
-        "special",
-        "stadium",
-        "welcome",
-      ],
-      photo_aspect: ["portrait", "landscape"],
-      photo_category: [
-        "live",
-        "practice",
-        "studio",
-        "events",
-        "group",
-        "backstage",
-      ],
     },
   },
 } as const

@@ -102,6 +102,34 @@ function requireOk(result, label) {
   return result.data ?? []
 }
 
+function isMissingLegacyTable(result, table) {
+  const error = result.error
+  if (!error) return false
+
+  const message = String(error.message ?? "").toLowerCase()
+  const details = String(error.details ?? "").toLowerCase()
+  const tableName = table.toLowerCase()
+
+  return (
+    error.code === "PGRST205" ||
+    error.code === "42P01" ||
+    message.includes("could not find the table") ||
+    message.includes(`public.${tableName}`) ||
+    details.includes(`public.${tableName}`)
+  )
+}
+
+function requireLegacyOk(result, table) {
+  if (isMissingLegacyTable(result, table)) {
+    return { rows: [], dropped: true }
+  }
+
+  return {
+    rows: requireOk(result, `legacy ${table}`),
+    dropped: false,
+  }
+}
+
 function dataValue(entity, key) {
   const data = entity.data
   if (!data || typeof data !== "object" || Array.isArray(data)) return null
@@ -137,10 +165,29 @@ async function loadLegacyRows(supabase) {
       .order("storage_path", { ascending: true }),
   ])
 
+  const results = {
+    performances: requireLegacyOk(performances, "performances"),
+    videos: requireLegacyOk(videos, "videos"),
+    photos: requireLegacyOk(photos, "photos"),
+  }
+  const droppedTables = Object.entries(results)
+    .filter(([, result]) => result.dropped)
+    .map(([table]) => table)
+
+  if (droppedTables.length > 0 && droppedTables.length < legacyTables.length) {
+    throw new Error(
+      `legacy media tables are partially dropped: ${droppedTables.join(", ")}`,
+    )
+  }
+
   return {
-    performances: requireOk(performances, "legacy performances"),
-    videos: requireOk(videos, "legacy videos"),
-    photos: requireOk(photos, "legacy photos"),
+    rows: {
+      performances: results.performances.rows,
+      videos: results.videos.rows,
+      photos: results.photos.rows,
+    },
+    droppedTables,
+    postDrop: droppedTables.length === legacyTables.length,
   }
 }
 
@@ -257,9 +304,12 @@ async function main() {
   const supabase = createClient(supabaseUrl, supabaseAnonKey, {
     auth: { persistSession: false },
   })
-  const legacyRows = await loadLegacyRows(supabase)
-  const entities = await loadGraphMediaEntities(supabase, legacyRows)
-  const parityRows = compareLegacyMedia({ legacyRows, entities })
+  const legacyState = await loadLegacyRows(supabase)
+  const entities = await loadGraphMediaEntities(supabase, legacyState.rows)
+  const parityRows = compareLegacyMedia({
+    legacyRows: legacyState.rows,
+    entities,
+  })
   const runtimeScan = findRuntimeLegacyReads()
   const migration = inspectRemovalMigration()
 
@@ -276,11 +326,16 @@ async function main() {
       migrationDropTables: migration.dropTableCount,
       migrationHasCascade: migration.hasCascade,
       migrationHasBroadDeleteOrUpdate: migration.hasBroadDeleteOrUpdate,
+      legacyTablesDropped: legacyState.postDrop,
       selfTest: "ok",
     },
   ])
 
-  console.log("\nLegacy row parity against entity graph")
+  console.log(
+    legacyState.postDrop
+      ? "\nPost-drop entity graph media summary"
+      : "\nLegacy row parity against entity graph",
+  )
   console.table(parityRows)
 
   if (runtimeScan.violations.length) {
