@@ -108,6 +108,11 @@ Current expected values:
 - Vercel preview wildcard: `https://*-hyeongsoo-kims-projects-3dc1850b.vercel.app/**`
 - Local development callback: `http://localhost:3000/auth/callback`
 
+Password recovery also returns through `/auth/callback` and preserves
+`next=/reset-password`, so the callback URLs above cover signup confirmation and
+password reset. Do not add `/reset-password` directly unless the Auth email
+template or application flow changes to bypass `/auth/callback`.
+
 When adding or changing a domain:
 
 1. Update Supabase Auth Site URL if the canonical production domain changes.
