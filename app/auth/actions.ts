@@ -1,9 +1,14 @@
 "use server"
 
 import { headers } from "next/headers"
+import { cookies } from "next/headers"
 import { revalidatePath, updateTag } from "next/cache"
 import { redirect } from "next/navigation"
 
+import {
+  PASSWORD_RECOVERY_COOKIE,
+  passwordRecoveryExpiredMessage,
+} from "@/lib/auth/password-recovery"
 import { PUBLIC_CONTENT_CACHE_TAG } from "@/lib/data/public-cache"
 import { createClient } from "@/lib/supabase/server"
 import type { Database } from "@/lib/supabase/types"
@@ -219,6 +224,14 @@ export async function requestPasswordResetAction(formData: FormData) {
 export async function updatePasswordAction(formData: FormData) {
   const password = stringField(formData, "password")
   const passwordConfirm = stringField(formData, "password_confirm")
+  const cookieStore = await cookies()
+  const hasRecoveryGuard = cookieStore.get(PASSWORD_RECOVERY_COOKIE)?.value === "1"
+
+  if (!hasRecoveryGuard) {
+    redirectWithParams("/forgot-password", {
+      error: passwordRecoveryExpiredMessage,
+    })
+  }
 
   if (password.length < 8) {
     redirectWithParams("/reset-password", {
@@ -238,8 +251,9 @@ export async function updatePasswordAction(formData: FormData) {
   } = await supabase.auth.getUser()
 
   if (!user) {
+    cookieStore.delete(PASSWORD_RECOVERY_COOKIE)
     redirectWithParams("/forgot-password", {
-      error: "재설정 링크가 만료되었습니다. 다시 요청해 주세요.",
+      error: passwordRecoveryExpiredMessage,
     })
   }
 
@@ -254,6 +268,7 @@ export async function updatePasswordAction(formData: FormData) {
   }
 
   await supabase.auth.signOut()
+  cookieStore.delete(PASSWORD_RECOVERY_COOKIE)
   redirectWithParams("/login", {
     message: passwordUpdatedMessage,
   })
