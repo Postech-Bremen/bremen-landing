@@ -54,3 +54,12 @@ export async function GET(request: NextRequest) {
 
   return response
 }
+
+export function HEAD(request: NextRequest) {
+  const requestUrl = new URL(request.url)
+  const next = safeNextPath(requestUrl.searchParams.get("next"))
+
+  // Do not exchange recovery codes for HEAD requests. Link scanners and curl -I
+  // should not consume a one-time auth code before the member opens the link.
+  return errorRedirect(requestUrl, next)
+}
