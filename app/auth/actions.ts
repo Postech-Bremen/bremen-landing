@@ -21,6 +21,10 @@ const weakPasswordMessage =
 
 const weakSignInPasswordMessage =
   "계정 보호를 위해 비밀번호 변경이 필요합니다. 비밀번호 재설정 후 다시 로그인해 주세요."
+const passwordResetRequestedMessage =
+  "메일함을 확인해 주세요. 계정이 확인되면 비밀번호 재설정 링크가 도착합니다."
+const passwordUpdatedMessage =
+  "비밀번호를 새로 저장했습니다. Sign In으로 다시 들어가 주세요."
 
 function stringField(formData: FormData, key: string) {
   const value = formData.get(key)
@@ -177,6 +181,82 @@ export async function signInAction(formData: FormData) {
   }
 
   redirect(next)
+}
+
+export async function requestPasswordResetAction(formData: FormData) {
+  const email = stringField(formData, "email").toLowerCase()
+
+  if (!email) {
+    redirectWithParams("/forgot-password", {
+      error: "POSTECH 메일을 입력해 주세요.",
+    })
+  }
+
+  if (!isPostechEmail(email)) {
+    redirectWithParams("/forgot-password", {
+      error: "POSTECH 메일(@postech.ac.kr)로만 비밀번호를 재설정할 수 있습니다.",
+    })
+  }
+
+  const headerStore = await headers()
+  const origin = headerStore.get("origin") ?? "http://localhost:3000"
+  const supabase = await createClient()
+  const { error } = await supabase.auth.resetPasswordForEmail(email, {
+    redirectTo: `${origin}/auth/callback?next=/reset-password`,
+  })
+
+  if (error) {
+    redirectWithParams("/forgot-password", {
+      error: "요청을 처리하지 못했습니다. 잠시 후 다시 시도해 주세요.",
+    })
+  }
+
+  redirectWithParams("/forgot-password", {
+    message: passwordResetRequestedMessage,
+  })
+}
+
+export async function updatePasswordAction(formData: FormData) {
+  const password = stringField(formData, "password")
+  const passwordConfirm = stringField(formData, "password_confirm")
+
+  if (password.length < 8) {
+    redirectWithParams("/reset-password", {
+      error: "비밀번호는 8자 이상으로 입력해 주세요.",
+    })
+  }
+
+  if (password !== passwordConfirm) {
+    redirectWithParams("/reset-password", {
+      error: "두 비밀번호가 서로 다릅니다.",
+    })
+  }
+
+  const supabase = await createClient()
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+
+  if (!user) {
+    redirectWithParams("/forgot-password", {
+      error: "재설정 링크가 만료되었습니다. 다시 요청해 주세요.",
+    })
+  }
+
+  const { error } = await supabase.auth.updateUser({ password })
+
+  if (error) {
+    redirectWithParams("/reset-password", {
+      error: isWeakPasswordError(error)
+        ? weakPasswordMessage
+        : "비밀번호 저장에 실패했습니다. 다시 시도해 주세요.",
+    })
+  }
+
+  await supabase.auth.signOut()
+  redirectWithParams("/login", {
+    message: passwordUpdatedMessage,
+  })
 }
 
 export async function signUpAction(formData: FormData) {
