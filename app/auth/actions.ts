@@ -9,6 +9,18 @@ import { createClient } from "@/lib/supabase/server"
 import type { Database } from "@/lib/supabase/types"
 
 type MemberStatus = Database["public"]["Enums"]["member_status"]
+type AuthErrorLike = {
+  code?: string
+  message?: string
+  name?: string
+  status?: number
+}
+
+const weakPasswordMessage =
+  "이 비밀번호는 너무 쉽게 추측되었거나 이미 유출된 기록이 있습니다. 다른 사이트에서 쓰지 않은 긴 비밀번호로 다시 시도해 주세요."
+
+const weakSignInPasswordMessage =
+  "계정 보호를 위해 비밀번호 변경이 필요합니다. 비밀번호 재설정 후 다시 로그인해 주세요."
 
 function stringField(formData: FormData, key: string) {
   const value = formData.get(key)
@@ -46,6 +58,44 @@ function normalizeStatus(raw: string): MemberStatus | null {
   if (!raw || raw === "unset") return null
   if (raw === "active" || raw === "inactive" || raw === "alumni") return raw
   return null
+}
+
+function authErrorFingerprint(error: AuthErrorLike) {
+  return [error.code, error.name, error.message]
+    .filter(Boolean)
+    .join(" ")
+    .toLowerCase()
+}
+
+function isWeakPasswordError(error: AuthErrorLike) {
+  const text = authErrorFingerprint(error)
+  return (
+    text.includes("weak_password") ||
+    text.includes("weak password") ||
+    text.includes("weakpassword") ||
+    text.includes("leaked") ||
+    text.includes("pwned") ||
+    text.includes("password should")
+  )
+}
+
+function signUpErrorMessage(error: AuthErrorLike) {
+  const text = authErrorFingerprint(error)
+
+  if (isWeakPasswordError(error)) return weakPasswordMessage
+  if (text.includes("already") && text.includes("registered")) {
+    return "이미 가입된 POSTECH 메일입니다. Sign In으로 들어가 주세요."
+  }
+  if (text.includes("email")) {
+    return "메일 주소를 확인해 주세요. 브레멘 멤버 계정은 POSTECH 메일로 가입합니다."
+  }
+
+  return "회원가입에 실패했습니다. 입력한 정보를 다시 확인해 주세요."
+}
+
+function signInErrorMessage(error: AuthErrorLike) {
+  if (isWeakPasswordError(error)) return weakSignInPasswordMessage
+  return "로그인에 실패했습니다. 이메일과 비밀번호를 확인해 주세요."
 }
 
 function extensionFromImage(file: File) {
@@ -121,7 +171,7 @@ export async function signInAction(formData: FormData) {
 
   if (error) {
     redirectWithParams("/login", {
-      error: "로그인에 실패했습니다. 이메일과 비밀번호를 확인해 주세요.",
+      error: signInErrorMessage(error),
       next,
     })
   }
@@ -164,7 +214,7 @@ export async function signUpAction(formData: FormData) {
 
   if (error) {
     redirectWithParams("/signup", {
-      error: error.message || "회원가입에 실패했습니다.",
+      error: signUpErrorMessage(error),
     })
   }
 

@@ -136,6 +136,10 @@ export default async function SignupPage({ searchParams }: SignupPageProps) {
                     className="h-11 bg-background/70"
                     required
                   />
+                  <p className="text-xs leading-relaxed text-muted-foreground">
+                    다른 곳에서 쓰지 않은 긴 비밀번호를 권장합니다. 유출된
+                    비밀번호는 가입이 거절될 수 있습니다.
+                  </p>
                 </div>
 
                 {error && (
