@@ -1,4 +1,5 @@
 import type { Metadata } from "next"
+import { cookies } from "next/headers"
 import { redirect } from "next/navigation"
 
 import { updatePasswordAction } from "@/app/auth/actions"
@@ -12,6 +13,10 @@ import {
 } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
+import {
+  PASSWORD_RECOVERY_COOKIE,
+  passwordRecoveryExpiredMessage,
+} from "@/lib/auth/password-recovery"
 import { createClient } from "@/lib/supabase/server"
 
 export const metadata: Metadata = {
@@ -32,15 +37,17 @@ export default async function ResetPasswordPage({
 }: ResetPasswordPageProps) {
   const params = (await searchParams) ?? {}
   const error = firstParam(params.error)
+  const cookieStore = await cookies()
+  const hasRecoveryGuard = cookieStore.get(PASSWORD_RECOVERY_COOKIE)?.value === "1"
 
   const supabase = await createClient()
   const {
     data: { user },
   } = await supabase.auth.getUser()
 
-  if (!user) {
+  if (!user || !hasRecoveryGuard) {
     const search = new URLSearchParams({
-      error: "재설정 링크가 만료되었습니다. 다시 요청해 주세요.",
+      error: passwordRecoveryExpiredMessage,
     })
     redirect(`/forgot-password?${search.toString()}`)
   }

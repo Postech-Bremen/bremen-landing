@@ -113,6 +113,11 @@ Password recovery also returns through `/auth/callback` and preserves
 password reset. Do not add `/reset-password` directly unless the Auth email
 template or application flow changes to bypass `/auth/callback`.
 
+The app sets a short-lived httpOnly recovery guard cookie only after a successful
+`/auth/callback?next=/reset-password` exchange. `/reset-password` and its server
+action must reject direct access without that guard, even when the user already
+has a normal signed-in session.
+
 When adding or changing a domain:
 
 1. Update Supabase Auth Site URL if the canonical production domain changes.
