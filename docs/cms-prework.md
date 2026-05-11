@@ -32,7 +32,6 @@ The database already has JSONB fields:
 
 - `sections.props`
 - `entities.data`
-- `section_entities.props`
 - `entity_relations.props`
 
 Those fields are flexible but not enough for a safe CMS. A CMS needs to know which JSON keys are editable, which fields are required, which options are allowed, and which fields are read-only.

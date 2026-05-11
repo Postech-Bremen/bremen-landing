@@ -1,15 +1,18 @@
 # Legacy Mirror Removal Plan
 
-This document stages the removal of the legacy composition mirror tables:
+Status: complete as of the Stage 5 migration
+`20260509000048_drop_legacy_mirror_tables.sql`. This document remains as the
+decision record for how the removal was staged.
+
+This document staged the removal of the legacy composition mirror tables:
 
 - `page_sections`
 - `section_entities`
 
-The current production-safe state is graph-primary runtime composition with
-legacy mirrors kept only for compatibility and their own transition triggers.
-Do not drop the legacy tables until every pre-Stage-5 blocker reported by
-`pnpm run qa:legacy-mirror-stage5-preflight` is clear and a maintainer has
-explicitly approved the destructive migration.
+The current production state is graph-primary runtime composition with the
+legacy mirrors removed. Do not reintroduce these tables; use
+`entity_relations` for ordered page-to-section and section-to-entity
+composition.
 
 ## Current State
 
@@ -27,11 +30,10 @@ Completed:
   indexes are superseded by the Stage 3 operational cleanup migration.
 - Content graph QA validates graph-internal page composition integrity without
   reading the legacy mirrors.
-- Legacy mirror compatibility triggers remain for the legacy tables themselves.
+- Legacy mirror compatibility triggers and tables were removed in Stage 5.
 
-Remaining blocker classes:
-
-- Legacy mirror compatibility migrations still mention the legacy tables.
+Remaining blocker classes: none for active runtime/CMS code. Historical
+migrations and guard self-tests still mention the removed table names by design.
 
 ## Stage 1: Canonical Graph Identity
 
@@ -140,6 +142,8 @@ contracts, ordering, and missing or unpublished targets directly from the graph.
 
 Goal: remove `page_sections` and `section_entities`.
 
+Status: complete.
+
 Preconditions:
 
 - Stages 1-4 are complete.
@@ -163,6 +167,12 @@ Exit checks:
 - No runtime, QA, migration, docs, or generated-code path expects live legacy
   mirror tables.
 - Production pages and PONIX CMS composition editing still pass smoke tests.
+
+Current verification commands:
+
+- `pnpm run qa:legacy-mirror-readiness`
+- `pnpm run qa:cms-legacy-bridge-boundary`
+- `pnpm run qa:graph-primary-seed-writes`
 
 ## Guardrails
 

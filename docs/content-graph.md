@@ -29,9 +29,11 @@ by mirroring page and section records into the generic graph:
 - Section-to-content composition uses `entity_relations` rows from section
   entity to content entity.
 
-The bridge uses `source_table` and `source_id` columns on `entities` and
-`entity_relations` so older mirrored rows can still be traced back to their
-source. New runtime composition writes do not need a legacy `source_id`.
+The bridge uses `source_table` and `source_id` columns on page/section shadow
+`entities` so routable domain rows can be resolved into graph nodes.
+`entity_relations` no longer uses legacy mirror source markers after
+`20260511000052_retire_legacy_relation_source_markers.sql`; relation identity
+comes from `schema_key`, `relation_type`, `slot`, and the relation id.
 
 The bridge is now the primary runtime composition path.
 
@@ -43,16 +45,13 @@ Current PONIX contract:
 - CMS relation lists read page/section placement through `entity_relations`
   bridge rows, using relation `schema_key` values as the runtime identity:
   `relation/page-section/v1` and `relation/section-entity/v1`.
-- Existing mirrored rows may still expose a legacy `source_id`; new runtime
-  composition writes use `entity_relations.id` and do not require one.
 - Routine CMS composition writes target `entity_relations` without legacy
   relation `source_table` markers.
 - Maintenance apply scripts and generated seed migrations that refresh scraped
   or Instagram content should also write section placement through
   `entity_relations`, not directly through `page_sections` or
   `section_entities`.
-- Code that mutates page or section composition must pass the graph relation id,
-  not the legacy `source_id`.
+- Code that mutates page or section composition must pass the graph relation id.
 - `pnpm run qa:content-graph` checks graph-only page composition integrity:
   page shadow cardinality, section ordering, relation contracts, and missing or
   unpublished section/entity references.
@@ -206,7 +205,8 @@ Use `entities.data` for entity-specific structured data:
 - activity metadata: schedule, variant, tilt
 - history metadata: year, display order
 
-Use `section_entities.props` only for relationship-specific display choices, such as a caption for a featured entity in one section.
+Use `entity_relations.props` only for relationship-specific display choices,
+such as a caption for a featured entity in one section.
 
 ## Image Policy
 
@@ -276,25 +276,30 @@ values (
 ### Link an Entity to a Section
 
 ```sql
-insert into public.section_entities (
-  section_id,
-  entity_id,
+insert into public.entity_relations (
+  from_entity_id,
+  to_entity_id,
+  schema_key,
   relation_type,
   slot,
   sort_order,
   props
 )
 select
-  section_ref.id,
+  section_shadow.id,
   entity_ref.id,
+  'relation/section-entity/v1',
   'item',
   'default',
   120,
   '{}'::jsonb
 from public.sections section_ref
+join public.entities section_shadow
+  on section_shadow.source_table = 'sections'
+ and section_shadow.source_id = section_ref.id
 join public.entities entity_ref on entity_ref.slug = 'history-2026-new-season'
 where section_ref.key = 'history-timeline'
-on conflict (section_id, entity_id, relation_type, slot) do update
+on conflict (from_entity_id, to_entity_id, relation_type, slot) do update
 set sort_order = excluded.sort_order,
     props = excluded.props,
     updated_at = now();
@@ -303,13 +308,21 @@ set sort_order = excluded.sort_order,
 ### Reorder a Section
 
 ```sql
-update public.page_sections page_section
+update public.entity_relations page_section_relation
 set sort_order = 30
-from public.pages page_ref, public.sections section_ref
-where page_section.page_id = page_ref.id
-  and page_section.section_id = section_ref.id
-  and page_ref.slug = 'home'
-  and section_ref.key = 'home-activities';
+from public.pages page_ref
+join public.entities page_shadow
+  on page_shadow.source_table = 'pages'
+ and page_shadow.source_id = page_ref.id
+join public.sections section_ref on section_ref.key = 'home-activities'
+join public.entities section_shadow
+  on section_shadow.source_table = 'sections'
+ and section_shadow.source_id = section_ref.id
+where page_section_relation.from_entity_id = page_shadow.id
+  and page_section_relation.to_entity_id = section_shadow.id
+  and page_section_relation.schema_key = 'relation/page-section/v1'
+  and page_section_relation.slot = 'sections'
+  and page_ref.slug = 'home';
 ```
 
 ## Required Content Checks
@@ -326,14 +339,33 @@ After changing content graph data, verify:
 Useful query:
 
 ```sql
-select p.slug, ps.sort_order, s.key, s.section_type, count(se.id) as entity_count
+select
+  p.slug,
+  page_section_relation.sort_order,
+  s.key,
+  s.section_type,
+  count(content_entity.id) as entity_count
 from public.pages p
-join public.page_sections ps on ps.page_id = p.id
-join public.sections s on s.id = ps.section_id
-left join public.section_entities se on se.section_id = s.id
+join public.entities page_shadow
+  on page_shadow.source_table = 'pages'
+ and page_shadow.source_id = p.id
+join public.entity_relations page_section_relation
+  on page_section_relation.from_entity_id = page_shadow.id
+ and page_section_relation.schema_key = 'relation/page-section/v1'
+ and page_section_relation.slot = 'sections'
+join public.entities section_shadow
+  on section_shadow.id = page_section_relation.to_entity_id
+ and section_shadow.source_table = 'sections'
+join public.sections s on s.id = section_shadow.source_id
+left join public.entity_relations section_item_relation
+  on section_item_relation.from_entity_id = section_shadow.id
+ and section_item_relation.schema_key = 'relation/section-entity/v1'
+left join public.entities content_entity
+  on content_entity.id = section_item_relation.to_entity_id
+ and content_entity.published = true
 where p.slug in ('home', 'site', 'performances', 'videos', 'photos', 'history')
   and p.published = true
   and s.published = true
-group by p.slug, ps.sort_order, s.key, s.section_type
-order by p.slug, ps.sort_order;
+group by p.slug, page_section_relation.sort_order, s.key, s.section_type
+order by p.slug, page_section_relation.sort_order;
 ```
