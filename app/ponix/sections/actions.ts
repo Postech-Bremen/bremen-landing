@@ -13,8 +13,8 @@ import {
   type CmsJsonObject,
 } from "@/lib/cms/section-editor"
 import {
-  loadSectionCreationSchema,
-  loadSectionEditorSchema,
+  loadSectionCreationSchemaById,
+  loadSectionEditorSchemaById,
 } from "@/lib/cms/section-editor.server"
 import { PUBLIC_CONTENT_CACHE_TAG } from "@/lib/data/public-cache"
 import { createClient } from "@/lib/supabase/server"
@@ -256,13 +256,13 @@ function updatePropsValue(
 }
 
 export async function createCmsSectionAction(formData: FormData) {
-  const schemaKey = stringField(formData, "schema_key")
-  const createPath = schemaKey
-    ? `/ponix/sections/new?schema=${encodeURIComponent(schemaKey)}`
+  const admin = await requireCmsAdmin("/ponix/sections/new")
+  const schemaId = stringField(formData, "schema_id")
+  const schema = schemaId ? await loadSectionCreationSchemaById(schemaId) : null
+  const createPath = schema
+    ? `/ponix/sections/new?schema=${encodeURIComponent(schema.schemaKey)}`
     : "/ponix/sections/new"
-  const admin = await requireCmsAdmin(createPath)
 
-  const schema = await loadSectionCreationSchema(schemaKey)
   if (!schema) {
     redirectWithParams("/ponix/sections/new", {
       error: "Choose a section schema that can be created from CMS.",
@@ -283,7 +283,7 @@ export async function createCmsSectionAction(formData: FormData) {
     owner_member_id: admin.id,
     props,
     published: false,
-    schema_key: schema.schemaKey,
+    schema_id: schemaId,
     section_type: sectionType,
   }
 
@@ -366,7 +366,7 @@ export async function updateCmsSectionAction(formData: FormData) {
     })
   }
 
-  const schema = await loadSectionEditorSchema(section.schema_key)
+  const schema = await loadSectionEditorSchemaById(section.schema_id)
   if (!schema) {
     redirectWithParams(editPath, {
       error: "This section schema is not registered for editing.",

@@ -350,6 +350,18 @@ function sqlJson(value) {
   return `${sqlString(JSON.stringify(value))}::jsonb`
 }
 
+function schemaIdExpr(schemaKey) {
+  return `(select id from public.entity_schemas where schema_key = ${sqlString(schemaKey)} and active = true)`
+}
+
+function semanticKindPredicate(alias, semanticKind) {
+  return `${alias}.schema_id in (select id from public.entity_schemas where semantic_kind = ${sqlString(semanticKind)} and active = true)`
+}
+
+function sectionSchemaPredicate(alias) {
+  return `${alias}.schema_id in (select id from public.entity_schemas where kind = 'section' and active = true)`
+}
+
 function parseViews(label) {
   if (!label) return 0
   const normalized = String(label).replace(/views?/i, "").trim().toUpperCase()
@@ -535,12 +547,11 @@ const playlistRows = (seed.playlists ?? []).map((playlist, index) => {
   }
 })
 
-function entityValues(rows, entityType, schemaKey) {
+function entityValues(rows, schemaKey) {
   return rows
     .map((row) =>
       [
-        sqlString(entityType),
-        sqlString(schemaKey),
+        schemaIdExpr(schemaKey),
         sqlString(row.slug),
         sqlString(row.title),
         sqlString(row.subtitle ?? null),
@@ -572,7 +583,7 @@ const sql = `-- Bremen — scraped content seed from YouTube, Instagram, and his
 
 update public.entities
 set slug = concat('youtube-', data->>'youtube_id')
-where entity_type = 'video'
+where ${semanticKindPredicate("public.entities", "video")}
   and slug is null
   and data ? 'youtube_id';
 
@@ -586,13 +597,13 @@ set title = excluded.title,
     published = excluded.published,
     props = excluded.props;
 
-insert into public.sections (key, section_type, schema_key, eyebrow, title, subtitle, published, props)
+insert into public.sections (key, section_type, schema_id, eyebrow, title, subtitle, published, props)
 values
-  ('videos-by-event', 'entity_grouped_grid', 'section/video-event-playlists/v1', 'Events', 'Recordings by stage', '공연 단위로 묶어 보는 영상 기록', true, '{}'::jsonb),
-  ('history-timeline', 'entity_timeline', 'section/history-timeline/v1', 'Since 2001', 'Bremen History', '궤짝 유랑 악단에서 현재의 브레멘까지', true, '{}'::jsonb)
+  ('videos-by-event', 'entity_grouped_grid', ${schemaIdExpr("section/video-event-playlists/v1")}, 'Events', 'Recordings by stage', '공연 단위로 묶어 보는 영상 기록', true, '{}'::jsonb),
+  ('history-timeline', 'entity_timeline', ${schemaIdExpr("section/history-timeline/v1")}, 'Since 2001', 'Bremen History', '궤짝 유랑 악단에서 현재의 브레멘까지', true, '{}'::jsonb)
 on conflict (key) do update
 set section_type = excluded.section_type,
-    schema_key = excluded.schema_key,
+    schema_id = excluded.schema_id,
     eyebrow = excluded.eyebrow,
     title = excluded.title,
     subtitle = excluded.subtitle,
@@ -607,7 +618,7 @@ with links(page_slug, section_key, sort_order) as (
 insert into public.entity_relations (
   from_entity_id,
   to_entity_id,
-  schema_key,
+  schema_id,
   relation_type,
   slot,
   sort_order,
@@ -616,7 +627,7 @@ insert into public.entity_relations (
 select
   page_entity.id,
   section_entity.id,
-  'relation/page-section/v1',
+  ${schemaIdExpr("relation/page-section/v1")},
   'contains_section',
   'sections',
   links.sort_order,
@@ -625,22 +636,21 @@ from links
 join public.pages page_ref on page_ref.slug = links.page_slug
 join public.sections section_ref on section_ref.key = links.section_key
 join public.entities page_entity
-  on page_entity.source_table = 'pages'
- and page_entity.source_id = page_ref.id
+  on page_entity.schema_id = ${schemaIdExpr("page/default/v1")}
+ and page_entity.slug = 'page:' || page_ref.slug
 join public.entities section_entity
-  on section_entity.source_table = 'sections'
- and section_entity.source_id = section_ref.id
+  on ${sectionSchemaPredicate("section_entity")}
+ and section_entity.slug = 'section:' || section_ref.key
 on conflict (from_entity_id, to_entity_id, relation_type, slot) do update
-set schema_key = excluded.schema_key,
+set schema_id = excluded.schema_id,
     sort_order = excluded.sort_order,
     props = excluded.props;
 
-insert into public.entities (entity_type, schema_key, slug, title, subtitle, summary, thumbnail_url, sort_at, data, published)
+insert into public.entities (schema_id, slug, title, subtitle, summary, thumbnail_url, sort_at, data, published)
 values
-${entityValues([...eventRowsBySlug.values()], "performance", "performance/scraped/v1")}
+${entityValues([...eventRowsBySlug.values()], "performance/scraped/v1")}
 on conflict (slug) do update
-set entity_type = excluded.entity_type,
-    schema_key = excluded.schema_key,
+set schema_id = excluded.schema_id,
     title = excluded.title,
     subtitle = excluded.subtitle,
     summary = excluded.summary,
@@ -650,12 +660,11 @@ set entity_type = excluded.entity_type,
     published = true,
     updated_at = now();
 
-insert into public.entities (entity_type, schema_key, slug, title, subtitle, summary, thumbnail_url, sort_at, data, published)
+insert into public.entities (schema_id, slug, title, subtitle, summary, thumbnail_url, sort_at, data, published)
 values
-${entityValues(videos, "video", "video/youtube/v1")}
+${entityValues(videos, "video/youtube/v1")}
 on conflict (slug) do update
-set entity_type = excluded.entity_type,
-    schema_key = excluded.schema_key,
+set schema_id = excluded.schema_id,
     title = excluded.title,
     subtitle = excluded.subtitle,
     summary = excluded.summary,
@@ -665,12 +674,11 @@ set entity_type = excluded.entity_type,
     published = true,
     updated_at = now();
 
-insert into public.entities (entity_type, schema_key, slug, title, subtitle, summary, thumbnail_url, sort_at, data, published)
+insert into public.entities (schema_id, slug, title, subtitle, summary, thumbnail_url, sort_at, data, published)
 values
-${entityValues(instagramRows, "photo", "photo/instagram-grid/v1")}
+${entityValues(instagramRows, "photo/instagram-grid/v1")}
 on conflict (slug) do update
-set entity_type = excluded.entity_type,
-    schema_key = excluded.schema_key,
+set schema_id = excluded.schema_id,
     title = excluded.title,
     subtitle = excluded.subtitle,
     summary = excluded.summary,
@@ -680,12 +688,11 @@ set entity_type = excluded.entity_type,
     published = true,
     updated_at = now();
 
-insert into public.entities (entity_type, schema_key, slug, title, subtitle, summary, thumbnail_url, sort_at, data, published)
+insert into public.entities (schema_id, slug, title, subtitle, summary, thumbnail_url, sort_at, data, published)
 values
-${entityValues(historyRows, "history_milestone", "history/milestone/v1")}
+${entityValues(historyRows, "history/milestone/v1")}
 on conflict (slug) do update
-set entity_type = excluded.entity_type,
-    schema_key = excluded.schema_key,
+set schema_id = excluded.schema_id,
     title = excluded.title,
     subtitle = excluded.subtitle,
     summary = excluded.summary,
@@ -695,12 +702,11 @@ set entity_type = excluded.entity_type,
     published = true,
     updated_at = now();
 
-insert into public.entities (entity_type, schema_key, slug, title, subtitle, summary, thumbnail_url, sort_at, data, published)
+insert into public.entities (schema_id, slug, title, subtitle, summary, thumbnail_url, sort_at, data, published)
 values
-${entityValues(playlistRows, "playlist", "playlist/youtube/v1")}
+${entityValues(playlistRows, "playlist/youtube/v1")}
 on conflict (slug) do update
-set entity_type = excluded.entity_type,
-    schema_key = excluded.schema_key,
+set schema_id = excluded.schema_id,
     title = excluded.title,
     subtitle = excluded.subtitle,
     summary = excluded.summary,
@@ -710,72 +716,78 @@ set entity_type = excluded.entity_type,
     published = true,
     updated_at = now();
 
-insert into public.entity_relations (from_entity_id, to_entity_id, relation_type, slot, sort_order, props)
+insert into public.entity_relations (from_entity_id, to_entity_id, schema_id, relation_type, slot, sort_order, props)
 select
   performance.id,
   video.id,
+  ${schemaIdExpr("relation/default/v1")},
   'has_recording',
   'default',
   coalesce((video.data->>'display_order')::int, 0),
   '{}'::jsonb
 from public.entities performance
 join public.entities video
-  on video.entity_type = 'video'
+  on ${semanticKindPredicate("video", "video")}
  and video.data->>'event_slug' = performance.slug
-where performance.entity_type = 'performance'
+where ${semanticKindPredicate("performance", "performance")}
 on conflict (from_entity_id, to_entity_id, relation_type, slot) do update
-set sort_order = excluded.sort_order,
+set schema_id = excluded.schema_id,
+    sort_order = excluded.sort_order,
     props = excluded.props;
 
-insert into public.entity_relations (from_entity_id, to_entity_id, relation_type, slot, sort_order, props)
+insert into public.entity_relations (from_entity_id, to_entity_id, schema_id, relation_type, slot, sort_order, props)
 select
   performance.id,
   photo.id,
+  ${schemaIdExpr("relation/default/v1")},
   'has_photo',
   coalesce(photo.data->>'category', 'performance'),
   row_number() over (partition by performance.id order by photo.sort_at desc)::int * 10,
   '{}'::jsonb
 from public.entities performance
 join public.entities photo
-  on photo.entity_type = 'photo'
+  on ${semanticKindPredicate("photo", "photo")}
  and photo.data->>'event_slug' = performance.slug
-where performance.entity_type = 'performance'
+where ${semanticKindPredicate("performance", "performance")}
 on conflict (from_entity_id, to_entity_id, relation_type, slot) do update
-set sort_order = excluded.sort_order,
+set schema_id = excluded.schema_id,
+    sort_order = excluded.sort_order,
     props = excluded.props;
 
-insert into public.entity_relations (from_entity_id, to_entity_id, relation_type, slot, sort_order, props)
+insert into public.entity_relations (from_entity_id, to_entity_id, schema_id, relation_type, slot, sort_order, props)
 select
   playlist.id,
   video.id,
+  ${schemaIdExpr("relation/default/v1")},
   'contains_video',
   'default',
   coalesce((video.data->>'display_order')::int, 0),
   '{}'::jsonb
 from public.entities playlist
 join public.entities video
-  on video.entity_type = 'video'
+  on ${semanticKindPredicate("video", "video")}
  and video.data->>'event_slug' = playlist.data->>'event_slug'
-where playlist.entity_type = 'playlist'
+where ${semanticKindPredicate("playlist", "playlist")}
   and playlist.data->>'event_slug' is not null
 on conflict (from_entity_id, to_entity_id, relation_type, slot) do update
-set sort_order = excluded.sort_order,
+set schema_id = excluded.schema_id,
+    sort_order = excluded.sort_order,
     props = excluded.props;
 
 delete from public.entity_relations relation
 using public.entities section_entity, public.sections section_ref
-where relation.schema_key = 'relation/section-entity/v1'
+where relation.schema_id = ${schemaIdExpr("relation/section-entity/v1")}
   and relation.from_entity_id = section_entity.id
-  and section_entity.source_table = 'sections'
-  and section_entity.source_id = section_ref.id
+  and ${sectionSchemaPredicate("section_entity")}
+  and section_entity.slug = 'section:' || section_ref.key
   and section_ref.key in (${sectionKeys.map(sqlString).join(", ")});
 
 with target_section as (
   select section_entity.id as section_entity_id
   from public.sections section_ref
   join public.entities section_entity
-    on section_entity.source_table = 'sections'
-   and section_entity.source_id = section_ref.id
+    on ${sectionSchemaPredicate("section_entity")}
+   and section_entity.slug = 'section:' || section_ref.key
   where section_ref.key = 'performances-current-season'
 ),
 ordered as (
@@ -783,14 +795,14 @@ ordered as (
     entity.id,
     row_number() over (order by entity.sort_at desc, entity.title) as rank
   from public.entities entity
-  where entity.entity_type = 'performance'
+  where ${semanticKindPredicate("entity", "performance")}
     and entity.published = true
     and coalesce(entity.data->>'year', extract(year from entity.sort_at)::text) = '2026'
 )
 insert into public.entity_relations (
   from_entity_id,
   to_entity_id,
-  schema_key,
+  schema_id,
   relation_type,
   slot,
   sort_order,
@@ -799,14 +811,14 @@ insert into public.entity_relations (
 select
   target_section.section_entity_id,
   ordered.id,
-  'relation/section-entity/v1',
+  ${schemaIdExpr("relation/section-entity/v1")},
   'item',
   'default',
   (ordered.rank * 10)::int,
   '{}'::jsonb
 from target_section cross join ordered
 on conflict (from_entity_id, to_entity_id, relation_type, slot) do update
-set schema_key = excluded.schema_key,
+set schema_id = excluded.schema_id,
     sort_order = excluded.sort_order,
     props = excluded.props;
 
@@ -814,8 +826,8 @@ with target_section as (
   select section_entity.id as section_entity_id
   from public.sections section_ref
   join public.entities section_entity
-    on section_entity.source_table = 'sections'
-   and section_entity.source_id = section_ref.id
+    on ${sectionSchemaPredicate("section_entity")}
+   and section_entity.slug = 'section:' || section_ref.key
   where section_ref.key = 'performances-archive'
 ),
 ordered as (
@@ -827,13 +839,13 @@ ordered as (
       order by entity.sort_at desc, entity.title
     ) as rank
   from public.entities entity
-  where entity.entity_type = 'performance'
+  where ${semanticKindPredicate("entity", "performance")}
     and entity.published = true
 )
 insert into public.entity_relations (
   from_entity_id,
   to_entity_id,
-  schema_key,
+  schema_id,
   relation_type,
   slot,
   sort_order,
@@ -842,14 +854,14 @@ insert into public.entity_relations (
 select
   target_section.section_entity_id,
   ordered.id,
-  'relation/section-entity/v1',
+  ${schemaIdExpr("relation/section-entity/v1")},
   'item',
   ordered.slot,
   (ordered.rank * 10)::int,
   '{}'::jsonb
 from target_section cross join ordered
 on conflict (from_entity_id, to_entity_id, relation_type, slot) do update
-set schema_key = excluded.schema_key,
+set schema_id = excluded.schema_id,
     sort_order = excluded.sort_order,
     props = excluded.props;
 
@@ -857,8 +869,8 @@ with target_section as (
   select section_entity.id as section_entity_id
   from public.sections section_ref
   join public.entities section_entity
-    on section_entity.source_table = 'sections'
-   and section_entity.source_id = section_ref.id
+    on ${sectionSchemaPredicate("section_entity")}
+   and section_entity.slug = 'section:' || section_ref.key
   where section_ref.key = 'videos-featured'
 ),
 ordered as (
@@ -866,7 +878,7 @@ ordered as (
     entity.id,
     row_number() over (order by entity.sort_at desc, entity.title) as rank
   from public.entities entity
-  where entity.entity_type = 'video'
+  where ${semanticKindPredicate("entity", "video")}
     and entity.published = true
     and coalesce((entity.data->>'is_highlight')::boolean, false) = true
   limit 6
@@ -874,7 +886,7 @@ ordered as (
 insert into public.entity_relations (
   from_entity_id,
   to_entity_id,
-  schema_key,
+  schema_id,
   relation_type,
   slot,
   sort_order,
@@ -883,14 +895,14 @@ insert into public.entity_relations (
 select
   target_section.section_entity_id,
   ordered.id,
-  'relation/section-entity/v1',
+  ${schemaIdExpr("relation/section-entity/v1")},
   'item',
   'default',
   (ordered.rank * 10)::int,
   '{}'::jsonb
 from target_section cross join ordered
 on conflict (from_entity_id, to_entity_id, relation_type, slot) do update
-set schema_key = excluded.schema_key,
+set schema_id = excluded.schema_id,
     sort_order = excluded.sort_order,
     props = excluded.props;
 
@@ -898,8 +910,8 @@ with target_section as (
   select section_entity.id as section_entity_id
   from public.sections section_ref
   join public.entities section_entity
-    on section_entity.source_table = 'sections'
-   and section_entity.source_id = section_ref.id
+    on ${sectionSchemaPredicate("section_entity")}
+   and section_entity.slug = 'section:' || section_ref.key
   where section_ref.key = 'videos-popular'
 ),
 ordered as (
@@ -909,14 +921,14 @@ ordered as (
       order by coalesce((entity.data->>'views')::int, 0) desc, entity.sort_at desc, entity.title
     ) as rank
   from public.entities entity
-  where entity.entity_type = 'video'
+  where ${semanticKindPredicate("entity", "video")}
     and entity.published = true
   limit 6
 )
 insert into public.entity_relations (
   from_entity_id,
   to_entity_id,
-  schema_key,
+  schema_id,
   relation_type,
   slot,
   sort_order,
@@ -925,14 +937,14 @@ insert into public.entity_relations (
 select
   target_section.section_entity_id,
   ordered.id,
-  'relation/section-entity/v1',
+  ${schemaIdExpr("relation/section-entity/v1")},
   'item',
   'default',
   (ordered.rank * 10)::int,
   '{}'::jsonb
 from target_section cross join ordered
 on conflict (from_entity_id, to_entity_id, relation_type, slot) do update
-set schema_key = excluded.schema_key,
+set schema_id = excluded.schema_id,
     sort_order = excluded.sort_order,
     props = excluded.props;
 
@@ -940,8 +952,8 @@ with target_section as (
   select section_entity.id as section_entity_id
   from public.sections section_ref
   join public.entities section_entity
-    on section_entity.source_table = 'sections'
-   and section_entity.source_id = section_ref.id
+    on ${sectionSchemaPredicate("section_entity")}
+   and section_entity.slug = 'section:' || section_ref.key
   where section_ref.key = 'videos-library'
 ),
 ordered as (
@@ -949,13 +961,13 @@ ordered as (
     entity.id,
     row_number() over (order by entity.sort_at desc, coalesce((entity.data->>'display_order')::int, 0), entity.title) as rank
   from public.entities entity
-  where entity.entity_type = 'video'
+  where ${semanticKindPredicate("entity", "video")}
     and entity.published = true
 )
 insert into public.entity_relations (
   from_entity_id,
   to_entity_id,
-  schema_key,
+  schema_id,
   relation_type,
   slot,
   sort_order,
@@ -964,14 +976,14 @@ insert into public.entity_relations (
 select
   target_section.section_entity_id,
   ordered.id,
-  'relation/section-entity/v1',
+  ${schemaIdExpr("relation/section-entity/v1")},
   'item',
   'default',
   (ordered.rank * 10)::int,
   '{}'::jsonb
 from target_section cross join ordered
 on conflict (from_entity_id, to_entity_id, relation_type, slot) do update
-set schema_key = excluded.schema_key,
+set schema_id = excluded.schema_id,
     sort_order = excluded.sort_order,
     props = excluded.props;
 
@@ -979,8 +991,8 @@ with target_section as (
   select section_entity.id as section_entity_id
   from public.sections section_ref
   join public.entities section_entity
-    on section_entity.source_table = 'sections'
-   and section_entity.source_id = section_ref.id
+    on ${sectionSchemaPredicate("section_entity")}
+   and section_entity.slug = 'section:' || section_ref.key
   where section_ref.key = 'videos-by-event'
 ),
 ordered as (
@@ -988,13 +1000,13 @@ ordered as (
     entity.id,
     row_number() over (order by entity.sort_at desc, entity.title) as rank
   from public.entities entity
-  where entity.entity_type = 'playlist'
+  where ${semanticKindPredicate("entity", "playlist")}
     and entity.published = true
 )
 insert into public.entity_relations (
   from_entity_id,
   to_entity_id,
-  schema_key,
+  schema_id,
   relation_type,
   slot,
   sort_order,
@@ -1003,14 +1015,14 @@ insert into public.entity_relations (
 select
   target_section.section_entity_id,
   ordered.id,
-  'relation/section-entity/v1',
+  ${schemaIdExpr("relation/section-entity/v1")},
   'item',
   'default',
   (ordered.rank * 10)::int,
   '{}'::jsonb
 from target_section cross join ordered
 on conflict (from_entity_id, to_entity_id, relation_type, slot) do update
-set schema_key = excluded.schema_key,
+set schema_id = excluded.schema_id,
     sort_order = excluded.sort_order,
     props = excluded.props;
 
@@ -1018,8 +1030,8 @@ with target_section as (
   select section_entity.id as section_entity_id
   from public.sections section_ref
   join public.entities section_entity
-    on section_entity.source_table = 'sections'
-   and section_entity.source_id = section_ref.id
+    on ${sectionSchemaPredicate("section_entity")}
+   and section_entity.slug = 'section:' || section_ref.key
   where section_ref.key = 'photos-gallery'
 ),
 ordered as (
@@ -1028,13 +1040,13 @@ ordered as (
     case when entity.data->>'category' = 'daily' then 'daily' else 'performance' end as slot,
     row_number() over (order by entity.sort_at desc, entity.title) as rank
   from public.entities entity
-  where entity.entity_type = 'photo'
+  where ${semanticKindPredicate("entity", "photo")}
     and entity.published = true
 )
 insert into public.entity_relations (
   from_entity_id,
   to_entity_id,
-  schema_key,
+  schema_id,
   relation_type,
   slot,
   sort_order,
@@ -1043,14 +1055,14 @@ insert into public.entity_relations (
 select
   target_section.section_entity_id,
   ordered.id,
-  'relation/section-entity/v1',
+  ${schemaIdExpr("relation/section-entity/v1")},
   'item',
   ordered.slot,
   (ordered.rank * 10)::int,
   '{}'::jsonb
 from target_section cross join ordered
 on conflict (from_entity_id, to_entity_id, relation_type, slot) do update
-set schema_key = excluded.schema_key,
+set schema_id = excluded.schema_id,
     sort_order = excluded.sort_order,
     props = excluded.props;
 
@@ -1058,8 +1070,8 @@ with target_section as (
   select section_entity.id as section_entity_id
   from public.sections section_ref
   join public.entities section_entity
-    on section_entity.source_table = 'sections'
-   and section_entity.source_id = section_ref.id
+    on ${sectionSchemaPredicate("section_entity")}
+   and section_entity.slug = 'section:' || section_ref.key
   where section_ref.key = 'history-timeline'
 ),
 ordered as (
@@ -1067,13 +1079,13 @@ ordered as (
     entity.id,
     row_number() over (order by coalesce((entity.data->>'display_order')::int, 0), entity.sort_at, entity.title) as rank
   from public.entities entity
-  where entity.entity_type = 'history_milestone'
+  where ${semanticKindPredicate("entity", "history_milestone")}
     and entity.published = true
 )
 insert into public.entity_relations (
   from_entity_id,
   to_entity_id,
-  schema_key,
+  schema_id,
   relation_type,
   slot,
   sort_order,
@@ -1082,14 +1094,14 @@ insert into public.entity_relations (
 select
   target_section.section_entity_id,
   ordered.id,
-  'relation/section-entity/v1',
+  ${schemaIdExpr("relation/section-entity/v1")},
   'item',
   'default',
   (ordered.rank * 10)::int,
   '{}'::jsonb
 from target_section cross join ordered
 on conflict (from_entity_id, to_entity_id, relation_type, slot) do update
-set schema_key = excluded.schema_key,
+set schema_id = excluded.schema_id,
     sort_order = excluded.sort_order,
     props = excluded.props;
 `

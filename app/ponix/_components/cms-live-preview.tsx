@@ -165,7 +165,7 @@ export function CmsEntityLivePreview({
     <PreviewShell eyebrow="Live preview" title="Entity card">
       <EntityPreviewCard
         schemaLabel={detail.schemaLabel}
-        entityType={detail.row.entity_type}
+        entityType={detail.entityType}
         snapshot={deferredSnapshot}
       />
     </PreviewShell>

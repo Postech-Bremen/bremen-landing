@@ -28,7 +28,7 @@ import {
   editableEntityFieldsForSchema,
   type CmsEditableEntityField,
 } from "@/lib/cms/entity-editor"
-import { loadEntityEditorSchema } from "@/lib/cms/entity-editor.server"
+import { loadEntityEditorSchemaById } from "@/lib/cms/entity-editor.server"
 
 import { CmsEntityLivePreview } from "./cms-live-preview"
 
@@ -43,7 +43,7 @@ export async function CmsEntityEditorPage({
   error?: string
   saved?: boolean
 }) {
-  const schema = await loadEntityEditorSchema(detail.schemaKey)
+  const schema = await loadEntityEditorSchemaById(detail.row.schema_id)
   const editableFields = schema ? editableEntityFieldsForSchema(schema) : []
   const columnFields = editableFields.filter((field) => field.source === "column")
   const dataFields = editableFields.filter((field) => field.source === "data")
@@ -68,7 +68,7 @@ export async function CmsEntityEditorPage({
             </p>
             <div className="mt-6 flex flex-wrap items-center gap-2">
               <Badge variant="outline" className="rounded-full font-mono">
-                {detail.row.entity_type}
+                {detail.entityType}
               </Badge>
               <Badge variant="secondary" className="rounded-full">
                 {schema?.label ?? "Unregistered schema"}
@@ -119,8 +119,8 @@ export async function CmsEntityEditorPage({
                   </CardDescription>
                 </CardHeader>
                 <CardContent className="grid gap-4 px-6 py-6 md:grid-cols-3">
-                  <ReadonlyMeta label="Entity type" value={detail.row.entity_type} />
-                  <ReadonlyMeta label="Schema" value={detail.row.schema_key} />
+                  <ReadonlyMeta label="Semantic kind" value={detail.entityType} />
+                  <ReadonlyMeta label="Schema" value={detail.schemaKey} />
                   <ReadonlyMeta label="ID" value={detail.row.id} />
                 </CardContent>
               </Card>

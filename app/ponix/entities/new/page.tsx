@@ -13,7 +13,7 @@ import {
   CardTitle,
 } from "@/components/ui/card"
 import { requireCmsAdmin } from "@/lib/cms/auth"
-import { entityTypeFromSchemaKey } from "@/lib/cms/entity-editor"
+import { semanticKindForSchema } from "@/lib/cms/entity-editor"
 import {
   loadEntityCreationSchema,
   loadEntityCreationSchemas,
@@ -115,7 +115,7 @@ function SchemaPickerPage({
                 <CardHeader className="border-b">
                   <div className="mb-3 flex flex-wrap items-center gap-2">
                     <Badge variant="outline" className="rounded-full font-mono">
-                      {entityTypeFromSchemaKey(schema.schemaKey)}
+                      {semanticKindForSchema(schema)}
                     </Badge>
                     <Badge variant="secondary" className="rounded-full">
                       {schema.fields.length} fields

@@ -6,15 +6,14 @@ import { redirect } from "next/navigation"
 import { requireCmsAdmin } from "@/lib/cms/auth"
 import {
   cmsEntityFieldInputName,
-  entityTypeFromSchemaKey,
   editableEntityFieldsForSchema,
   jsonObject,
   type CmsEditableEntityField,
   type CmsJsonObject,
 } from "@/lib/cms/entity-editor"
 import {
-  loadEntityCreationSchema,
-  loadEntityEditorSchema,
+  loadEntityCreationSchemaById,
+  loadEntityEditorSchemaById,
 } from "@/lib/cms/entity-editor.server"
 import { PUBLIC_CONTENT_CACHE_TAG } from "@/lib/data/public-cache"
 import { createClient } from "@/lib/supabase/server"
@@ -23,6 +22,9 @@ import type { Database, Json } from "@/lib/supabase/types"
 type EntityUpdate = Database["public"]["Tables"]["entities"]["Update"]
 type EntityInsert = Database["public"]["Tables"]["entities"]["Insert"]
 type EntityRow = Database["public"]["Tables"]["entities"]["Row"]
+type SchemaDerivedEntityInsert = Omit<EntityInsert, "entity_type" | "schema_key"> & {
+  schema_id: string
+}
 
 type ActionResult =
   | {
@@ -271,11 +273,13 @@ function extensionFromImage(file: File) {
 async function uploadThumbnailIfPresent({
   supabase,
   entity,
+  semanticKind,
   formData,
   editPath,
 }: {
   supabase: Awaited<ReturnType<typeof createClient>>
   entity: EntityRow
+  semanticKind: string
   formData: FormData
   editPath: string
 }) {
@@ -296,7 +300,7 @@ async function uploadThumbnailIfPresent({
 
   const extension = extensionFromImage(file)
   const safeKey = (entity.slug ?? entity.id).replace(/[^a-zA-Z0-9._-]+/g, "-")
-  const safeType = entity.entity_type.replace(/[^a-zA-Z0-9._-]+/g, "-")
+  const safeType = semanticKind.replace(/[^a-zA-Z0-9._-]+/g, "-")
   const path = `entities/${safeType}/${entity.id}/${safeKey}-thumbnail-${Date.now()}.${extension}`
   const { error } = await supabase.storage
     .from(entityThumbnailBucket)
@@ -326,7 +330,7 @@ async function buildEntityUpdate({
   editPath: string
   redirectOnError: boolean
 }) {
-  const schema = await loadEntityEditorSchema(entity.schema_key)
+  const schema = await loadEntityEditorSchemaById(entity.schema_id)
   if (!schema) {
     const error = "This entity schema is not registered for editing."
     if (redirectOnError) {
@@ -387,31 +391,35 @@ async function buildEntityUpdate({
   }
 
   update.data = data
-  return update
+  return { update, schema }
 }
 
 export async function createCmsEntityAction(formData: FormData) {
-  const schemaKey = stringField(formData, "schema_key")
-  const createPath = schemaKey
-    ? `/ponix/entities/new?schema=${encodeURIComponent(schemaKey)}`
+  const admin = await requireCmsAdmin("/ponix/entities/new")
+  const schemaId = stringField(formData, "schema_id")
+  const schema = schemaId ? await loadEntityCreationSchemaById(schemaId) : null
+  const createPath = schema
+    ? `/ponix/entities/new?schema=${encodeURIComponent(schema.schemaKey)}`
     : "/ponix/entities/new"
-  const admin = await requireCmsAdmin(createPath)
 
-  const schema = await loadEntityCreationSchema(schemaKey)
   if (!schema) {
     redirectWithParams("/ponix/entities/new", {
       error: "Choose a schema that can be created from CMS.",
     })
   }
+  if (!schema.schemaId) {
+    redirectWithParams(createPath, {
+      error: "This entity schema is not registered in the database.",
+    })
+  }
 
   const fields = editableEntityFieldsForSchema(schema)
   const data: CmsJsonObject = {}
-  const insert: EntityInsert = {
+  const insert: SchemaDerivedEntityInsert = {
     data,
-    entity_type: entityTypeFromSchemaKey(schema.schemaKey),
     owner_member_id: admin.id,
     published: false,
-    schema_key: schema.schemaKey,
+    schema_id: schema.schemaId,
     sort_at: new Date().toISOString(),
     title: "",
   }
@@ -462,7 +470,8 @@ export async function createCmsEntityAction(formData: FormData) {
   const supabase = await createClient()
   const { data: created, error: insertError } = await supabase
     .from("entities")
-    .insert(insert)
+    // The DB trigger derives `entity_type` and `schema_key` from `schema_id`.
+    .insert(insert as EntityInsert)
     .select("*")
     .single()
 
@@ -476,6 +485,7 @@ export async function createCmsEntityAction(formData: FormData) {
   const uploadedThumbnailUrl = await uploadThumbnailIfPresent({
     supabase,
     entity: created,
+    semanticKind: schema.semanticKind,
     formData,
     editPath,
   })
@@ -524,7 +534,7 @@ export async function updateCmsEntityAction(formData: FormData) {
     })
   }
 
-  const update = await buildEntityUpdate({
+  const { update, schema } = await buildEntityUpdate({
     formData,
     entity,
     editPath,
@@ -534,6 +544,7 @@ export async function updateCmsEntityAction(formData: FormData) {
   const uploadedThumbnailUrl = await uploadThumbnailIfPresent({
     supabase,
     entity,
+    semanticKind: schema.semanticKind,
     formData,
     editPath,
   })
@@ -584,7 +595,7 @@ export async function updateCmsEntityInlineAction(
       throw new Error("Entity not found.")
     }
 
-    const update = await buildEntityUpdate({
+    const { update } = await buildEntityUpdate({
       formData,
       entity,
       editPath,

@@ -15,15 +15,13 @@ type EntityRelationUpdate =
 type ServerSupabaseClient = Awaited<ReturnType<typeof createClient>>
 
 type SourceEntityLink = {
-  source_table: string | null
-  source_id: string | null
+  slug: string | null
 }
 
 type PageSectionGraphRelation = {
   id: string
   from_entity_id: string
   to_entity_id: string
-  source_id: string | null
   fromEntity?: SourceEntityLink | null
   toEntity?: SourceEntityLink | null
 }
@@ -32,7 +30,6 @@ type SectionEntityGraphRelation = {
   id: string
   from_entity_id: string
   to_entity_id: string
-  source_id: string | null
   fromEntity?: SourceEntityLink | null
 }
 
@@ -47,8 +44,12 @@ type ActionResult =
 
 const uuidPattern =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
+const PAGE_ENTITY_SCHEMA_KEY = "page/default/v1"
+const DEFAULT_RELATION_SCHEMA_KEY = "relation/default/v1"
 const PAGE_SECTION_RELATION_SCHEMA_KEY = "relation/page-section/v1"
 const SECTION_ENTITY_RELATION_SCHEMA_KEY = "relation/section-entity/v1"
+const PAGE_SHADOW_PREFIX = "page:"
+const SECTION_SHADOW_PREFIX = "section:"
 
 function stringField(formData: FormData, key: string) {
   const value = formData.get(key)
@@ -153,11 +154,62 @@ function revalidateRelationSurfaces(paths: string[]) {
   }
 }
 
-function sourceIdFromLink(
+function shadowSlug(sourceTable: "pages" | "sections", sourceKey: string) {
+  return `${sourceTable === "pages" ? PAGE_SHADOW_PREFIX : SECTION_SHADOW_PREFIX}${sourceKey}`
+}
+
+function sourceKeyFromLink(
   link: SourceEntityLink | null | undefined,
   sourceTable: "pages" | "sections",
 ) {
-  return link?.source_table === sourceTable ? link.source_id : null
+  const prefix = sourceTable === "pages" ? PAGE_SHADOW_PREFIX : SECTION_SHADOW_PREFIX
+  return link?.slug?.startsWith(prefix) ? link.slug.slice(prefix.length) : null
+}
+
+async function loadSchemaIdByKey({
+  supabase,
+  schemaKey,
+  label,
+}: {
+  supabase: ServerSupabaseClient
+  schemaKey: string
+  label: string
+}) {
+  const { data, error } = await supabase
+    .from("entity_schemas")
+    .select("id")
+    .eq("schema_key", schemaKey)
+    .eq("active", true)
+    .maybeSingle()
+
+  if (error || !data?.id) {
+    throw new Error(error?.message ?? `${label} schema is not registered.`)
+  }
+
+  return data.id
+}
+
+async function loadSchemaIdsByKind({
+  supabase,
+  kind,
+  label,
+}: {
+  supabase: ServerSupabaseClient
+  kind: string
+  label: string
+}) {
+  const { data, error } = await supabase
+    .from("entity_schemas")
+    .select("id")
+    .eq("kind", kind)
+    .eq("active", true)
+
+  const ids = (data ?? []).map((schema) => schema.id).filter(Boolean)
+  if (error || !ids.length) {
+    throw new Error(error?.message ?? `${label} schemas are not registered.`)
+  }
+
+  return ids
 }
 
 async function loadShadowEntityId({
@@ -171,15 +223,85 @@ async function loadShadowEntityId({
   sourceId: string
   label: string
 }) {
-  const { data, error } = await supabase
+  const source =
+    sourceTable === "pages"
+      ? await supabase
+          .from("pages")
+          .select("slug")
+          .eq("id", sourceId)
+          .maybeSingle()
+      : await supabase
+          .from("sections")
+          .select("key")
+          .eq("id", sourceId)
+          .maybeSingle()
+
+  if (source.error) {
+    throw new Error(source.error.message)
+  }
+
+  const sourceKey =
+    sourceTable === "pages"
+      ? (source.data as { slug?: string } | null)?.slug
+      : (source.data as { key?: string } | null)?.key
+
+  if (!sourceKey) {
+    throw new Error(`${label} source record not found.`)
+  }
+
+  let query = supabase
     .from("entities")
     .select("id")
-    .eq("source_table", sourceTable)
-    .eq("source_id", sourceId)
-    .maybeSingle()
+    .eq("slug", shadowSlug(sourceTable, sourceKey))
+
+  if (sourceTable === "pages") {
+    const pageSchemaId = await loadSchemaIdByKey({
+      supabase,
+      schemaKey: PAGE_ENTITY_SCHEMA_KEY,
+      label: "Page",
+    })
+    query = query.eq("schema_id", pageSchemaId)
+  } else {
+    const sectionSchemaIds = await loadSchemaIdsByKind({
+      supabase,
+      kind: "section",
+      label: "Section",
+    })
+    query = query.in("schema_id", sectionSchemaIds)
+  }
+
+  const { data, error } = await query.maybeSingle()
 
   if (error || !data?.id) {
     throw new Error(error?.message ?? `${label} graph entity not found.`)
+  }
+
+  return data.id
+}
+
+async function loadPageIdBySlug(supabase: ServerSupabaseClient, slug: string) {
+  const { data, error } = await supabase
+    .from("pages")
+    .select("id")
+    .eq("slug", slug)
+    .maybeSingle()
+
+  if (error || !data?.id) {
+    throw new Error(error?.message ?? "Page source record not found.")
+  }
+
+  return data.id
+}
+
+async function loadSectionIdByKey(supabase: ServerSupabaseClient, key: string) {
+  const { data, error } = await supabase
+    .from("sections")
+    .select("id")
+    .eq("key", key)
+    .maybeSingle()
+
+  if (error || !data?.id) {
+    throw new Error(error?.message ?? "Section source record not found.")
   }
 
   return data.id
@@ -189,6 +311,11 @@ async function loadPageSectionGraphRelation(
   supabase: ServerSupabaseClient,
   graphRelationId: string,
 ) {
+  const relationSchemaId = await loadSchemaIdByKey({
+    supabase,
+    schemaKey: PAGE_SECTION_RELATION_SCHEMA_KEY,
+    label: "Page section relation",
+  })
   const { data, error } = await supabase
     .from("entity_relations")
     .select(
@@ -196,22 +323,26 @@ async function loadPageSectionGraphRelation(
         id,
         from_entity_id,
         to_entity_id,
-        source_id,
-        fromEntity:entities!entity_relations_from_entity_id_fkey(source_table, source_id),
-        toEntity:entities!entity_relations_to_entity_id_fkey(source_table, source_id)
+        fromEntity:entities!entity_relations_from_entity_id_fkey(slug),
+        toEntity:entities!entity_relations_to_entity_id_fkey(slug)
       `,
     )
     .eq("id", graphRelationId)
-    .eq("schema_key", PAGE_SECTION_RELATION_SCHEMA_KEY)
+    .eq("schema_id", relationSchemaId)
     .maybeSingle()
 
   const relation = data as unknown as PageSectionGraphRelation | null
-  const pageId = sourceIdFromLink(relation?.fromEntity, "pages")
-  const sectionId = sourceIdFromLink(relation?.toEntity, "sections")
+  const pageSlug = sourceKeyFromLink(relation?.fromEntity, "pages")
+  const sectionKey = sourceKeyFromLink(relation?.toEntity, "sections")
 
-  if (error || !relation || !pageId || !sectionId) {
+  if (error || !relation || !pageSlug || !sectionKey) {
     throw new Error(error?.message ?? "Page section graph relation not found.")
   }
+
+  const [pageId, sectionId] = await Promise.all([
+    loadPageIdBySlug(supabase, pageSlug),
+    loadSectionIdByKey(supabase, sectionKey),
+  ])
 
   return {
     ...relation,
@@ -224,6 +355,11 @@ async function loadSectionEntityGraphRelation(
   supabase: ServerSupabaseClient,
   graphRelationId: string,
 ) {
+  const relationSchemaId = await loadSchemaIdByKey({
+    supabase,
+    schemaKey: SECTION_ENTITY_RELATION_SCHEMA_KEY,
+    label: "Section entity relation",
+  })
   const { data, error } = await supabase
     .from("entity_relations")
     .select(
@@ -231,20 +367,21 @@ async function loadSectionEntityGraphRelation(
         id,
         from_entity_id,
         to_entity_id,
-        source_id,
-        fromEntity:entities!entity_relations_from_entity_id_fkey(source_table, source_id)
+        fromEntity:entities!entity_relations_from_entity_id_fkey(slug)
       `,
     )
     .eq("id", graphRelationId)
-    .eq("schema_key", SECTION_ENTITY_RELATION_SCHEMA_KEY)
+    .eq("schema_id", relationSchemaId)
     .maybeSingle()
 
   const relation = data as unknown as SectionEntityGraphRelation | null
-  const sectionId = sourceIdFromLink(relation?.fromEntity, "sections")
+  const sectionKey = sourceKeyFromLink(relation?.fromEntity, "sections")
 
-  if (error || !relation || !sectionId) {
+  if (error || !relation || !sectionKey) {
     throw new Error(error?.message ?? "Section graph relation not found.")
   }
+
+  const sectionId = await loadSectionIdByKey(supabase, sectionKey)
 
   return {
     ...relation,
@@ -261,7 +398,7 @@ export async function addPageSectionRelationAction(formData: FormData) {
     const supabase = await createClient()
     const pageId = parseUuid(formData, "page_id", "Page")
     const sectionId = parseUuid(formData, "section_id", "Section")
-    const [pageEntityId, sectionEntityId] = await Promise.all([
+    const [pageEntityId, sectionEntityId, relationSchemaId] = await Promise.all([
       loadShadowEntityId({
         supabase,
         sourceTable: "pages",
@@ -274,11 +411,16 @@ export async function addPageSectionRelationAction(formData: FormData) {
         sourceId: sectionId,
         label: "Section",
       }),
+      loadSchemaIdByKey({
+        supabase,
+        schemaKey: PAGE_SECTION_RELATION_SCHEMA_KEY,
+        label: "Page section relation",
+      }),
     ])
     const payload: EntityRelationInsert = {
       from_entity_id: pageEntityId,
       to_entity_id: sectionEntityId,
-      schema_key: PAGE_SECTION_RELATION_SCHEMA_KEY,
+      schema_id: relationSchemaId,
       relation_type: "contains_section",
       slot: "sections",
       sort_order: parseSortOrder(formData),
@@ -288,7 +430,7 @@ export async function addPageSectionRelationAction(formData: FormData) {
     const { data: existing, error: existingError } = await supabase
       .from("entity_relations")
       .select("id")
-      .eq("schema_key", PAGE_SECTION_RELATION_SCHEMA_KEY)
+      .eq("schema_id", relationSchemaId)
       .eq("from_entity_id", pageEntityId)
       .eq("to_entity_id", sectionEntityId)
       .eq("relation_type", "contains_section")
@@ -301,6 +443,7 @@ export async function addPageSectionRelationAction(formData: FormData) {
       ? await supabase
           .from("entity_relations")
           .update({
+            schema_id: payload.schema_id,
             sort_order: payload.sort_order,
             props: payload.props,
           } satisfies EntityRelationUpdate)
@@ -390,16 +533,23 @@ export async function addSectionEntityRelationAction(formData: FormData) {
     const entityId = parseUuid(formData, "entity_id", "Entity")
     const relationType = parseText(formData, "relation_type", "Relation type")
     const slot = stringField(formData, "slot") || "default"
-    const sectionEntityId = await loadShadowEntityId({
-      supabase,
-      sourceTable: "sections",
-      sourceId: sectionId,
-      label: "Section",
-    })
+    const [sectionEntityId, relationSchemaId] = await Promise.all([
+      loadShadowEntityId({
+        supabase,
+        sourceTable: "sections",
+        sourceId: sectionId,
+        label: "Section",
+      }),
+      loadSchemaIdByKey({
+        supabase,
+        schemaKey: SECTION_ENTITY_RELATION_SCHEMA_KEY,
+        label: "Section entity relation",
+      }),
+    ])
     const payload: EntityRelationInsert = {
       from_entity_id: sectionEntityId,
       to_entity_id: entityId,
-      schema_key: SECTION_ENTITY_RELATION_SCHEMA_KEY,
+      schema_id: relationSchemaId,
       relation_type: relationType,
       slot,
       sort_order: parseSortOrder(formData),
@@ -409,7 +559,7 @@ export async function addSectionEntityRelationAction(formData: FormData) {
     const { data: existing, error: existingError } = await supabase
       .from("entity_relations")
       .select("id")
-      .eq("schema_key", SECTION_ENTITY_RELATION_SCHEMA_KEY)
+      .eq("schema_id", relationSchemaId)
       .eq("from_entity_id", payload.from_entity_id)
       .eq("to_entity_id", payload.to_entity_id)
       .eq("relation_type", relationType)
@@ -424,6 +574,7 @@ export async function addSectionEntityRelationAction(formData: FormData) {
       ? await supabase
           .from("entity_relations")
           .update({
+            schema_id: payload.schema_id,
             relation_type: payload.relation_type,
             slot: payload.slot,
             sort_order: payload.sort_order,
@@ -571,22 +722,25 @@ export async function reorderSectionEntityRelationsAction({
     }
 
     const supabase = await createClient()
-    const { data: sectionShadow, error: shadowError } = await supabase
-      .from("entities")
-      .select("id")
-      .eq("source_table", "sections")
-      .eq("source_id", sectionId)
-      .maybeSingle()
-
-    if (shadowError || !sectionShadow) {
-      throw new Error(shadowError?.message ?? "Section graph entity not found.")
-    }
+    const [sectionShadowId, relationSchemaId] = await Promise.all([
+      loadShadowEntityId({
+        supabase,
+        sourceTable: "sections",
+        sourceId: sectionId,
+        label: "Section",
+      }),
+      loadSchemaIdByKey({
+        supabase,
+        schemaKey: SECTION_ENTITY_RELATION_SCHEMA_KEY,
+        label: "Section entity relation",
+      }),
+    ])
 
     const { data: relations, error: loadError } = await supabase
       .from("entity_relations")
       .select("id, to_entity_id")
-      .eq("schema_key", SECTION_ENTITY_RELATION_SCHEMA_KEY)
-      .eq("from_entity_id", sectionShadow.id)
+      .eq("schema_id", relationSchemaId)
+      .eq("from_entity_id", sectionShadowId)
       .in("id", orderedIds)
 
     if (loadError) {
@@ -603,8 +757,8 @@ export async function reorderSectionEntityRelationsAction({
         .from("entity_relations")
         .update({ sort_order: (index + 1) * 10 } satisfies EntityRelationUpdate)
         .eq("id", relationId)
-        .eq("schema_key", SECTION_ENTITY_RELATION_SCHEMA_KEY)
-        .eq("from_entity_id", sectionShadow.id),
+        .eq("schema_id", relationSchemaId)
+        .eq("from_entity_id", sectionShadowId),
     )
     const results = await Promise.all(updates)
     const updateError = results.find((result) => result.error)?.error
@@ -670,9 +824,15 @@ export async function addEntityRelationAction(formData: FormData) {
       throw new Error("Entity relations cannot point to the same entity.")
     }
 
+    const relationSchemaId = await loadSchemaIdByKey({
+      supabase,
+      schemaKey: DEFAULT_RELATION_SCHEMA_KEY,
+      label: "Entity relation",
+    })
     const payload: EntityRelationInsert = {
       from_entity_id: fromEntityId,
       to_entity_id: toEntityId,
+      schema_id: relationSchemaId,
       relation_type: parseText(formData, "relation_type", "Relation type"),
       slot: stringField(formData, "slot") || "default",
       sort_order: parseSortOrder(formData),

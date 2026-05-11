@@ -68,7 +68,7 @@ export function CmsSectionCreatePage({
         </div>
 
         <form id={formId} action={createCmsSectionAction} className="space-y-6">
-          <input type="hidden" name="schema_key" value={schema.schemaKey} />
+          <input type="hidden" name="schema_id" value={schema.schemaId ?? ""} />
 
           {error && (
             <Alert variant="destructive">

@@ -22,18 +22,19 @@ removed. Media/archive content now lives in `entities` and `entity_relations`.
 Migration `20260506000042_entity_graph_bridge.sql` started the safe transition
 by mirroring page and section records into the generic graph:
 
-- `pages` rows get shadow `entities` rows with `entity_type = 'page'`.
-- `sections` rows get shadow `entities` rows with `entity_type = 'section'`.
+- `pages` rows get shadow `entities` rows using the `page/default/v1` schema.
+- `sections` rows get shadow `entities` rows using registered section schemas.
 - Page-to-section composition uses `entity_relations` rows from page entity to
   section entity.
 - Section-to-content composition uses `entity_relations` rows from section
   entity to content entity.
 
-The bridge uses `source_table` and `source_id` columns on page/section shadow
-`entities` so routable domain rows can be resolved into graph nodes.
+The bridge resolves page/section shadow `entities` through deterministic slugs:
+`page:<pages.slug>` and `section:<sections.key>`. Legacy source marker columns
+on `entities` and `entity_relations` have been retired.
 `entity_relations` no longer uses legacy mirror source markers after
 `20260511000052_retire_legacy_relation_source_markers.sql`; relation identity
-comes from `schema_key`, `relation_type`, `slot`, and the relation id.
+comes from `schema_id`, `relation_type`, `slot`, and the relation id.
 
 The bridge is now the primary runtime composition path.
 
@@ -43,10 +44,11 @@ Current PONIX contract:
   Content graph QA now validates the graph directly instead of comparing
   against the legacy mirrors.
 - CMS relation lists read page/section placement through `entity_relations`
-  bridge rows, using relation `schema_key` values as the runtime identity:
-  `relation/page-section/v1` and `relation/section-entity/v1`.
+  bridge rows, using relation `schema_id` values resolved from registered
+  schema keys such as `relation/page-section/v1` and
+  `relation/section-entity/v1`.
 - Routine CMS composition writes target `entity_relations` without legacy
-  relation `source_table` markers.
+  source markers.
 - Maintenance apply scripts and generated seed migrations that refresh scraped
   or Instagram content should also write section placement through
   `entity_relations`, not directly through `page_sections` or
@@ -69,7 +71,7 @@ Current PONIX contract:
 
 | Table | Purpose |
 | --- | --- |
-| `entity_schemas` | DB-backed schema registry for page, section, entity, and relation records. This is the long-term source for CMS form metadata and validation. |
+| `entity_schemas` | DB-backed schema registry for page, section, entity, and relation records. This is the long-term source for CMS form metadata. |
 | `pages` | Routable page records such as `home`, `performances`, `videos`, `photos`, `history`, and `site`. |
 | `sections` | Renderer blocks with `section_type`, copy, and renderer props. |
 | `entities` | Reusable content units such as videos, photos, stats, posts, history milestones, activities, nav items, and social links. |
@@ -138,26 +140,32 @@ The long-term content contract is:
 ```txt
 entity_schemas
 - what kind of content this is
+- broad semantic identity such as video, photo, performance, post, or section
 - which fields are editable
-- how the data should be validated
 - which renderer key may display it
 
 entities
 - shared identity and display columns
-- schema_id / schema_key
+- required schema_id, with schema_key kept as a compatibility mirror
 - flexible data jsonb
 
 entity_relations
 - ordered links between entities
-- schema_id / schema_key
+- required schema_id, with schema_key kept as a compatibility mirror
 - slot, relation_type, sort_order
 - relation props as relation-specific data
 ```
 
-For now, `entities.schema_key` remains the public compatibility key and
-`entities.schema_id` resolves it to `entity_schemas`. `entity_relations` also has
-a default relation schema. Do not remove the text `schema_key` fields until all
-loaders, CMS forms, migrations, and production data have moved to schema IDs.
+For now, `entities.schema_key` and `entity_relations.schema_key` remain public
+compatibility keys. The canonical DB reference is now `schema_id`, and the
+schema registry trigger keeps `schema_id` and `schema_key` synchronized.
+`entity_schemas.semantic_kind` is the broad identity that should replace new
+direct branching on `entities.entity_type`. The DB schema resolver now also
+syncs `entities.entity_type` from `entity_schemas.semantic_kind`, so
+`entity_type` should be treated as a compatibility mirror rather than an
+independent authoring field.
+Do not remove the text `schema_key` fields until all loaders, CMS forms,
+migrations, and production data have moved to schema IDs.
 
 Renderer implementations remain in React code. Database schemas may name a
 `renderer_key`, but they must not define executable UI behavior.
@@ -186,7 +194,8 @@ Use `sections.props` for renderer-level copy and behavior:
 
 Use `entities` columns for shared display identity:
 
-- `entity_type`
+- `entity_type` (compatibility cache; prefer `entity_schemas.semantic_kind` for
+  new CMS/runtime logic; not exposed as a CMS editor field)
 - `schema_key`
 - `slug`
 - `title`
@@ -252,8 +261,7 @@ where key = 'home-join';
 
 ```sql
 insert into public.entities (
-  entity_type,
-  schema_key,
+  schema_id,
   slug,
   title,
   summary,
@@ -261,16 +269,17 @@ insert into public.entities (
   data,
   published
 )
-values (
-  'history_milestone',
-  'history/milestone/v1',
+select
+  schema_ref.id,
   'history-2026-new-season',
   '2026 New Season',
   'Short summary',
   null,
   '{"year":"2026","display_order":120}'::jsonb,
   true
-);
+from public.entity_schemas schema_ref
+where schema_ref.schema_key = 'history/milestone/v1'
+  and schema_ref.active = true;
 ```
 
 ### Link an Entity to a Section
@@ -279,7 +288,7 @@ values (
 insert into public.entity_relations (
   from_entity_id,
   to_entity_id,
-  schema_key,
+  schema_id,
   relation_type,
   slot,
   sort_order,
@@ -288,16 +297,22 @@ insert into public.entity_relations (
 select
   section_shadow.id,
   entity_ref.id,
-  'relation/section-entity/v1',
+  relation_schema.id,
   'item',
   'default',
   120,
   '{}'::jsonb
 from public.sections section_ref
 join public.entities section_shadow
-  on section_shadow.source_table = 'sections'
- and section_shadow.source_id = section_ref.id
+  on section_shadow.schema_id in (
+    select id from public.entity_schemas
+    where kind = 'section' and active = true
+  )
+ and section_shadow.slug = 'section:' || section_ref.key
 join public.entities entity_ref on entity_ref.slug = 'history-2026-new-season'
+join public.entity_schemas relation_schema
+  on relation_schema.schema_key = 'relation/section-entity/v1'
+ and relation_schema.active = true
 where section_ref.key = 'history-timeline'
 on conflict (from_entity_id, to_entity_id, relation_type, slot) do update
 set sort_order = excluded.sort_order,
@@ -312,15 +327,24 @@ update public.entity_relations page_section_relation
 set sort_order = 30
 from public.pages page_ref
 join public.entities page_shadow
-  on page_shadow.source_table = 'pages'
- and page_shadow.source_id = page_ref.id
+  on page_shadow.schema_id = (
+    select id from public.entity_schemas
+    where schema_key = 'page/default/v1' and active = true
+  )
+ and page_shadow.slug = 'page:' || page_ref.slug
 join public.sections section_ref on section_ref.key = 'home-activities'
 join public.entities section_shadow
-  on section_shadow.source_table = 'sections'
- and section_shadow.source_id = section_ref.id
+  on section_shadow.schema_id in (
+    select id from public.entity_schemas
+    where kind = 'section' and active = true
+  )
+ and section_shadow.slug = 'section:' || section_ref.key
+join public.entity_schemas relation_schema
+  on relation_schema.schema_key = 'relation/page-section/v1'
+ and relation_schema.active = true
 where page_section_relation.from_entity_id = page_shadow.id
   and page_section_relation.to_entity_id = section_shadow.id
-  and page_section_relation.schema_key = 'relation/page-section/v1'
+  and page_section_relation.schema_id = relation_schema.id
   and page_section_relation.slot = 'sections'
   and page_ref.slug = 'home';
 ```
@@ -347,19 +371,31 @@ select
   count(content_entity.id) as entity_count
 from public.pages p
 join public.entities page_shadow
-  on page_shadow.source_table = 'pages'
- and page_shadow.source_id = p.id
+  on page_shadow.schema_id = (
+    select id from public.entity_schemas
+    where schema_key = 'page/default/v1' and active = true
+  )
+ and page_shadow.slug = 'page:' || p.slug
 join public.entity_relations page_section_relation
   on page_section_relation.from_entity_id = page_shadow.id
- and page_section_relation.schema_key = 'relation/page-section/v1'
+ and page_section_relation.schema_id = (
+    select id from public.entity_schemas
+    where schema_key = 'relation/page-section/v1' and active = true
+ )
  and page_section_relation.slot = 'sections'
 join public.entities section_shadow
   on section_shadow.id = page_section_relation.to_entity_id
- and section_shadow.source_table = 'sections'
-join public.sections s on s.id = section_shadow.source_id
+ and section_shadow.schema_id in (
+    select id from public.entity_schemas
+    where kind = 'section' and active = true
+ )
+join public.sections s on section_shadow.slug = 'section:' || s.key
 left join public.entity_relations section_item_relation
   on section_item_relation.from_entity_id = section_shadow.id
- and section_item_relation.schema_key = 'relation/section-entity/v1'
+ and section_item_relation.schema_id = (
+    select id from public.entity_schemas
+    where schema_key = 'relation/section-entity/v1' and active = true
+ )
 left join public.entities content_entity
   on content_entity.id = section_item_relation.to_entity_id
  and content_entity.published = true

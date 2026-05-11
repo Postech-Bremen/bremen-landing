@@ -43,18 +43,16 @@ export function isEntityEditorSchema(schema: CmsSchemaDefinition) {
   return schema.kind === "entity" && schema.table === "entities"
 }
 
-export function entityTypeFromSchemaKey(schemaKey: string) {
-  return schemaKey.split("/")[0] || "entity"
+export function semanticKindFromSchemaKey(schemaKey: string) {
+  return getCmsSchema(schemaKey)?.semanticKind ?? schemaKey.split("/")[0] ?? "entity"
+}
+
+export function semanticKindForSchema(schema: CmsSchemaDefinition) {
+  return schema.semanticKind || semanticKindFromSchemaKey(schema.schemaKey)
 }
 
 function hasRequiredReadOnlyField(schema: CmsSchemaDefinition) {
-  return schema.fields.some((field) => {
-    if (!field.required || !field.readOnly) {
-      return false
-    }
-
-    return !(field.source === "column" && field.key === "entity_type")
-  })
+  return schema.fields.some((field) => field.required && field.readOnly)
 }
 
 export function canCreateEntitySchema(schema: CmsSchemaDefinition) {

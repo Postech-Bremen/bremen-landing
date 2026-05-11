@@ -64,6 +64,18 @@ function sqlJson(value) {
   return `${sqlString(JSON.stringify(value))}::jsonb`
 }
 
+function schemaIdExpr(schemaKey) {
+  return `(select id from public.entity_schemas where schema_key = ${sqlString(schemaKey)} and active = true)`
+}
+
+function semanticKindPredicate(alias, semanticKind) {
+  return `${alias}.schema_id in (select id from public.entity_schemas where semantic_kind = ${sqlString(semanticKind)} and active = true)`
+}
+
+function sectionSchemaPredicate(alias) {
+  return `${alias}.schema_id in (select id from public.entity_schemas where kind = 'section' and active = true)`
+}
+
 function compactText(value, limit = 420) {
   const text = String(value ?? "")
     .replace(/\s+/g, " ")
@@ -267,8 +279,7 @@ function values(rows) {
     .map(
       (row) =>
         `    (${[
-          sqlString(row.entityType),
-          sqlString(row.schemaKey),
+          schemaIdExpr(row.schemaKey),
           sqlString(row.slug),
           sqlString(row.title),
           "null",
@@ -311,7 +322,7 @@ const sql = `-- Bremen — expanded Instagram feed seed.
 insert into public.sections (
   key,
   section_type,
-  schema_key,
+  schema_id,
   eyebrow,
   title,
   subtitle,
@@ -321,7 +332,7 @@ insert into public.sections (
 values (
   'performances-updates',
   'entity_post_grid',
-  'section/performance-updates/v1',
+  ${schemaIdExpr("section/performance-updates/v1")},
   'Notice board',
   'Around the stages',
   '공연 전후의 소식',
@@ -330,7 +341,7 @@ values (
 )
 on conflict (key) do update
 set section_type = excluded.section_type,
-    schema_key = excluded.schema_key,
+    schema_id = excluded.schema_id,
     eyebrow = excluded.eyebrow,
     title = excluded.title,
     subtitle = excluded.subtitle,
@@ -342,17 +353,17 @@ with target as (
   from public.pages page
   join public.sections section on section.key = 'performances-updates'
   join public.entities page_entity
-    on page_entity.source_table = 'pages'
-   and page_entity.source_id = page.id
+    on page_entity.schema_id = ${schemaIdExpr("page/default/v1")}
+   and page_entity.slug = 'page:' || page.slug
   join public.entities section_entity
-    on section_entity.source_table = 'sections'
-   and section_entity.source_id = section.id
+    on ${sectionSchemaPredicate("section_entity")}
+   and section_entity.slug = 'section:' || section.key
   where page.slug = 'performances'
 )
 insert into public.entity_relations (
   from_entity_id,
   to_entity_id,
-  schema_key,
+  schema_id,
   relation_type,
   slot,
   sort_order,
@@ -361,20 +372,19 @@ insert into public.entity_relations (
 select
   page_entity_id,
   section_entity_id,
-  'relation/page-section/v1',
+  ${schemaIdExpr("relation/page-section/v1")},
   'contains_section',
   'sections',
   25,
   '{}'::jsonb
 from target
 on conflict (from_entity_id, to_entity_id, relation_type, slot) do update
-set schema_key = excluded.schema_key,
+set schema_id = excluded.schema_id,
     sort_order = excluded.sort_order,
     props = excluded.props;
 
 insert into public.entities (
-  entity_type,
-  schema_key,
+  schema_id,
   slug,
   title,
   subtitle,
@@ -387,8 +397,7 @@ insert into public.entities (
 values
 ${values(rows)}
 on conflict (slug) do update
-set entity_type = excluded.entity_type,
-    schema_key = excluded.schema_key,
+set schema_id = excluded.schema_id,
     title = excluded.title,
     subtitle = excluded.subtitle,
     summary = excluded.summary,
@@ -412,6 +421,7 @@ relations as (
   select
     parent.id as from_entity_id,
     child.id as to_entity_id,
+    ${schemaIdExpr("relation/default/v1")} as schema_id,
     relation_seed.relation_type,
     relation_seed.slot,
     relation_seed.sort_order
@@ -422,6 +432,7 @@ relations as (
 insert into public.entity_relations (
   from_entity_id,
   to_entity_id,
+  schema_id,
   relation_type,
   slot,
   sort_order,
@@ -430,22 +441,24 @@ insert into public.entity_relations (
 select
   from_entity_id,
   to_entity_id,
+  schema_id,
   relation_type,
   slot,
   sort_order,
   '{}'::jsonb
 from relations
 on conflict (from_entity_id, to_entity_id, relation_type, slot) do update
-set sort_order = excluded.sort_order,
+set schema_id = excluded.schema_id,
+    sort_order = excluded.sort_order,
     props = excluded.props;
 
 delete from public.entity_relations relation
 using public.entities section_entity, public.sections section_ref, public.entities entity
-where relation.schema_key = 'relation/section-entity/v1'
+where relation.schema_id = ${schemaIdExpr("relation/section-entity/v1")}
   and relation.from_entity_id = section_entity.id
   and relation.to_entity_id = entity.id
-  and section_entity.source_table = 'sections'
-  and section_entity.source_id = section_ref.id
+  and ${sectionSchemaPredicate("section_entity")}
+  and section_entity.slug = 'section:' || section_ref.key
   and section_ref.key = 'photos-gallery'
   and entity.data->>'source' = 'instagram';
 
@@ -453,8 +466,8 @@ with target_section as (
   select section_entity.id as section_entity_id
   from public.sections section_ref
   join public.entities section_entity
-    on section_entity.source_table = 'sections'
-   and section_entity.source_id = section_ref.id
+    on ${sectionSchemaPredicate("section_entity")}
+   and section_entity.slug = 'section:' || section_ref.key
   where section_ref.key = 'photos-gallery'
 ),
 ordered as (
@@ -462,7 +475,7 @@ ordered as (
     entity.id,
     row_number() over (order by entity.sort_at desc, entity.title) as rank
   from public.entities entity
-  where entity.entity_type = 'photo'
+  where ${semanticKindPredicate("entity", "photo")}
     and entity.data->>'source' = 'instagram'
     and coalesce((entity.data->>'gallery_include')::boolean, false) = true
     and entity.published = true
@@ -470,7 +483,7 @@ ordered as (
 insert into public.entity_relations (
   from_entity_id,
   to_entity_id,
-  schema_key,
+  schema_id,
   relation_type,
   slot,
   sort_order,
@@ -479,7 +492,7 @@ insert into public.entity_relations (
 select
   target_section.section_entity_id,
   ordered.id,
-  'relation/section-entity/v1',
+  ${schemaIdExpr("relation/section-entity/v1")},
   'features_photo',
   'gallery',
   ordered.rank * 10,
@@ -487,17 +500,17 @@ select
 from target_section
 cross join ordered
 on conflict (from_entity_id, to_entity_id, relation_type, slot) do update
-set schema_key = excluded.schema_key,
+set schema_id = excluded.schema_id,
     sort_order = excluded.sort_order,
     props = excluded.props;
 
 delete from public.entity_relations relation
 using public.entities section_entity, public.sections section_ref, public.entities entity
-where relation.schema_key = 'relation/section-entity/v1'
+where relation.schema_id = ${schemaIdExpr("relation/section-entity/v1")}
   and relation.from_entity_id = section_entity.id
   and relation.to_entity_id = entity.id
-  and section_entity.source_table = 'sections'
-  and section_entity.source_id = section_ref.id
+  and ${sectionSchemaPredicate("section_entity")}
+  and section_entity.slug = 'section:' || section_ref.key
   and section_ref.key = 'performances-updates'
   and entity.data->>'source' = 'instagram';
 
@@ -505,8 +518,8 @@ with target_section as (
   select section_entity.id as section_entity_id
   from public.sections section_ref
   join public.entities section_entity
-    on section_entity.source_table = 'sections'
-   and section_entity.source_id = section_ref.id
+    on ${sectionSchemaPredicate("section_entity")}
+   and section_entity.slug = 'section:' || section_ref.key
   where section_ref.key = 'performances-updates'
 ),
 ordered as (
@@ -515,7 +528,7 @@ ordered as (
     coalesce(entity.data->>'content_kind', 'notice') as content_kind,
     row_number() over (order by entity.sort_at desc, entity.title) as rank
   from public.entities entity
-  where entity.entity_type = 'post'
+  where ${semanticKindPredicate("entity", "post")}
     and entity.data->>'source' = 'instagram'
     and coalesce((entity.data->>'gallery_include')::boolean, false) = false
     and entity.published = true
@@ -523,7 +536,7 @@ ordered as (
 insert into public.entity_relations (
   from_entity_id,
   to_entity_id,
-  schema_key,
+  schema_id,
   relation_type,
   slot,
   sort_order,
@@ -532,7 +545,7 @@ insert into public.entity_relations (
 select
   target_section.section_entity_id,
   ordered.id,
-  'relation/section-entity/v1',
+  ${schemaIdExpr("relation/section-entity/v1")},
   'features_post',
   ordered.content_kind,
   ordered.rank * 10,
@@ -540,7 +553,7 @@ select
 from target_section
 cross join ordered
 on conflict (from_entity_id, to_entity_id, relation_type, slot) do update
-set schema_key = excluded.schema_key,
+set schema_id = excluded.schema_id,
     sort_order = excluded.sort_order,
     props = excluded.props;
 `

@@ -15,7 +15,8 @@
     "qa:graph-primary-seed-writes": "node scripts/qa-graph-primary-seed-writes.mjs",
     "qa:legacy-media-table-readiness": "node scripts/qa-legacy-media-table-readiness.mjs",
     "qa:legacy-mirror-readiness": "node scripts/qa-legacy-mirror-readiness.mjs",
-    "qa:legacy-mirror-stage5-preflight": "node scripts/qa-legacy-mirror-readiness.mjs --fail-before-stage 5"
+    "qa:legacy-mirror-stage5-preflight": "node scripts/qa-legacy-mirror-readiness.mjs --fail-before-stage 5",
+    "qa:schema-semantic-identity": "node scripts/qa-schema-semantic-identity.mjs"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.9.1",

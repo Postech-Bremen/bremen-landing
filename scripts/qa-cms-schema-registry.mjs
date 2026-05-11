@@ -144,7 +144,7 @@ async function main() {
     await supabase
       .from("entity_schemas")
       .select(
-        "schema_key, kind, table_name, label, description, fields, validation, relation_slots, active",
+        "schema_key, kind, table_name, semantic_kind, semantic_group, label, description, fields, relation_slots, active",
       )
       .eq("active", true)
       .order("kind", { ascending: true })
@@ -178,6 +178,18 @@ async function main() {
       codeTable: codeSchema?.table ?? null,
       dbTable: dbSchema?.table_name ?? null,
       tableMatch: Boolean(codeSchema && dbSchema && codeSchema.table === dbSchema.table_name),
+      codeSemanticKind: codeSchema?.semanticKind ?? null,
+      dbSemanticKind: dbSchema?.semantic_kind ?? null,
+      semanticKindMatch: Boolean(
+        codeSchema && dbSchema && codeSchema.semanticKind === dbSchema.semantic_kind,
+      ),
+      codeSemanticGroup: codeSchema?.semanticGroup ?? null,
+      dbSemanticGroup: dbSchema?.semantic_group ?? null,
+      semanticGroupMatch: Boolean(
+        codeSchema &&
+          dbSchema &&
+          (codeSchema.semanticGroup ?? null) === (dbSchema.semantic_group ?? null),
+      ),
       codeSlots: normalizeSlots(codeSchema?.relationSlots ?? []),
       dbSlots: normalizeSlots(dbSchema?.relation_slots ?? []),
       relationSlotsMatch,
@@ -204,6 +216,12 @@ async function main() {
         row.inDb &&
         (!row.kindMatch || !row.tableMatch || !row.relationSlotsMatch),
     ).length,
+    semanticMismatch: rows.filter(
+      (row) =>
+        row.inCode &&
+        row.inDb &&
+        (!row.semanticKindMatch || !row.semanticGroupMatch),
+    ).length,
   }
 
   console.log("CMS schema registry parity")
@@ -216,6 +234,8 @@ async function main() {
         row.inCode && row.inDb ? "matched" : row.inCode ? "code-only" : "db-only",
       kind: row.kindMatch ? "ok" : "mismatch",
       table: row.tableMatch ? "ok" : "mismatch",
+      semantic:
+        row.semanticKindMatch && row.semanticGroupMatch ? "ok" : "mismatch",
       slots: row.relationSlotsMatch ? "ok" : "mismatch",
       codeFields: row.codeFields,
       dbFields: row.dbFields,
@@ -230,8 +250,12 @@ async function main() {
   const metadataMismatches = rows.filter(
     (row) =>
       row.inCode &&
-      row.inDb &&
-      (!row.kindMatch || !row.tableMatch || !row.relationSlotsMatch),
+        row.inDb &&
+        (!row.kindMatch ||
+          !row.tableMatch ||
+          !row.semanticKindMatch ||
+          !row.semanticGroupMatch ||
+          !row.relationSlotsMatch),
   )
 
   if (metadataMismatches.length) {
@@ -243,6 +267,10 @@ async function main() {
         dbKind: row.dbKind,
         codeTable: row.codeTable,
         dbTable: row.dbTable,
+        codeSemanticKind: row.codeSemanticKind,
+        dbSemanticKind: row.dbSemanticKind,
+        codeSemanticGroup: row.codeSemanticGroup,
+        dbSemanticGroup: row.dbSemanticGroup,
         codeSlots: row.codeSlots.join(","),
         dbSlots: row.dbSlots.join(","),
       })),
@@ -264,6 +292,8 @@ async function main() {
         !row.inDb ||
         !row.kindMatch ||
         !row.tableMatch ||
+        !row.semanticKindMatch ||
+        !row.semanticGroupMatch ||
         !row.relationSlotsMatch ||
         !row.fieldsMatch,
     )

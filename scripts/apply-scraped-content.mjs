@@ -9,6 +9,14 @@ import {
 const envPath = ".env.local"
 const rowsPath = process.argv[2] ?? "/tmp/bremen_seed_rows.json"
 
+const entitySchemaKeys = {
+  performance: "performance/scraped/v1",
+  video: "video/youtube/v1",
+  photo: "photo/instagram-grid/v1",
+  history: "history/milestone/v1",
+  playlist: "playlist/youtube/v1",
+}
+const defaultRelationSchemaKey = "relation/default/v1"
 const sectionKeys = [
   "performances-current-season",
   "performances-archive",
@@ -48,10 +56,54 @@ function requireOk(result, label) {
   return result.data
 }
 
-function entityRow(row, entityType, schemaKey) {
+function schemaIdByKey(schemas, schemaKey) {
+  const schema = schemas.byKey.get(schemaKey)
+  if (!schema?.id) {
+    throw new Error(`Missing active schema ${schemaKey}`)
+  }
+
+  return schema.id
+}
+
+function semanticKindForEntity(entity, schemas) {
+  return schemas.byId.get(entity.schema_id)?.semantic_kind ?? null
+}
+
+function schemaIdsBySemanticKind(schemas, semanticKind) {
+  const ids = (schemas.bySemanticKind.get(semanticKind) ?? [])
+    .map((schema) => schema.id)
+    .filter(Boolean)
+  if (!ids.length) {
+    throw new Error(`Missing active schemas for ${semanticKind}`)
+  }
+
+  return ids
+}
+
+async function loadSchemaRegistry(supabase) {
+  const rows = requireOk(
+    await supabase
+      .from("entity_schemas")
+      .select("id,schema_key,semantic_kind")
+      .eq("active", true),
+    "load schema registry",
+  )
+  const byKey = new Map(rows.map((schema) => [schema.schema_key, schema]))
+  const byId = new Map(rows.map((schema) => [schema.id, schema]))
+  const bySemanticKind = new Map()
+
+  for (const schema of rows) {
+    const list = bySemanticKind.get(schema.semantic_kind) ?? []
+    list.push(schema)
+    bySemanticKind.set(schema.semantic_kind, list)
+  }
+
+  return { byKey, byId, bySemanticKind }
+}
+
+function entityRow(row, schemaKey, schemas) {
   return {
-    entity_type: entityType,
-    schema_key: schemaKey,
+    schema_id: schemaIdByKey(schemas, schemaKey),
     slug: row.slug,
     title: row.title,
     subtitle: row.subtitle ?? null,
@@ -78,6 +130,19 @@ function entityYear(entity) {
   return entity.data?.year ?? String(entity.sort_at).slice(0, 4)
 }
 
+async function loadPublishedEntitiesBySemanticKind(supabase, schemas, semanticKind, label) {
+  const schemaIds = schemaIdsBySemanticKind(schemas, semanticKind)
+
+  return requireOk(
+    await supabase
+      .from("entities")
+      .select("id,slug,schema_id,title,sort_at,data,published")
+      .in("schema_id", schemaIds)
+      .eq("published", true),
+    label,
+  )
+}
+
 async function upsertChunked(supabase, table, rows, options, label) {
   for (const [index, part] of chunk(rows).entries()) {
     requireOk(
@@ -100,6 +165,8 @@ async function main() {
   const supabase = createClient(supabaseUrl, serviceRoleKey, {
     auth: { persistSession: false },
   })
+  const schemas = await loadSchemaRegistry(supabase)
+  const defaultRelationSchemaId = schemaIdByKey(schemas, defaultRelationSchemaKey)
 
   requireOk(
     await supabase.from("pages").upsert(
@@ -122,7 +189,7 @@ async function main() {
         {
           key: "videos-by-event",
           section_type: "entity_grouped_grid",
-          schema_key: "section/video-event-playlists/v1",
+          schema_id: schemaIdByKey(schemas, "section/video-event-playlists/v1"),
           eyebrow: "Events",
           title: "Recordings by stage",
           subtitle: "공연 단위로 묶어 보는 영상 기록",
@@ -132,7 +199,7 @@ async function main() {
         {
           key: "history-timeline",
           section_type: "entity_timeline",
-          schema_key: "section/history-timeline/v1",
+          schema_id: schemaIdByKey(schemas, "section/history-timeline/v1"),
           eyebrow: "Since 2001",
           title: "Bremen History",
           subtitle: "궤짝 유랑 악단에서 현재의 브레멘까지",
@@ -179,7 +246,7 @@ async function main() {
     await supabase
       .from("entities")
       .select("id,slug,data")
-      .eq("entity_type", "video"),
+      .in("schema_id", schemaIdsBySemanticKind(schemas, "video")),
     "load existing videos",
   )
 
@@ -197,11 +264,15 @@ async function main() {
   }
 
   const entityRows = [
-    ...rows.performances.map((row) => entityRow(row, "performance", "performance/scraped/v1")),
-    ...rows.videos.map((row) => entityRow(row, "video", "video/youtube/v1")),
-    ...rows.instagram.map((row) => entityRow(row, "photo", "photo/instagram-grid/v1")),
-    ...rows.history.map((row) => entityRow(row, "history_milestone", "history/milestone/v1")),
-    ...rows.playlists.map((row) => entityRow(row, "playlist", "playlist/youtube/v1")),
+    ...rows.performances.map((row) =>
+      entityRow(row, entitySchemaKeys.performance, schemas),
+    ),
+    ...rows.videos.map((row) => entityRow(row, entitySchemaKeys.video, schemas)),
+    ...rows.instagram.map((row) => entityRow(row, entitySchemaKeys.photo, schemas)),
+    ...rows.history.map((row) => entityRow(row, entitySchemaKeys.history, schemas)),
+    ...rows.playlists.map((row) =>
+      entityRow(row, entitySchemaKeys.playlist, schemas),
+    ),
   ]
 
   await upsertChunked(
@@ -218,7 +289,7 @@ async function main() {
     const loaded = requireOk(
       await supabase
         .from("entities")
-        .select("id,slug,entity_type,title,sort_at,data,published")
+        .select("id,slug,schema_id,title,sort_at,data,published")
         .in("slug", part),
       "load seeded entities",
     )
@@ -227,12 +298,18 @@ async function main() {
 
   const performanceBySlug = new Map(
     entities
-      .filter((entity) => entity.entity_type === "performance")
+      .filter((entity) => semanticKindForEntity(entity, schemas) === "performance")
       .map((entity) => [entity.slug, entity]),
   )
-  const videos = entities.filter((entity) => entity.entity_type === "video")
-  const photos = entities.filter((entity) => entity.entity_type === "photo")
-  const playlists = entities.filter((entity) => entity.entity_type === "playlist")
+  const videos = entities.filter(
+    (entity) => semanticKindForEntity(entity, schemas) === "video",
+  )
+  const photos = entities.filter(
+    (entity) => semanticKindForEntity(entity, schemas) === "photo",
+  )
+  const playlists = entities.filter(
+    (entity) => semanticKindForEntity(entity, schemas) === "playlist",
+  )
 
   const relations = []
   for (const video of videos) {
@@ -241,6 +318,7 @@ async function main() {
     relations.push({
       from_entity_id: performance.id,
       to_entity_id: video.id,
+      schema_id: defaultRelationSchemaId,
       relation_type: "has_recording",
       slot: "default",
       sort_order: Number(video.data?.display_order ?? 0),
@@ -254,6 +332,7 @@ async function main() {
     relations.push({
       from_entity_id: performance.id,
       to_entity_id: photo.id,
+      schema_id: defaultRelationSchemaId,
       relation_type: "has_photo",
       slot: photo.data?.category ?? "performance",
       sort_order: Number(photo.data?.display_order ?? 0),
@@ -268,6 +347,7 @@ async function main() {
       relations.push({
         from_entity_id: playlist.id,
         to_entity_id: video.id,
+        schema_id: defaultRelationSchemaId,
         relation_type: "contains_video",
         slot: "default",
         sort_order: Number(video.data?.display_order ?? 0),
@@ -296,44 +376,34 @@ async function main() {
     label: "clear section entities",
   })
 
-  const allPerformances = requireOk(
-    await supabase
-      .from("entities")
-      .select("id,slug,entity_type,title,sort_at,data,published")
-      .eq("entity_type", "performance")
-      .eq("published", true),
+  const allPerformances = await loadPublishedEntitiesBySemanticKind(
+    supabase,
+    schemas,
+    "performance",
     "load all performances",
   )
-  const allVideos = requireOk(
-    await supabase
-      .from("entities")
-      .select("id,slug,entity_type,title,sort_at,data,published")
-      .eq("entity_type", "video")
-      .eq("published", true),
+  const allVideos = await loadPublishedEntitiesBySemanticKind(
+    supabase,
+    schemas,
+    "video",
     "load all videos",
   )
-  const allPhotos = requireOk(
-    await supabase
-      .from("entities")
-      .select("id,slug,entity_type,title,sort_at,data,published")
-      .eq("entity_type", "photo")
-      .eq("published", true),
+  const allPhotos = await loadPublishedEntitiesBySemanticKind(
+    supabase,
+    schemas,
+    "photo",
     "load all photos",
   )
-  const allPlaylists = requireOk(
-    await supabase
-      .from("entities")
-      .select("id,slug,entity_type,title,sort_at,data,published")
-      .eq("entity_type", "playlist")
-      .eq("published", true),
+  const allPlaylists = await loadPublishedEntitiesBySemanticKind(
+    supabase,
+    schemas,
+    "playlist",
     "load all playlists",
   )
-  const allHistory = requireOk(
-    await supabase
-      .from("entities")
-      .select("id,slug,entity_type,title,sort_at,data,published")
-      .eq("entity_type", "history_milestone")
-      .eq("published", true),
+  const allHistory = await loadPublishedEntitiesBySemanticKind(
+    supabase,
+    schemas,
+    "history_milestone",
     "load all history",
   )
 

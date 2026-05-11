@@ -20,12 +20,30 @@ import {
 type EntityRow = Database["public"]["Tables"]["entities"]["Row"]
 type PageRow = Database["public"]["Tables"]["pages"]["Row"]
 type EntityRelationRow = Database["public"]["Tables"]["entity_relations"]["Row"]
+type ContentEntityRow = Pick<
+  EntityRow,
+  | "id"
+  | "schema_id"
+  | "slug"
+  | "title"
+  | "subtitle"
+  | "summary"
+  | "thumbnail_url"
+  | "data"
+  | "sort_at"
+>
 
 const PAGE_SECTION_RELATION_SCHEMA_KEY = "relation/page-section/v1"
 const SECTION_ENTITY_RELATION_SCHEMA_KEY = "relation/section-entity/v1"
+const PAGE_ENTITY_SCHEMA_KEY = "page/default/v1"
+const PAGE_SHADOW_PREFIX = "page:"
+const SECTION_SHADOW_PREFIX = "section:"
+const CONTENT_ENTITY_SELECT =
+  "id, schema_id, slug, title, subtitle, summary, thumbnail_url, data, sort_at"
 
 export type GraphSectionItem = {
-  entity: EntityRow
+  entity: ContentEntityRow
+  semanticKind: string
   relationType: string
   slot: string
   sortOrder: number
@@ -36,6 +54,7 @@ export type GraphSection = {
   id: string
   key: string
   sectionType: string
+  schemaId: string
   schemaKey: string
   eyebrow: string | null
   title: string | null
@@ -280,12 +299,21 @@ type GraphPageLoadOptions = {
 
 type EntityGraphLink = {
   id: string
-  source_table: string | null
-  source_id: string | null
+  slug: string | null
+  schema_id: string
 }
 
 type EntityGraphRelation = EntityRelationRow & {
   toEntity?: EntityGraphLink | null
+}
+
+type PublicSupabaseClient = ReturnType<typeof createPublicClient>
+
+type ContentGraphSchemaContext = {
+  pageSchemaId: string
+  pageSectionRelationSchemaId: string
+  sectionEntityRelationSchemaId: string
+  schemaKeyById: Map<string, string>
 }
 
 function hasSupabaseEnv() {
@@ -305,6 +333,77 @@ function jsonObject(value: Json): Record<string, Json | undefined> {
 
 function uniqueStrings(values: Array<string | null | undefined>) {
   return [...new Set(values.filter((value): value is string => Boolean(value)))]
+}
+
+function shadowSlug(sourceTable: "pages" | "sections", sourceKey: string) {
+  return `${sourceTable === "pages" ? PAGE_SHADOW_PREFIX : SECTION_SHADOW_PREFIX}${sourceKey}`
+}
+
+function shadowKey(
+  entity: EntityGraphLink | null | undefined,
+  sourceTable: "pages" | "sections",
+) {
+  const prefix = sourceTable === "pages" ? PAGE_SHADOW_PREFIX : SECTION_SHADOW_PREFIX
+  return entity?.slug?.startsWith(prefix) ? entity.slug.slice(prefix.length) : null
+}
+
+async function loadContentGraphSchemaContext(
+  supabase: PublicSupabaseClient,
+): Promise<ContentGraphSchemaContext | null> {
+  const { data, error } = await supabase
+    .from("entity_schemas")
+    .select("id, schema_key")
+    .eq("active", true)
+
+  if (error || !data) return null
+
+  const byKey = new Map(data.map((schema) => [schema.schema_key, schema.id]))
+  const pageSchemaId = byKey.get(PAGE_ENTITY_SCHEMA_KEY)
+  const pageSectionRelationSchemaId = byKey.get(PAGE_SECTION_RELATION_SCHEMA_KEY)
+  const sectionEntityRelationSchemaId = byKey.get(SECTION_ENTITY_RELATION_SCHEMA_KEY)
+
+  if (
+    !pageSchemaId ||
+    !pageSectionRelationSchemaId ||
+    !sectionEntityRelationSchemaId
+  ) {
+    return null
+  }
+
+  return {
+    pageSchemaId,
+    pageSectionRelationSchemaId,
+    sectionEntityRelationSchemaId,
+    schemaKeyById: new Map(data.map((schema) => [schema.id, schema.schema_key])),
+  }
+}
+
+async function loadSemanticKindBySchemaId(
+  supabase: PublicSupabaseClient,
+  entities: ContentEntityRow[],
+) {
+  const schemaIds = uniqueStrings(entities.map((entity) => entity.schema_id))
+  if (!schemaIds.length) return new Map<string, string>()
+
+  const { data, error } = await supabase
+    .from("entity_schemas")
+    .select("id, semantic_kind")
+    .in("id", schemaIds)
+
+  if (error || !data) return new Map<string, string>()
+
+  return new Map(
+    data
+      .filter((schema) => schema.semantic_kind)
+      .map((schema) => [schema.id, schema.semantic_kind]),
+  )
+}
+
+function semanticKindForEntity(
+  entity: ContentEntityRow,
+  semanticKindBySchemaId: Map<string, string>,
+) {
+  return semanticKindBySchemaId.get(entity.schema_id) ?? "unregistered"
 }
 
 function stringArrayValue(data: Record<string, Json | undefined>, key: string) {
@@ -525,15 +624,18 @@ async function loadGraphPageFromEntityRelations({
   page,
   includeDrafts,
 }: {
-  supabase: ReturnType<typeof createPublicClient>
+  supabase: PublicSupabaseClient
   page: PageRow
   includeDrafts: boolean
 }): Promise<GraphPage> {
+  const schemas = await loadContentGraphSchemaContext(supabase)
+  if (!schemas) return { page, sections: [] }
+
   const { data: pageEntity, error: pageEntityError } = await supabase
     .from("entities")
     .select("id")
-    .eq("source_table", "pages")
-    .eq("source_id", page.id)
+    .eq("schema_id", schemas.pageSchemaId)
+    .eq("slug", shadowSlug("pages", page.slug))
     .maybeSingle()
 
   if (pageEntityError || !pageEntity) return { page, sections: [] }
@@ -543,10 +645,10 @@ async function loadGraphPageFromEntityRelations({
     .select(
       `
         *,
-        toEntity:entities!entity_relations_to_entity_id_fkey(id, source_table, source_id)
+        toEntity:entities!entity_relations_to_entity_id_fkey(id, slug, schema_id)
       `,
     )
-    .eq("schema_key", PAGE_SECTION_RELATION_SCHEMA_KEY)
+    .eq("schema_id", schemas.pageSectionRelationSchemaId)
     .eq("from_entity_id", pageEntity.id)
     .order("sort_order", { ascending: true })
 
@@ -556,17 +658,16 @@ async function loadGraphPageFromEntityRelations({
 
   const graphPageSections =
     pageSectionRelations as unknown as EntityGraphRelation[]
-  const sectionIds = uniqueStrings(
-    graphPageSections.map((relation) =>
-      relation.toEntity?.source_table === "sections"
-        ? relation.toEntity.source_id
-        : null,
-    ),
+  const sectionKeys = uniqueStrings(
+    graphPageSections.map((relation) => shadowKey(relation.toEntity, "sections")),
   )
 
-  if (!sectionIds.length) return { page, sections: [] }
+  if (!sectionKeys.length) return { page, sections: [] }
 
-  let sectionsQuery = supabase.from("sections").select("*").in("id", sectionIds)
+  let sectionsQuery = supabase
+    .from("sections")
+    .select("id, key, section_type, schema_id, eyebrow, title, subtitle, props")
+    .in("key", sectionKeys)
 
   if (!includeDrafts) {
     sectionsQuery = sectionsQuery.eq("published", true)
@@ -586,7 +687,7 @@ async function loadGraphPageFromEntityRelations({
       ? await supabase
           .from("entity_relations")
           .select("*")
-          .eq("schema_key", SECTION_ENTITY_RELATION_SCHEMA_KEY)
+          .eq("schema_id", schemas.sectionEntityRelationSchemaId)
           .in("from_entity_id", sectionShadowIds)
       : { data: [], error: null }
 
@@ -598,12 +699,15 @@ async function loadGraphPageFromEntityRelations({
     graphSectionEntities.map((relation) => relation.to_entity_id),
   )
   let entitiesResult: {
-    data: EntityRow[] | null
+    data: ContentEntityRow[] | null
     error: { message: string } | null
   } = { data: [], error: null }
 
   if (entityIds.length) {
-    let entitiesQuery = supabase.from("entities").select("*").in("id", entityIds)
+    let entitiesQuery = supabase
+      .from("entities")
+      .select(CONTENT_ENTITY_SELECT)
+      .in("id", entityIds)
 
     if (!includeDrafts) {
       entitiesQuery = entitiesQuery.eq("published", true)
@@ -616,14 +720,16 @@ async function loadGraphPageFromEntityRelations({
 
   if (entitiesError) return { page, sections: [] }
 
-  const sectionById = new Map(sections.map((section) => [section.id, section]))
-  const sectionIdByShadowId = new Map(
+  const semanticKindBySchemaId = await loadSemanticKindBySchemaId(
+    supabase,
+    entities ?? [],
+  )
+  const sectionByKey = new Map(sections.map((section) => [section.key, section]))
+  const sectionKeyByShadowId = new Map(
     graphPageSections
       .map((relation) => [
         relation.toEntity?.id,
-        relation.toEntity?.source_table === "sections"
-          ? relation.toEntity.source_id
-          : null,
+        shadowKey(relation.toEntity, "sections"),
       ])
       .filter((entry): entry is [string, string] => Boolean(entry[0] && entry[1])),
   )
@@ -635,37 +741,39 @@ async function loadGraphPageFromEntityRelations({
       left.sort_order - right.sort_order ||
       left.created_at.localeCompare(right.created_at),
   )) {
-    const sectionId = sectionIdByShadowId.get(relation.from_entity_id)
+    const sectionKey = sectionKeyByShadowId.get(relation.from_entity_id)
+    const section = sectionKey ? sectionByKey.get(sectionKey) : null
     const entity = entityById.get(relation.to_entity_id)
-    if (!sectionId || !entity) continue
+    if (!section || !entity) continue
 
-    const existing = itemsBySectionId.get(sectionId) ?? []
+    const existing = itemsBySectionId.get(section.id) ?? []
     existing.push({
       entity,
+      semanticKind: semanticKindForEntity(entity, semanticKindBySchemaId),
       relationType: relation.relation_type,
       slot: relation.slot,
       sortOrder: relation.sort_order,
       props: relation.props,
     })
-    itemsBySectionId.set(sectionId, existing)
+    itemsBySectionId.set(section.id, existing)
   }
 
   return {
     page,
     sections: graphPageSections
       .map((relation) => {
-        const sectionId =
-          relation.toEntity?.source_table === "sections"
-            ? relation.toEntity.source_id
-            : null
-        const section = sectionId ? sectionById.get(sectionId) : null
+        const sectionKey = shadowKey(relation.toEntity, "sections")
+        const section = sectionKey ? sectionByKey.get(sectionKey) : null
         if (!section) return null
 
         return {
           id: section.id,
           key: section.key,
           sectionType: section.section_type,
-          schemaKey: section.schema_key,
+          schemaId: section.schema_id,
+          schemaKey:
+            schemas.schemaKeyById.get(section.schema_id) ??
+            `unregistered:${section.schema_id}`,
           eyebrow: section.eyebrow,
           title: section.title,
           subtitle: section.subtitle,
@@ -698,7 +806,7 @@ function sectionByKey(page: GraphPage | null, key: string) {
 function siteNavigationItemFromSectionItem(
   item: GraphSectionItem,
 ): SiteNavigationItem | null {
-  if (item.entity.entity_type !== "navigation_item") return null
+  if (item.semanticKind !== "navigation_item") return null
 
   const data = jsonObject(item.entity.data)
   const href = stringValue(data, "href")
@@ -711,7 +819,7 @@ function siteNavigationItemFromSectionItem(
 }
 
 function siteContactFromSectionItem(item: GraphSectionItem): SiteContactItem | null {
-  if (item.entity.entity_type !== "contact_item") return null
+  if (item.semanticKind !== "contact_item") return null
 
   const data = jsonObject(item.entity.data)
   const value = item.entity.title || stringValue(data, "value")
@@ -724,7 +832,7 @@ function siteContactFromSectionItem(item: GraphSectionItem): SiteContactItem | n
 }
 
 function siteSocialFromSectionItem(item: GraphSectionItem): SiteSocialItem | null {
-  if (item.entity.entity_type !== "social_link") return null
+  if (item.semanticKind !== "social_link") return null
 
   const data = jsonObject(item.entity.data)
   const href = stringValue(data, "href")
@@ -834,7 +942,7 @@ async function loadSiteChromeUncached(): Promise<SiteChrome | null> {
   }
 }
 
-function performanceFromEntity(entity: EntityRow): PerformanceArchiveItem | null {
+function performanceFromEntity(entity: ContentEntityRow): PerformanceArchiveItem | null {
   const data = jsonObject(entity.data)
   const isoDate = stringValue(data, "event_date") ?? entity.sort_at.slice(0, 10)
   const year = isoDate.slice(0, 4)
@@ -859,7 +967,9 @@ function sortRelations(left: EntityRelationRow, right: EntityRelationRow) {
   return left.sort_order - right.sort_order || left.created_at.localeCompare(right.created_at)
 }
 
-function performanceUpdateFromEntity(entity: EntityRow): PerformanceUpdateItem | null {
+function performanceUpdateFromEntity(
+  entity: ContentEntityRow,
+): PerformanceUpdateItem | null {
   const data = jsonObject(entity.data)
   const isoDate = stringValue(data, "taken_at") ?? entity.sort_at.slice(0, 10)
 
@@ -877,7 +987,7 @@ function performanceUpdateFromEntity(entity: EntityRow): PerformanceUpdateItem |
 }
 
 function videoFromEntity(
-  entity: EntityRow,
+  entity: ContentEntityRow,
   performanceSlugById: Map<string, string>,
 ): Video | null {
   const data = jsonObject(entity.data)
@@ -908,7 +1018,7 @@ function videoFromEntity(
   }
 }
 
-function historyFromEntity(entity: EntityRow): HistoryMilestoneItem | null {
+function historyFromEntity(entity: ContentEntityRow): HistoryMilestoneItem | null {
   const data = jsonObject(entity.data)
   const year = stringValue(data, "year") ?? entity.title.match(/\d{4}/)?.[0]
 
@@ -923,7 +1033,7 @@ function historyFromEntity(entity: EntityRow): HistoryMilestoneItem | null {
   }
 }
 
-function photoFromEntity(entity: EntityRow): PhotoArchiveItem | null {
+function photoFromEntity(entity: ContentEntityRow): PhotoArchiveItem | null {
   const data = jsonObject(entity.data)
 
   if (booleanValue(data, "gallery_include") === false) return null
@@ -959,7 +1069,7 @@ function homeVideoFromSectionItem(
 }
 
 function homeStatFromSectionItem(item: GraphSectionItem): HomeCurationStatItem | null {
-  if (item.entity.entity_type !== "stat") return null
+  if (item.semanticKind !== "stat") return null
 
   const data = jsonObject(item.entity.data)
   const detail =
@@ -984,7 +1094,7 @@ function homeStatFromSectionItem(item: GraphSectionItem): HomeCurationStatItem |
 function homeActivityFromSectionItem(
   item: GraphSectionItem,
 ): HomeCurationActivityItem | null {
-  if (item.entity.entity_type !== "activity") return null
+  if (item.semanticKind !== "activity") return null
 
   const data = jsonObject(item.entity.data)
 
@@ -1004,8 +1114,8 @@ async function loadPerformanceSlugsById(includeDrafts = false) {
     ? await loadGraphPageUncached({ slug: "performances", includeDrafts: true })
     : await loadGraphPage("performances")
   const entries = sectionItems(page, "performances-archive")
+    .filter((item) => item.semanticKind === "performance")
     .map((item) => item.entity)
-    .filter((entity) => entity.entity_type === "performance")
 
   return new Map(entries.map((entity) => [entity.id, entity.slug ?? entity.id]))
 }
@@ -1066,8 +1176,8 @@ async function loadPerformancePlaylistsFromPage(
   options: { includeDrafts?: boolean } = {},
 ) {
   const performanceEntities = sectionItems(page, "performances-archive")
+    .filter((item) => item.semanticKind === "performance")
     .map((item) => item.entity)
-    .filter((entity) => entity.entity_type === "performance")
 
   if (!performanceEntities.length || !hasSupabaseEnv()) return null
 
@@ -1095,14 +1205,14 @@ async function loadPerformancePlaylistsFromPage(
       ...new Set((relations ?? []).map((relation) => relation.to_entity_id)),
     ]
     let relatedEntitiesResult: {
-      data: EntityRow[] | null
+      data: ContentEntityRow[] | null
       error: { message: string } | null
     } = { data: [], error: null }
 
     if (relatedIds.length) {
       let relatedEntitiesQuery = supabase
         .from("entities")
-        .select("*")
+        .select(CONTENT_ENTITY_SELECT)
         .in("id", relatedIds)
 
       if (!includeDrafts) {
@@ -1117,6 +1227,10 @@ async function loadPerformancePlaylistsFromPage(
     if (relatedEntitiesError) return null
 
     const entityById = new Map((relatedEntities ?? []).map((entity) => [entity.id, entity]))
+    const relatedSemanticKindBySchemaId = await loadSemanticKindBySchemaId(
+      supabase,
+      relatedEntities ?? [],
+    )
     const relationsByPerformance = new Map<string, EntityRelationRow[]>()
 
     for (const relation of [...(relations ?? [])].sort(sortRelations)) {
@@ -1133,24 +1247,36 @@ async function loadPerformancePlaylistsFromPage(
         const related = relationsByPerformance.get(entity.id) ?? []
         const videos = related
           .map((relation) => entityById.get(relation.to_entity_id))
-          .filter((relatedEntity): relatedEntity is EntityRow =>
-            Boolean(relatedEntity && relatedEntity.entity_type === "video"),
+          .filter((relatedEntity): relatedEntity is ContentEntityRow =>
+            Boolean(
+              relatedEntity &&
+                semanticKindForEntity(relatedEntity, relatedSemanticKindBySchemaId) ===
+                  "video",
+            ),
           )
           .map((relatedEntity) => videoFromEntity(relatedEntity, performanceSlugById))
           .filter((video): video is Video => Boolean(video))
 
         const photos = related
           .map((relation) => entityById.get(relation.to_entity_id))
-          .filter((relatedEntity): relatedEntity is EntityRow =>
-            Boolean(relatedEntity && relatedEntity.entity_type === "photo"),
+          .filter((relatedEntity): relatedEntity is ContentEntityRow =>
+            Boolean(
+              relatedEntity &&
+                semanticKindForEntity(relatedEntity, relatedSemanticKindBySchemaId) ===
+                  "photo",
+            ),
           )
           .map((relatedEntity) => photoFromEntity(relatedEntity))
           .filter((photo): photo is PhotoArchiveItem => Boolean(photo))
 
         const updates = related
           .map((relation) => entityById.get(relation.to_entity_id))
-          .filter((relatedEntity): relatedEntity is EntityRow =>
-            Boolean(relatedEntity && relatedEntity.entity_type === "post"),
+          .filter((relatedEntity): relatedEntity is ContentEntityRow =>
+            Boolean(
+              relatedEntity &&
+                semanticKindForEntity(relatedEntity, relatedSemanticKindBySchemaId) ===
+                  "post",
+            ),
           )
           .map((relatedEntity) => performanceUpdateFromEntity(relatedEntity))
           .filter((update): update is PerformanceUpdateItem => Boolean(update))
