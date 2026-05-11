@@ -167,6 +167,14 @@ independent authoring field.
 Do not remove the text `schema_key` fields until all loaders, CMS forms,
 migrations, and production data have moved to schema IDs.
 
+Issue #149 tracks the removal preparation for those compatibility mirrors.
+`entity_schemas.schema_key` is not legacy; it remains the stable, human-readable
+registry key. The fields under review are only the duplicated content-row mirror
+columns: `entities.schema_key`, `entities.entity_type`,
+`entity_relations.schema_key`, and `sections.schema_key`. Run
+`pnpm run qa:schema-mirror-removal-readiness` after touching CMS loaders,
+seed/apply scripts, or graph migrations.
+
 Renderer implementations remain in React code. Database schemas may name a
 `renderer_key`, but they must not define executable UI behavior.
 
@@ -176,7 +184,8 @@ Use `sections` columns for section identity:
 
 - `key`
 - `section_type`
-- `schema_key`
+- `schema_id` (canonical schema reference)
+- `schema_key` (compatibility mirror until the final drop migration)
 - `eyebrow`
 - `title`
 - `subtitle`
@@ -194,9 +203,10 @@ Use `sections.props` for renderer-level copy and behavior:
 
 Use `entities` columns for shared display identity:
 
-- `entity_type` (compatibility cache; prefer `entity_schemas.semantic_kind` for
+- `schema_id` (canonical schema reference)
+- `entity_type` (compatibility mirror; prefer `entity_schemas.semantic_kind` for
   new CMS/runtime logic; not exposed as a CMS editor field)
-- `schema_key`
+- `schema_key` (compatibility mirror)
 - `slug`
 - `title`
 - `subtitle`
