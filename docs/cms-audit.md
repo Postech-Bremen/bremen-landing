@@ -4,17 +4,21 @@ PONIX CMS writes are admin-gated, but they still mutate shared content rows.
 The audit layer is intentionally append-only and recovery-focused: it records
 what changed, but it does not add broad rollback controls in the first slice.
 
-## First Slice
+## Current Content Graph Audit Scope
 
-Migration `20260505000039_cms_audit_events.sql` adds
-`public.cms_audit_events` and database triggers on:
+Migration `20260505000039_cms_audit_events.sql` introduced
+`public.cms_audit_events`. After the legacy mirror removal in
+`20260509000048_drop_legacy_mirror_tables.sql`, active CMS content graph audit
+coverage is centered on:
 
 - `pages`
 - `sections`
 - `entities`
-- `page_sections`
-- `section_entities`
 - `entity_relations`
+
+Historical audit rows can still contain `target_table` values for removed
+legacy mirror tables. Treat those as immutable history, not active write
+targets.
 
 Each audit event stores:
 

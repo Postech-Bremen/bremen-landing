@@ -1,16 +1,40 @@
 # Legacy Mirror Stage 5 Runbook
 
-Stage 5 removes the legacy composition mirror tables:
+Status: completed. Stage 5 removed the legacy composition mirror tables through
+`20260509000048_drop_legacy_mirror_tables.sql`.
+
+The removed tables were:
 
 - `public.page_sections`
 - `public.section_entities`
 
-This is destructive. Do not apply the migration until a maintainer explicitly
-approves the production write after reviewing the preflight output.
+This runbook is retained as a historical safety record and rollback reference.
+Do not use it as an instruction to recreate the legacy mirrors during normal
+CMS work.
 
 ## Current Production Snapshot
 
-Captured on 2026-05-09 with Supabase MCP read-only queries:
+Captured on 2026-05-11 with `pnpm run qa:legacy-media-table-readiness`,
+`pnpm run qa:legacy-mirror-readiness`, and Supabase MCP `list_tables`:
+
+- `public.page_sections`: removed.
+- `public.section_entities`: removed.
+- `public.performances`: removed.
+- `public.videos`: removed.
+- `public.photos`: removed.
+- Active public tables: `members`, `entities`, `entity_relations`, `pages`,
+  `sections`, `cms_audit_events`, `entity_schemas`.
+- Entity graph media summary: 33 performance entities, 215 video entities, 31
+  photo entities.
+- `qa:legacy-mirror-readiness` reports zero active blocker references.
+- Follow-up migration `20260511000052_retire_legacy_relation_source_markers.sql`
+  retires inert `entity_relations.source_table/source_id` markers that pointed
+  to the removed mirror rows.
+
+## Historical Pre-Drop Snapshot
+
+Captured on 2026-05-09 with Supabase MCP read-only queries before the
+destructive migration:
 
 - `page_sections`: 16 rows.
 - `section_entities`: 400 rows.
@@ -20,12 +44,13 @@ Captured on 2026-05-09 with Supabase MCP read-only queries:
 - Historical `cms_audit_events.target_table = 'section_entities'`: 35 rows.
 - No public/private views reference the legacy mirrors.
 
-The graph rows are the canonical runtime source. The legacy row counts are kept
-here only to make the destructive boundary explicit.
+The graph rows were already the canonical runtime source. The legacy row counts
+are kept here only to make the destructive boundary explicit.
 
-## Local Preflight
+## Historical Local Preflight
 
-Run these before writing or applying the destructive migration:
+These checks were required before writing or applying the destructive
+migration:
 
 ```bash
 pnpm run qa:legacy-mirror-stage5-preflight
@@ -45,9 +70,9 @@ pnpm run build
 At this point, the expected remaining static references are historical
 migrations, docs, static guard self-tests, and Stage 5 compatibility migrations.
 
-## Supabase MCP Preflight
+## Historical Supabase MCP Preflight
 
-Run these as read-only checks immediately before approval/application:
+These read-only checks were required immediately before approval/application:
 
 ```sql
 select table_name, table_type
@@ -109,13 +134,13 @@ group by target_table
 order by target_table;
 ```
 
-Expected function references before the destructive migration:
+Expected function references before the destructive migration were:
 
 - `private.record_cms_audit_event()`
 - `private.sync_page_section_relation_bridge()`
 - `private.sync_section_entity_relation_bridge()`
 
-Expected legacy table triggers before the destructive migration:
+Expected legacy table triggers before the destructive migration were:
 
 - `page_sections_cms_audit`
 - `page_sections_entity_relation_bridge`
@@ -124,18 +149,19 @@ Expected legacy table triggers before the destructive migration:
 - `section_entities_entity_relation_bridge`
 - `section_entities_set_updated_at`
 
-Expected entity relation bridge triggers before cleanup:
+Expected entity relation bridge triggers before cleanup were:
 
 - `entity_relations_source_bridge_insert`
 - `entity_relations_source_bridge_update`
 - `entity_relations_source_bridge_delete`
 
-## Migration Shape
+## Applied Migration Shape
 
-The reviewed migration should avoid `cascade` unless a fresh catalog preflight
-proves an unexpected dependency must be removed deliberately.
+The reviewed migration avoided `cascade`; if a future migration fails because of
+an unexpected dependency, stop and inspect the dependency instead of broadening
+the destructive operation.
 
-Recommended order:
+Applied order:
 
 1. Drop the no-op `entity_relations_source_bridge_*` triggers.
 2. Drop legacy table triggers explicitly.
@@ -154,10 +180,7 @@ Reviewed draft migration:
 
 - `supabase/migrations/20260509000048_drop_legacy_mirror_tables.sql`
 
-Do not apply this migration to production until the maintainer gives explicit
-production-write approval in the active session. The migration is intentionally
-plain `drop table if exists` without `cascade`; if it fails, stop and inspect
-the dependency instead of broadening the destructive operation.
+The migration is intentionally plain `drop table if exists` without `cascade`.
 
 ## Rollback Plan
 

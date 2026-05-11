@@ -84,6 +84,12 @@ const categories = {
     removalBlocker: false,
     note: "The reviewed Stage 5 migration intentionally names the legacy mirrors it removes.",
   },
+  legacy_relation_source_retirement_migration: {
+    label: "Legacy relation source marker retirement migration",
+    stage: null,
+    removalBlocker: false,
+    note: "The follow-up cleanup migration intentionally names retired source_table marker values.",
+  },
   bridge_compatibility_marker: {
     label: "Bridge compatibility markers",
     stage: 2,
@@ -209,6 +215,13 @@ function classify(file, line = "") {
     return "legacy_mirror_removal_migration"
   }
 
+  if (
+    file ===
+    "supabase/migrations/20260511000052_retire_legacy_relation_source_markers.sql"
+  ) {
+    return "legacy_relation_source_retirement_migration"
+  }
+
   if (bridgeCompatibilityMarkerFiles.has(file)) {
     if (
       /\.eq\(\s*["'`]source_table["'`]/.test(line) ||
@@ -257,6 +270,7 @@ function runSelfTest() {
     classify("scripts/generate-instagram-feed-migration.mjs", "'section_entities'"),
     classify("supabase/migrations/20260430000034_private_rls_helpers.sql", "section_entities"),
     classify("supabase/migrations/20260509000048_drop_legacy_mirror_tables.sql", "drop table public.section_entities"),
+    classify("supabase/migrations/20260511000052_retire_legacy_relation_source_markers.sql", "source_table in ('page_sections', 'section_entities')"),
     classify("supabase/migrations/20260429000009_scraped_content_seed.sql", "page_sections"),
     classify("docs/content-graph.md", "`section_entities`"),
   ]

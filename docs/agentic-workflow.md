@@ -9,7 +9,7 @@ Start from an issue. If no issue exists, the first agent task is to draft one us
 Agents should classify every task as one or more of:
 
 - `code`: React, Next.js, Tailwind, shadcn/ui, loaders, validation, tests
-- `content`: `pages`, `sections`, `entities`, `section_entities`, `entity_relations`
+- `content`: `pages`, `sections`, `entities`, `entity_relations`
 - `schema`: tables, columns, indexes, functions, triggers, RLS, storage policies
 - `ops`: Vercel, Supabase Auth, SMTP, domains, environment variables
 - `research`: YouTube, Instagram, history PDF, references, visual direction
@@ -134,7 +134,8 @@ For content graph tasks:
 1. Identify page slug and section keys.
 2. Determine whether this is content data, renderer behavior, or schema.
 3. Prefer upserts by stable keys (`pages.slug`, `sections.key`, `entities.slug`).
-4. Link with `section_entities` or `entity_relations`.
+4. Link with `entity_relations`; the legacy `section_entities` mirror table has
+   been removed.
 5. Verify counts with the query in `docs/content-graph.md`.
 
 For schema tasks:
