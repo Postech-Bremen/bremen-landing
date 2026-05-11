@@ -27,7 +27,7 @@ import {
   editableSectionFieldsForSchema,
   type CmsEditableSectionField,
 } from "@/lib/cms/section-editor"
-import { loadSectionEditorSchema } from "@/lib/cms/section-editor.server"
+import { loadSectionEditorSchemaById } from "@/lib/cms/section-editor.server"
 
 import { CmsSectionLivePreview } from "./cms-live-preview"
 
@@ -44,7 +44,7 @@ export async function CmsSectionEditorPage({
   error?: string
   saved?: boolean
 }) {
-  const schema = await loadSectionEditorSchema(detail.schemaKey)
+  const schema = await loadSectionEditorSchemaById(detail.row.schema_id)
   const editableFields = schema ? editableSectionFieldsForSchema(schema) : []
   const columnFields = editableFields.filter((field) => field.source === "column")
   const propsFields = editableFields.filter((field) => field.source === "props")
@@ -122,7 +122,7 @@ export async function CmsSectionEditorPage({
                 <CardContent className="grid gap-4 px-6 py-6 md:grid-cols-3">
                   <ReadonlyMeta label="Key" value={detail.row.key} />
                   <ReadonlyMeta label="Renderer" value={detail.row.section_type} />
-                  <ReadonlyMeta label="Schema" value={detail.row.schema_key} />
+                  <ReadonlyMeta label="Schema" value={detail.schemaKey} />
                 </CardContent>
               </Card>
 

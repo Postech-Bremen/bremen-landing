@@ -4,9 +4,6 @@ import { createClient } from "@/lib/supabase/server"
 import type { Database, Json } from "@/lib/supabase/types"
 
 import {
-  cmsSchemaRegistry,
-  getCmsSchema,
-  getCmsSchemasByKind,
   type CmsFieldDefinition,
   type CmsFieldOption,
   type CmsFieldSource,
@@ -17,6 +14,7 @@ import {
 
 type EntitySchemaRow = Pick<
   Database["public"]["Tables"]["entity_schemas"]["Row"],
+  | "id"
   | "schema_key"
   | "kind"
   | "table_name"
@@ -24,6 +22,8 @@ type EntitySchemaRow = Pick<
   | "description"
   | "fields"
   | "relation_slots"
+  | "semantic_kind"
+  | "semantic_group"
 >
 
 const fieldTypes = new Set<CmsFieldType>([
@@ -158,13 +158,16 @@ function normalizeSchemaRow(row: EntitySchemaRow): CmsSchemaDefinition | null {
     !schemaTables.has(table as CmsSchemaDefinition["table"]) ||
     !fields
   ) {
-    return getCmsSchema(row.schema_key)
+    return null
   }
 
   return {
+    schemaId: row.id,
     schemaKey: row.schema_key,
     kind: kind as CmsSchemaKind,
     table: table as CmsSchemaDefinition["table"],
+    semanticKind: stringValue(row.semantic_kind) ?? "generic",
+    semanticGroup: stringValue(row.semantic_group) ?? undefined,
     label: row.label,
     description: row.description,
     fields,
@@ -177,26 +180,19 @@ export const loadCmsSchemaRegistry = cache(
     const supabase = await createClient()
     const { data, error } = await supabase
       .from("entity_schemas")
-      .select("schema_key, kind, table_name, label, description, fields, relation_slots")
+      .select(
+        "id, schema_key, kind, table_name, semantic_kind, semantic_group, label, description, fields, relation_slots",
+      )
       .eq("active", true)
       .order("schema_key", { ascending: true })
 
     if (error) {
-      return cmsSchemaRegistry
+      throw new Error(`Failed to load CMS schema registry: ${error.message}`)
     }
 
-    const byKey = new Map(
-      cmsSchemaRegistry.map((schema) => [schema.schemaKey, schema]),
-    )
-
-    for (const row of data ?? []) {
-      const schema = normalizeSchemaRow(row)
-      if (schema) {
-        byKey.set(schema.schemaKey, schema)
-      }
-    }
-
-    return [...byKey.values()]
+    return (data ?? [])
+      .map((row) => normalizeSchemaRow(row))
+      .filter((schema): schema is CmsSchemaDefinition => Boolean(schema))
   },
 )
 
@@ -209,11 +205,15 @@ export const loadCmsSchemaRegistryMap = cache(
 
 export async function loadCmsSchema(schemaKey: string) {
   const registry = await loadCmsSchemaRegistryMap()
-  return registry.get(schemaKey) ?? getCmsSchema(schemaKey)
+  return registry.get(schemaKey) ?? null
+}
+
+export async function loadCmsSchemaById(schemaId: string) {
+  const registry = await loadCmsSchemaRegistry()
+  return registry.find((schema) => schema.schemaId === schemaId) ?? null
 }
 
 export async function loadCmsSchemasByKind(kind: CmsSchemaKind) {
   const registry = await loadCmsSchemaRegistry()
-  const schemas = registry.filter((schema) => schema.kind === kind)
-  return schemas.length ? schemas : getCmsSchemasByKind(kind)
+  return registry.filter((schema) => schema.kind === kind)
 }

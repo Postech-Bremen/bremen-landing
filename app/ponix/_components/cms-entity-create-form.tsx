@@ -17,8 +17,8 @@ import { Label } from "@/components/ui/label"
 import type { CmsSchemaDefinition } from "@/lib/cms/schema-registry"
 import {
   cmsEntityFieldInputName,
-  entityTypeFromSchemaKey,
   editableEntityFieldsForSchema,
+  semanticKindForSchema,
   type CmsEditableEntityField,
 } from "@/lib/cms/entity-editor"
 
@@ -33,7 +33,7 @@ export function CmsEntityCreatePage({
   const columnFields = editableFields.filter((field) => field.source === "column")
   const dataFields = editableFields.filter((field) => field.source === "data")
   const formId = `cms-entity-create-${schema.schemaKey.replace(/[^a-z0-9]+/gi, "-")}`
-  const entityType = entityTypeFromSchemaKey(schema.schemaKey)
+  const semanticKind = semanticKindForSchema(schema)
 
   return (
     <main className="relative min-h-[calc(100vh-5rem)] overflow-hidden">
@@ -55,7 +55,7 @@ export function CmsEntityCreatePage({
             </p>
             <div className="mt-6 flex flex-wrap items-center gap-2">
               <Badge variant="outline" className="rounded-full font-mono">
-                {entityType}
+                {semanticKind}
               </Badge>
               <Badge variant="secondary" className="rounded-full">
                 {schema.schemaKey}
@@ -68,7 +68,7 @@ export function CmsEntityCreatePage({
         </div>
 
         <form id={formId} action={createCmsEntityAction} className="space-y-6">
-          <input type="hidden" name="schema_key" value={schema.schemaKey} />
+          <input type="hidden" name="schema_id" value={schema.schemaId ?? ""} />
 
           {error && (
             <Alert variant="destructive">
@@ -88,7 +88,7 @@ export function CmsEntityCreatePage({
               </CardDescription>
             </CardHeader>
             <CardContent className="grid gap-4 px-6 py-6 md:grid-cols-3">
-              <ReadonlyMeta label="Entity type" value={entityType} />
+              <ReadonlyMeta label="Semantic kind" value={semanticKind} />
               <ReadonlyMeta label="Schema" value={schema.schemaKey} />
               <ReadonlyMeta label="Description" value={schema.description} />
             </CardContent>

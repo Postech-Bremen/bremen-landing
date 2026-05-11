@@ -149,6 +149,24 @@ function indexBy(values, key) {
   return index
 }
 
+async function loadSchemaIdsBySemanticKind(supabase, semanticKind) {
+  const rows = requireOk(
+    await supabase
+      .from("entity_schemas")
+      .select("id")
+      .eq("semantic_kind", semanticKind)
+      .eq("active", true)
+      .order("schema_key", { ascending: true }),
+    `${semanticKind} schemas`,
+  )
+  const ids = rows.map((row) => row.id).filter(Boolean)
+  if (!ids.length) {
+    throw new Error(`No active schema registered for ${semanticKind}`)
+  }
+
+  return ids
+}
+
 async function loadLegacyRows(supabase) {
   const [performances, videos, photos] = await Promise.all([
     supabase
@@ -192,23 +210,28 @@ async function loadLegacyRows(supabase) {
 }
 
 async function loadGraphMediaEntities(supabase, legacyRows) {
+  const [performanceSchemaIds, videoSchemaIds, photoSchemaIds] = await Promise.all([
+    loadSchemaIdsBySemanticKind(supabase, "performance"),
+    loadSchemaIdsBySemanticKind(supabase, "video"),
+    loadSchemaIdsBySemanticKind(supabase, "photo"),
+  ])
   const [performances, videos, photos] = await Promise.all([
     supabase
       .from("entities")
-      .select("id, entity_type, slug, title, published")
-      .eq("entity_type", "performance"),
+      .select("id, schema_id, slug, title, published")
+      .in("schema_id", performanceSchemaIds),
     supabase
       .from("entities")
-      .select("id, entity_type, slug, title, data, published")
-      .eq("entity_type", "video"),
+      .select("id, schema_id, slug, title, data, published")
+      .in("schema_id", videoSchemaIds),
     supabase
       .from("entities")
       .select(
         legacyRows.photos.length
-          ? "id, entity_type, slug, title, data, published"
-          : "id, entity_type, slug, title, published",
+          ? "id, schema_id, slug, title, data, published"
+          : "id, schema_id, slug, title, published",
       )
-      .eq("entity_type", "photo"),
+      .in("schema_id", photoSchemaIds),
   ])
 
   return {

@@ -8,6 +8,7 @@ import {
 
 const rowsPath = process.argv[2] ?? "/tmp/bremen_instagram_seed_rows.json"
 const envPath = ".env.local"
+const defaultRelationSchemaKey = "relation/default/v1"
 
 function loadEnv(path) {
   const text = readFileSync(path, "utf8")
@@ -45,10 +46,37 @@ async function upsertChunked(supabase, table, rows, options, label) {
   }
 }
 
-function entityRow(row) {
+function schemaIdByKey(schemas, schemaKey) {
+  const schema = schemas.byKey.get(schemaKey)
+  if (!schema?.id) {
+    throw new Error(`Missing active schema ${schemaKey}`)
+  }
+
+  return schema.id
+}
+
+function semanticKindForEntity(entity, schemas) {
+  return schemas.byId.get(entity.schema_id)?.semantic_kind ?? null
+}
+
+async function loadSchemaRegistry(supabase) {
+  const rows = requireOk(
+    await supabase
+      .from("entity_schemas")
+      .select("id,schema_key,semantic_kind")
+      .eq("active", true),
+    "load schema registry",
+  )
+
   return {
-    entity_type: row.entityType,
-    schema_key: row.schemaKey,
+    byKey: new Map(rows.map((schema) => [schema.schema_key, schema])),
+    byId: new Map(rows.map((schema) => [schema.id, schema])),
+  }
+}
+
+function entityRow(row, schemas) {
+  return {
+    schema_id: schemaIdByKey(schemas, row.schemaKey),
     slug: row.slug,
     title: row.title,
     subtitle: null,
@@ -82,13 +110,19 @@ async function main() {
   const supabase = createClient(supabaseUrl, serviceRoleKey, {
     auth: { persistSession: false },
   })
+  const schemas = await loadSchemaRegistry(supabase)
+  const defaultRelationSchemaId = schemaIdByKey(schemas, defaultRelationSchemaKey)
+  const performanceUpdatesSectionSchemaId = schemaIdByKey(
+    schemas,
+    "section/performance-updates/v1",
+  )
 
   requireOk(
     await supabase.from("sections").upsert(
       {
         key: "performances-updates",
         section_type: "entity_post_grid",
-        schema_key: "section/performance-updates/v1",
+        schema_id: performanceUpdatesSectionSchemaId,
         eyebrow: "Notice board",
         title: "Around the stages",
         subtitle: "공연 전후의 소식",
@@ -132,7 +166,7 @@ async function main() {
     )
   }
 
-  const entityRows = rows.map(entityRow)
+  const entityRows = rows.map((row) => entityRow(row, schemas))
   await upsertChunked(
     supabase,
     "entities",
@@ -148,7 +182,7 @@ async function main() {
       ...requireOk(
         await supabase
           .from("entities")
-          .select("id,slug,entity_type,title,sort_at,data,published")
+          .select("id,slug,schema_id,title,sort_at,data,published")
           .in("slug", part),
         "load Instagram entities",
       ),
@@ -195,8 +229,13 @@ async function main() {
       {
         from_entity_id: parent.id,
         to_entity_id: child.id,
-        relation_type: row.entityType === "photo" ? "has_photo" : "has_post",
-        slot: row.entityType === "photo" ? row.data.category : row.data.content_kind,
+        schema_id: defaultRelationSchemaId,
+        relation_type:
+          semanticKindForEntity(child, schemas) === "photo" ? "has_photo" : "has_post",
+        slot:
+          semanticKindForEntity(child, schemas) === "photo"
+            ? row.data.category
+            : row.data.content_kind,
         sort_order: Number(row.data.source_index + 1) * 10,
         props: {},
       },
@@ -234,7 +273,7 @@ async function main() {
   const photos = entities
     .filter(
       (entity) =>
-        entity.entity_type === "photo" &&
+        semanticKindForEntity(entity, schemas) === "photo" &&
         entity.data?.source === "instagram" &&
         entity.data?.gallery_include === true &&
         entity.published,
@@ -244,7 +283,7 @@ async function main() {
   const posts = entities
     .filter(
       (entity) =>
-        entity.entity_type === "post" &&
+        semanticKindForEntity(entity, schemas) === "post" &&
         entity.data?.source === "instagram" &&
         entity.data?.gallery_include === false &&
         entity.published,

@@ -8,6 +8,10 @@ const scanFiles = [
   "scripts/generate-instagram-feed-migration.mjs",
   "scripts/generate-scraped-content-migration.mjs",
 ]
+const applyScriptFiles = new Set([
+  "scripts/apply-instagram-feed.mjs",
+  "scripts/apply-scraped-content.mjs",
+])
 
 const forbiddenPatterns = [
   {
@@ -66,13 +70,58 @@ const forbiddenPatterns = [
     label: "generated legacy relation source_table upsert",
     pattern: /source_table\s*=\s*excluded\.source_table/i,
   },
+  {
+    label: "generated entity_type SQL filter",
+    pattern: /\bentity_type\s*=/i,
+  },
+  {
+    label: "generated entity_type insert column",
+    pattern: /insert\s+into\s+public\.entities\s*\([^)]*\bentity_type\b/i,
+  },
+  {
+    label: "generated section shadow schema_key wildcard",
+    pattern: /\bschema_key\s+like\s+["'`]section\/%["'`]/i,
+  },
+  {
+    label: "generated section schema_key insert column",
+    pattern: /^\s*schema_key,?\s*$/i,
+  },
+  {
+    label: "generated section schema_key upsert",
+    pattern: /\bschema_key\s*=\s*excluded\.schema_key/i,
+  },
+]
+const applyScriptForbiddenPatterns = [
+  {
+    label: "apply script direct entity_type object write",
+    pattern: /\bentity_type\s*:/,
+  },
+  {
+    label: "apply script direct entity_type filter",
+    pattern: /\.eq\(\s*["'`]entity_type["'`]/,
+  },
+  {
+    label: "apply script direct entity_type property branching",
+    pattern: /\.entity_type\b/,
+  },
+  {
+    label: "apply script direct entity_type select",
+    pattern: /\.select\(\s*["'`][^"'`]*entity_type/,
+  },
+  {
+    label: "apply script direct section schema_key write",
+    pattern: /\bschema_key\s*:\s*["'`]section\//,
+  },
 ]
 
 function scanText(file, text) {
   const violations = []
+  const patterns = applyScriptFiles.has(file)
+    ? [...forbiddenPatterns, ...applyScriptForbiddenPatterns]
+    : forbiddenPatterns
 
   for (const [index, line] of text.split(/\r?\n/).entries()) {
-    for (const forbidden of forbiddenPatterns) {
+    for (const forbidden of patterns) {
       if (forbidden.pattern.test(line)) {
         violations.push({
           file,
@@ -100,16 +149,41 @@ function runSelfTest() {
     "scripts/apply-example.mjs",
     "insert into public.entity_relations (source_table) values ('section_entities')",
   )
+  const entityTypeSqlShouldFail = scanText(
+    "scripts/generate-example.mjs",
+    "where entity.entity_type = 'video'",
+  )
+  const sectionSchemaKeySqlShouldFail = scanText(
+    "scripts/generate-example.mjs",
+    "on section_entity.schema_key like 'section/%'",
+  )
+  const sectionSchemaKeyColumnShouldFail = scanText(
+    "scripts/generate-example.mjs",
+    "  schema_key,",
+  )
+  const sectionSchemaKeyUpsertShouldFail = scanText(
+    "scripts/generate-example.mjs",
+    "    schema_key = excluded.schema_key,",
+  )
   const shouldPass = scanText(
     "scripts/apply-example.mjs",
     'await upsertSectionEntityRelations(supabase, rows, "seed links")',
+  )
+  const entityTypeShouldFail = scanText(
+    "scripts/apply-instagram-feed.mjs",
+    'const photos = entities.filter((entity) => entity.entity_type === "photo")',
   )
 
   if (
     shouldFail.length !== 1 ||
     sqlShouldFail.length !== 1 ||
     sourceMarkerShouldFail.length !== 1 ||
-    shouldPass.length !== 0
+    entityTypeSqlShouldFail.length !== 1 ||
+    sectionSchemaKeySqlShouldFail.length !== 1 ||
+    sectionSchemaKeyColumnShouldFail.length !== 1 ||
+    sectionSchemaKeyUpsertShouldFail.length !== 1 ||
+    shouldPass.length !== 0 ||
+    entityTypeShouldFail.length < 1
   ) {
     throw new Error("Self-test failed for graph-primary seed write guard.")
   }
@@ -123,9 +197,10 @@ console.log("Graph-primary seed write guard")
 console.table([
   {
     scannedFiles: scanFiles.length,
-    forbiddenPatterns: forbiddenPatterns.length,
-    violations: violations.length,
-    selfTest: "ok",
+      forbiddenPatterns: forbiddenPatterns.length,
+      applyScriptForbiddenPatterns: applyScriptForbiddenPatterns.length,
+      violations: violations.length,
+      selfTest: "ok",
   },
 ])
 

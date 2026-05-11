@@ -31,6 +31,17 @@ const forbiddenNames = [
   "getEditablePageFields",
 ]
 
+const forbiddenPatterns = [
+  {
+    label: "CMS form posts schema_key instead of schema_id",
+    pattern: /name=["'`]schema_key["'`]/,
+  },
+  {
+    label: "CMS server action reads schema_key from formData",
+    pattern: /stringField\(\s*formData\s*,\s*["'`]schema_key["'`]\s*\)/,
+  },
+]
+
 function repoRelative(filePath) {
   return path.relative(repoRoot, filePath).split(path.sep).join("/")
 }
@@ -74,6 +85,19 @@ function findForbiddenReferences(relativePath, source) {
     })
   }
 
+  for (const forbidden of forbiddenPatterns) {
+    lines.forEach((line, index) => {
+      if (!forbidden.pattern.test(line)) return
+
+      violations.push({
+        file: relativePath,
+        line: index + 1,
+        symbol: forbidden.label,
+        text: line.trim(),
+      })
+    })
+  }
+
   return violations
 }
 
@@ -94,9 +118,21 @@ function runSelfTest() {
       "editableEntityFieldsForSchema(schema)",
     ].join("\n"),
   )
+  const schemaKeyFormShouldFail = findForbiddenReferences(
+    "app/ponix/example/form.tsx",
+    '<input type="hidden" name="schema_key" value={schema.schemaKey} />',
+  )
+  const schemaKeyActionShouldFail = findForbiddenReferences(
+    "app/ponix/example/actions.ts",
+    'const schemaKey = stringField(formData, "schema_key")',
+  )
 
   if (blocked.length === 0) {
     throw new Error("Self-test failed: forbidden sync lookup was not detected.")
+  }
+
+  if (schemaKeyFormShouldFail.length === 0 || schemaKeyActionShouldFail.length === 0) {
+    throw new Error("Self-test failed: schema_key form usage was not detected.")
   }
 
   if (allowedFallback.length > 0 || allowedTypeAndPureHelpers.length > 0) {
@@ -116,7 +152,7 @@ console.table([
   {
     scannedFiles: files.length,
     fallbackFiles: fallbackFiles.size,
-    forbiddenSymbols: forbiddenNames.length,
+    forbiddenSymbols: forbiddenNames.length + forbiddenPatterns.length,
     violations: violations.length,
     selfTest: "ok",
   },
@@ -134,4 +170,3 @@ if (violations.length > 0) {
   )
   process.exit(1)
 }
-

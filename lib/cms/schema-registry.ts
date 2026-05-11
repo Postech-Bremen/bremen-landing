@@ -32,14 +32,20 @@ export type CmsFieldDefinition = {
 }
 
 export type CmsSchemaDefinition = {
+  schemaId?: string
   schemaKey: string
   kind: CmsSchemaKind
   table: "pages" | "sections" | "entities" | "entity_relations"
+  semanticKind: string
+  semanticGroup?: string
   label: string
   description: string
   fields: CmsFieldDefinition[]
   relationSlots?: string[]
 }
+
+type CmsSchemaDraft = Omit<CmsSchemaDefinition, "semanticKind" | "semanticGroup"> &
+  Partial<Pick<CmsSchemaDefinition, "semanticKind" | "semanticGroup">>
 
 const field = (
   source: CmsFieldSource,
@@ -70,10 +76,6 @@ const sectionBaseFields = [
 ]
 
 const entityBaseFields = [
-  field("column", "entity_type", "Entity type", "text", {
-    readOnly: true,
-    required: true,
-  }),
   field("column", "slug", "Slug", "text"),
   field("column", "title", "Title", "text", { required: true }),
   field("column", "subtitle", "Subtitle", "text"),
@@ -89,7 +91,7 @@ const sectionSchema = (
   description: string,
   propsFields: CmsFieldDefinition[] = [],
   relationSlots: string[] = ["default"],
-): CmsSchemaDefinition => ({
+): CmsSchemaDraft => ({
   schemaKey,
   kind: "section",
   table: "sections",
@@ -104,7 +106,7 @@ const entitySchema = (
   label: string,
   description: string,
   dataFields: CmsFieldDefinition[] = [],
-): CmsSchemaDefinition => ({
+): CmsSchemaDraft => ({
   schemaKey,
   kind: "entity",
   table: "entities",
@@ -155,11 +157,61 @@ const videoCollectionKindOptions = [
   textOption("video_collection", "Video collection"),
 ]
 
-export const cmsSchemaRegistry: CmsSchemaDefinition[] = [
+const semanticKindOverrides: Record<string, string> = {
+  "contact/site-footer/v1": "contact_item",
+  "history/milestone/v1": "history_milestone",
+  "navigation/item/v1": "navigation_item",
+  "social/site-footer/v1": "social_link",
+}
+
+const semanticGroupOverrides: Record<string, string> = {
+  "activity/home-card/v1": "home",
+  "contact/site-footer/v1": "site",
+  "navigation/item/v1": "site",
+  "playlist/youtube/v1": "video",
+  "post/instagram/v1": "instagram",
+  "social/site-footer/v1": "site",
+  "stat/home-number/v1": "home",
+}
+
+function defaultSemanticKind(schema: Pick<CmsSchemaDraft, "schemaKey" | "kind">) {
+  if (schema.kind === "page") return "page"
+  if (schema.kind === "section") return "section"
+  if (schema.kind === "relation") return "relation"
+
+  return semanticKindOverrides[schema.schemaKey] ?? schema.schemaKey.split("/")[0] ?? "entity"
+}
+
+function defaultSemanticGroup(schema: Pick<CmsSchemaDraft, "schemaKey" | "kind">) {
+  if (schema.kind === "page") return "site"
+  if (schema.kind === "relation") return "relation"
+  if (semanticGroupOverrides[schema.schemaKey]) {
+    return semanticGroupOverrides[schema.schemaKey]
+  }
+
+  const [family, variant] = schema.schemaKey.split("/")
+  if (schema.kind === "section" && variant) {
+    return variant.split("-")[0] || family
+  }
+
+  return family || schema.kind
+}
+
+function withSemanticDefaults(schema: CmsSchemaDraft): CmsSchemaDefinition {
+  return {
+    ...schema,
+    semanticKind: schema.semanticKind || defaultSemanticKind(schema),
+    semanticGroup: schema.semanticGroup || defaultSemanticGroup(schema),
+  }
+}
+
+const rawCmsSchemaRegistry: CmsSchemaDraft[] = [
   {
     schemaKey: "page/default/v1",
     kind: "page",
     table: "pages",
+    semanticKind: "page",
+    semanticGroup: "site",
     label: "Page",
     description: "Routable page record and page-level metadata.",
     relationSlots: ["sections"],
@@ -610,6 +662,9 @@ export const cmsSchemaRegistry: CmsSchemaDefinition[] = [
     ],
   },
 ]
+
+export const cmsSchemaRegistry: CmsSchemaDefinition[] =
+  rawCmsSchemaRegistry.map(withSemanticDefaults)
 
 export function getCmsSchema(schemaKey: string) {
   return cmsSchemaRegistry.find((schema) => schema.schemaKey === schemaKey) ?? null
