@@ -142,7 +142,7 @@ export async function CmsSectionEditorPage({
 
               <div className="flex flex-col gap-3 rounded-md border bg-card/95 p-4 shadow-xl sm:flex-row sm:items-center sm:justify-between">
                 <p className="text-sm text-muted-foreground">
-                  Saving updates this section row only. Relations and entities stay untouched.
+                  저장하면 이 섹션의 문구와 설정만 바뀝니다. 연결된 데이터는 그대로 둡니다.
                 </p>
                 <div className="flex gap-2">
                   <Button asChild type="button" variant="outline">

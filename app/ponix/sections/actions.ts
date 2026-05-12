@@ -20,8 +20,8 @@ import { PUBLIC_CONTENT_CACHE_TAG } from "@/lib/data/public-cache"
 import { createClient } from "@/lib/supabase/server"
 import type { Database, Json } from "@/lib/supabase/types"
 
-type SectionUpdate = Database["public"]["Tables"]["sections"]["Update"]
-type SectionInsert = Database["public"]["Tables"]["sections"]["Insert"]
+type EntityInsert = Database["public"]["Tables"]["entities"]["Insert"]
+type EntityUpdate = Database["public"]["Tables"]["entities"]["Update"]
 
 type ParsedValue =
   | {
@@ -255,6 +255,58 @@ function updatePropsValue(
   props[field.key] = parsed.value
 }
 
+async function loadSectionSchemaIds(supabase: Awaited<ReturnType<typeof createClient>>) {
+  const { data, error } = await supabase
+    .from("entity_schemas")
+    .select("id")
+    .eq("kind", "section")
+    .eq("active", true)
+
+  const ids = (data ?? []).map((schema) => schema.id).filter(Boolean)
+  if (error || !ids.length) {
+    throw new Error(error?.message ?? "No active section schemas are registered.")
+  }
+
+  return ids
+}
+
+async function ensureSectionKeyAvailable({
+  supabase,
+  key,
+  currentEntityId,
+}: {
+  supabase: Awaited<ReturnType<typeof createClient>>
+  key: string
+  currentEntityId?: string
+}) {
+  const sectionSchemaIds = await loadSectionSchemaIds(supabase)
+  const { data, error } = await supabase
+    .from("entities")
+    .select("id, slug, data")
+    .in("schema_id", sectionSchemaIds)
+
+  if (error) {
+    throw new Error(error.message)
+  }
+
+  const duplicate = (data ?? []).find((entity) => {
+    if (entity.id === currentEntityId) return false
+    const entityData = jsonObject(entity.data)
+    const entityKey =
+      entity.slug?.startsWith("section:")
+        ? entity.slug.slice("section:".length)
+        : typeof entityData.key === "string"
+          ? entityData.key
+          : null
+
+    return entityKey === key
+  })
+
+  if (duplicate) {
+    throw new Error("Section key is already in use.")
+  }
+}
+
 export async function createCmsSectionAction(formData: FormData) {
   const admin = await requireCmsAdmin("/ponix/sections/new")
   const schemaId = stringField(formData, "schema_id")
@@ -278,13 +330,19 @@ export async function createCmsSectionAction(formData: FormData) {
 
   const fields = editableSectionFieldsForSchema(schema)
   const props: CmsJsonObject = {}
-  const insert: SectionInsert = {
-    key: parseSectionKey(formData, createPath),
-    owner_member_id: admin.id,
+  const sectionKey = parseSectionKey(formData, createPath)
+  const data: CmsJsonObject = {
+    key: sectionKey,
+    section_type: sectionType,
     props,
+  }
+  const insert: EntityInsert = {
+    owner_member_id: admin.id,
     published: false,
     schema_id: schemaId,
-    section_type: sectionType,
+    slug: null,
+    title: sectionKey,
+    data,
   }
 
   for (const field of fields) {
@@ -306,11 +364,11 @@ export async function createCmsSectionAction(formData: FormData) {
     }
 
     if (field.key === "eyebrow") {
-      insert.eyebrow = parsed.value === null ? null : String(parsed.value)
+      data.eyebrow = parsed.value === null ? null : String(parsed.value)
     }
 
     if (field.key === "title") {
-      insert.title = parsed.value === null ? null : String(parsed.value)
+      insert.title = parsed.value === null ? sectionKey : String(parsed.value)
     }
 
     if (field.key === "subtitle") {
@@ -319,8 +377,19 @@ export async function createCmsSectionAction(formData: FormData) {
   }
 
   const supabase = await createClient()
+  try {
+    await ensureSectionKeyAvailable({ supabase, key: sectionKey })
+  } catch (error) {
+    redirectWithParams(createPath, {
+      error:
+        error instanceof Error
+          ? error.message
+          : "Section key availability check failed.",
+    })
+  }
+
   const { data: created, error: insertError } = await supabase
-    .from("sections")
+    .from("entities")
     .insert(insert)
     .select("*")
     .single()
@@ -355,7 +424,7 @@ export async function updateCmsSectionAction(formData: FormData) {
 
   const supabase = await createClient()
   const { data: section, error: loadError } = await supabase
-    .from("sections")
+    .from("entities")
     .select("*")
     .eq("id", sectionId)
     .maybeSingle()
@@ -374,8 +443,24 @@ export async function updateCmsSectionAction(formData: FormData) {
   }
 
   const fields = editableSectionFieldsForSchema(schema)
-  const props = jsonObject(section.props)
-  const update: SectionUpdate = {}
+  const data = jsonObject(section.data)
+  const props = jsonObject((data.props ?? null) as Json)
+  const sectionKey =
+    section.slug?.startsWith("section:")
+      ? section.slug.slice("section:".length)
+      : typeof data.key === "string" && data.key.trim()
+        ? data.key
+        : section.id
+  const sectionType =
+    typeof data.section_type === "string" && data.section_type.trim()
+      ? data.section_type
+      : sectionTypeFromSchemaKey(schema.schemaKey)
+  if (!sectionType) {
+    redirectWithParams(editPath, {
+      error: "This section schema has no registered renderer type.",
+    })
+  }
+  const update: EntityUpdate = {}
 
   for (const field of fields) {
     const parsed = parseFieldValue(formData, field)
@@ -396,11 +481,11 @@ export async function updateCmsSectionAction(formData: FormData) {
     }
 
     if (field.key === "eyebrow") {
-      update.eyebrow = parsed.value === null ? null : String(parsed.value)
+      data.eyebrow = parsed.value === null ? null : String(parsed.value)
     }
 
     if (field.key === "title") {
-      update.title = parsed.value === null ? null : String(parsed.value)
+      update.title = parsed.value === null ? sectionKey : String(parsed.value)
     }
 
     if (field.key === "subtitle") {
@@ -408,12 +493,18 @@ export async function updateCmsSectionAction(formData: FormData) {
     }
   }
 
-  update.props = props
+  update.data = {
+    ...data,
+    key: sectionKey,
+    section_type: sectionType,
+    props,
+  }
 
   const { error: updateError } = await supabase
-    .from("sections")
+    .from("entities")
     .update(update)
     .eq("id", sectionId)
+    .eq("schema_id", section.schema_id)
 
   if (updateError) {
     redirectWithParams(editPath, {

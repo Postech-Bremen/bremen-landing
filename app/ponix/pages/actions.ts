@@ -16,7 +16,7 @@ import { PUBLIC_CONTENT_CACHE_TAG } from "@/lib/data/public-cache"
 import { createClient } from "@/lib/supabase/server"
 import type { Database, Json } from "@/lib/supabase/types"
 
-type PageUpdate = Database["public"]["Tables"]["pages"]["Update"]
+type EntityUpdate = Database["public"]["Tables"]["entities"]["Update"]
 
 type ParsedValue =
   | {
@@ -150,6 +150,23 @@ function updatePropsValue(
   props[field.key] = parsed.value
 }
 
+function pageSlugFromEntity({
+  slug,
+  data,
+}: {
+  slug: string | null
+  data: Json
+}) {
+  const props = jsonObject(data)
+  const dataSlug = props.slug
+
+  if (slug?.startsWith("page:")) {
+    return slug.slice("page:".length)
+  }
+
+  return typeof dataSlug === "string" && dataSlug.trim() ? dataSlug : undefined
+}
+
 export async function updateCmsPageAction(formData: FormData) {
   const pageId = stringField(formData, "page_id")
 
@@ -170,22 +187,30 @@ export async function updateCmsPageAction(formData: FormData) {
     })
   }
 
+  if (!schema.schemaId) {
+    redirectWithParams(editPath, {
+      error: "The page editor schema is missing a database id.",
+    })
+  }
+
   const supabase = await createClient()
-  const { data: page, error: loadError } = await supabase
-    .from("pages")
+  const { data: pageEntity, error: loadError } = await supabase
+    .from("entities")
     .select("*")
     .eq("id", pageId)
+    .eq("schema_id", schema.schemaId)
     .maybeSingle()
 
-  if (loadError || !page) {
+  if (loadError || !pageEntity) {
     redirectWithParams(editPath, {
       error: "Page not found.",
     })
   }
 
   const fields = editablePageFieldsForSchema(schema)
-  const props = jsonObject(page.props)
-  const update: PageUpdate = {}
+  const data = jsonObject(pageEntity.data)
+  const props = jsonObject((data.props ?? null) as Json)
+  const update: EntityUpdate = {}
 
   for (const field of fields) {
     const parsed = parseFieldValue(formData, field)
@@ -214,16 +239,20 @@ export async function updateCmsPageAction(formData: FormData) {
     }
 
     if (field.key === "description") {
-      update.description = parsed.value === null ? null : String(parsed.value)
+      update.summary = parsed.value === null ? null : String(parsed.value)
     }
   }
 
-  update.props = props
+  update.data = {
+    ...data,
+    props,
+  }
 
   const { error: updateError } = await supabase
-    .from("pages")
+    .from("entities")
     .update(update)
     .eq("id", pageId)
+    .eq("schema_id", schema.schemaId)
 
   if (updateError) {
     redirectWithParams(editPath, {
@@ -231,7 +260,10 @@ export async function updateCmsPageAction(formData: FormData) {
     })
   }
 
-  revalidatePageSurfaces(pageId, page.slug)
+  revalidatePageSurfaces(
+    pageId,
+    pageSlugFromEntity({ slug: pageEntity.slug, data: pageEntity.data }),
+  )
 
   redirectWithParams(redirectTo, {
     saved: "page",

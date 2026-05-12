@@ -126,8 +126,7 @@ export function CmsSectionCreatePage({
 
           <div className="flex flex-col gap-3 rounded-md border bg-card/95 p-4 shadow-xl sm:flex-row sm:items-center sm:justify-between">
             <p className="text-sm text-muted-foreground">
-              Creation inserts one section row only. Page placement is a
-              separate relation step.
+              섹션을 만든 뒤 페이지에 배치하고 필요한 데이터를 연결합니다.
             </p>
             <div className="flex gap-2">
               <Button asChild type="button" variant="outline">

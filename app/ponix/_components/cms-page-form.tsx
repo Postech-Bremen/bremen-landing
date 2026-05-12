@@ -129,8 +129,7 @@ export async function CmsPageEditorPage({
 
             <div className="flex flex-col gap-3 rounded-md border bg-card/95 p-4 shadow-xl sm:flex-row sm:items-center sm:justify-between">
               <p className="text-sm text-muted-foreground">
-                Saving updates this page row only. Section composition stays
-                untouched.
+                저장하면 페이지 제목, 설명, 공개 상태만 바뀝니다. 섹션 구성은 그대로 둡니다.
               </p>
               <div className="flex gap-2">
                 <Button asChild type="button" variant="outline">
