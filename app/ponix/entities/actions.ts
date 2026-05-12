@@ -22,9 +22,6 @@ import type { Database, Json } from "@/lib/supabase/types"
 type EntityUpdate = Database["public"]["Tables"]["entities"]["Update"]
 type EntityInsert = Database["public"]["Tables"]["entities"]["Insert"]
 type EntityRow = Database["public"]["Tables"]["entities"]["Row"]
-type SchemaDerivedEntityInsert = Omit<EntityInsert, "entity_type" | "schema_key"> & {
-  schema_id: string
-}
 
 type ActionResult =
   | {
@@ -415,7 +412,7 @@ export async function createCmsEntityAction(formData: FormData) {
 
   const fields = editableEntityFieldsForSchema(schema)
   const data: CmsJsonObject = {}
-  const insert: SchemaDerivedEntityInsert = {
+  const insert: EntityInsert = {
     data,
     owner_member_id: admin.id,
     published: false,
@@ -470,8 +467,8 @@ export async function createCmsEntityAction(formData: FormData) {
   const supabase = await createClient()
   const { data: created, error: insertError } = await supabase
     .from("entities")
-    // The DB trigger derives `entity_type` and `schema_key` from `schema_id`.
-    .insert(insert as EntityInsert)
+    // The DB trigger validates schema_id against the registered schema kind.
+    .insert(insert)
     .select("*")
     .single()
 

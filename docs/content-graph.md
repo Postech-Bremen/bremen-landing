@@ -146,32 +146,24 @@ entity_schemas
 
 entities
 - shared identity and display columns
-- required schema_id, with schema_key kept as a compatibility mirror
+- required schema_id
 - flexible data jsonb
 
 entity_relations
 - ordered links between entities
-- required schema_id, with schema_key kept as a compatibility mirror
+- required schema_id
 - slot, relation_type, sort_order
 - relation props as relation-specific data
 ```
 
-For now, `entities.schema_key` and `entity_relations.schema_key` remain public
-compatibility keys. The canonical DB reference is now `schema_id`, and the
-schema registry trigger keeps `schema_id` and `schema_key` synchronized.
-`entity_schemas.semantic_kind` is the broad identity that should replace new
-direct branching on `entities.entity_type`. The DB schema resolver now also
-syncs `entities.entity_type` from `entity_schemas.semantic_kind`, so
-`entity_type` should be treated as a compatibility mirror rather than an
-independent authoring field.
-Do not remove the text `schema_key` fields until all loaders, CMS forms,
-migrations, and production data have moved to schema IDs.
-
-Issue #149 tracks the removal preparation for those compatibility mirrors.
 `entity_schemas.schema_key` is not legacy; it remains the stable, human-readable
-registry key. The fields under review are only the duplicated content-row mirror
-columns: `entities.schema_key`, `entities.entity_type`,
-`entity_relations.schema_key`, and `sections.schema_key`. Run
+registry key. Content rows use `schema_id` as the canonical DB reference, and
+runtime/CMS code derives semantic labels from `entity_schemas.semantic_kind`
+instead of content-row mirrors.
+
+Issue #153 removed the duplicated content-row mirror columns:
+`entities.schema_key`, `entities.entity_type`, `entity_relations.schema_key`,
+and `sections.schema_key`. Run
 `pnpm run qa:schema-mirror-removal-readiness` after touching CMS loaders,
 seed/apply scripts, or graph migrations.
 
@@ -184,8 +176,7 @@ Use `sections` columns for section identity:
 
 - `key`
 - `section_type`
-- `schema_id` (canonical schema reference)
-- `schema_key` (compatibility mirror until the final drop migration)
+- `schema_id`
 - `eyebrow`
 - `title`
 - `subtitle`
@@ -203,10 +194,7 @@ Use `sections.props` for renderer-level copy and behavior:
 
 Use `entities` columns for shared display identity:
 
-- `schema_id` (canonical schema reference)
-- `entity_type` (compatibility mirror; prefer `entity_schemas.semantic_kind` for
-  new CMS/runtime logic; not exposed as a CMS editor field)
-- `schema_key` (compatibility mirror)
+- `schema_id`
 - `slug`
 - `title`
 - `subtitle`

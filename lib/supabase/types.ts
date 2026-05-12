@@ -70,12 +70,10 @@ export type Database = {
         Row: {
           created_at: string
           data: Json
-          entity_type: string
           id: string
           owner_member_id: string | null
           published: boolean
           schema_id: string
-          schema_key: string
           slug: string | null
           sort_at: string
           subtitle: string | null
@@ -87,12 +85,10 @@ export type Database = {
         Insert: {
           created_at?: string
           data?: Json
-          entity_type: string
           id?: string
           owner_member_id?: string | null
           published?: boolean
           schema_id: string
-          schema_key?: string
           slug?: string | null
           sort_at?: string
           subtitle?: string | null
@@ -104,12 +100,10 @@ export type Database = {
         Update: {
           created_at?: string
           data?: Json
-          entity_type?: string
           id?: string
           owner_member_id?: string | null
           published?: boolean
           schema_id?: string
-          schema_key?: string
           slug?: string | null
           sort_at?: string
           subtitle?: string | null
@@ -144,7 +138,6 @@ export type Database = {
           props: Json
           relation_type: string
           schema_id: string
-          schema_key: string
           slot: string
           sort_order: number
           to_entity_id: string
@@ -158,7 +151,6 @@ export type Database = {
           props?: Json
           relation_type: string
           schema_id: string
-          schema_key?: string
           slot?: string
           sort_order?: number
           to_entity_id: string
@@ -172,7 +164,6 @@ export type Database = {
           props?: Json
           relation_type?: string
           schema_id?: string
-          schema_key?: string
           slot?: string
           sort_order?: number
           to_entity_id?: string
@@ -388,7 +379,6 @@ export type Database = {
           props: Json
           published: boolean
           schema_id: string
-          schema_key: string
           section_type: string
           subtitle: string | null
           title: string | null
@@ -403,7 +393,6 @@ export type Database = {
           props?: Json
           published?: boolean
           schema_id: string
-          schema_key?: string
           section_type: string
           subtitle?: string | null
           title?: string | null
@@ -418,7 +407,6 @@ export type Database = {
           props?: Json
           published?: boolean
           schema_id?: string
-          schema_key?: string
           section_type?: string
           subtitle?: string | null
           title?: string | null
