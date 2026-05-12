@@ -67,20 +67,19 @@ async function main() {
   const entities = requireOk(
     await supabase
       .from("entities")
-      .select("id, schema_id, schema_key, entity_type, slug, title")
-      .order("schema_key", { ascending: true }),
+      .select("id, schema_id, slug, title")
+      .order("title", { ascending: true }),
     "entities semantic identity",
   )
   const sections = requireOk(
     await supabase
       .from("sections")
-      .select("id, schema_id, schema_key, key, title")
+      .select("id, schema_id, key, title")
       .order("key", { ascending: true }),
     "sections schema identity",
   )
 
   const schemaById = new Map(schemas.map((schema) => [schema.id, schema]))
-  const schemaByKey = new Map(schemas.map((schema) => [schema.schema_key, schema]))
   const failures = []
 
   for (const schema of schemas) {
@@ -94,47 +93,42 @@ async function main() {
   }
 
   for (const entity of entities) {
-    const schema =
-      (entity.schema_id ? schemaById.get(entity.schema_id) : null) ??
-      schemaByKey.get(entity.schema_key)
+    const schema = entity.schema_id ? schemaById.get(entity.schema_id) : null
 
     if (!schema) {
       failures.push(
         issue("Entity cannot resolve an active schema", {
           entityId: entity.id,
           schemaId: entity.schema_id,
-          schemaKey: entity.schema_key,
-          entityType: entity.entity_type,
+          slug: entity.slug,
+          title: entity.title,
         }),
       )
       continue
     }
 
-    if (entity.entity_type !== schema.semantic_kind) {
+    if (!["entity", "page", "section"].includes(schema.kind)) {
       failures.push(
-        issue("Entity type differs from schema semantic_kind", {
+        issue("Entity schema has unsupported kind", {
           entityId: entity.id,
           slug: entity.slug,
           title: entity.title,
-          schemaKey: entity.schema_key,
-          entityType: entity.entity_type,
-          semanticKind: schema.semantic_kind,
+          schemaId: entity.schema_id,
+          schemaKey: schema.schema_key,
+          schemaKind: schema.kind,
         }),
       )
     }
   }
 
   for (const section of sections) {
-    const schema =
-      (section.schema_id ? schemaById.get(section.schema_id) : null) ??
-      schemaByKey.get(section.schema_key)
+    const schema = section.schema_id ? schemaById.get(section.schema_id) : null
 
     if (!schema) {
       failures.push(
         issue("Section cannot resolve an active schema", {
           sectionId: section.id,
           schemaId: section.schema_id,
-          schemaKey: section.schema_key,
           key: section.key,
         }),
       )
@@ -146,21 +140,9 @@ async function main() {
         issue("Section schema has non-section kind", {
           sectionId: section.id,
           schemaId: section.schema_id,
-          schemaKey: section.schema_key,
+          schemaKey: schema.schema_key,
           key: section.key,
           schemaKind: schema.kind,
-        }),
-      )
-    }
-
-    if (section.schema_key !== schema.schema_key) {
-      failures.push(
-        issue("Section schema_key differs from schema_id target", {
-          sectionId: section.id,
-          schemaId: section.schema_id,
-          schemaKey: section.schema_key,
-          resolvedSchemaKey: schema.schema_key,
-          key: section.key,
         }),
       )
     }

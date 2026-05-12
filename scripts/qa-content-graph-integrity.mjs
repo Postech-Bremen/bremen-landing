@@ -354,7 +354,6 @@ async function checkPageComposition(supabase, page, schemas) {
               to_entity_id,
               toEntity:entities!entity_relations_to_entity_id_fkey(
                 id,
-                schema_key,
                 schema_id,
                 slug,
                 title,

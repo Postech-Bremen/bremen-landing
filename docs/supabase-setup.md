@@ -171,10 +171,10 @@ Safe pattern:
 
 1. Add or update a versioned `schema_key`, such as `video/youtube/v1`.
 2. Keep existing schema keys active until all rows and renderers have migrated.
-3. Keep text `schema_key` compatibility columns until all persisted rows and
-   historical maintenance paths have a schema-id-only path. PONIX create forms
-   should submit `schema_id`; server code may still display stable schema keys
-   for human-readable routing and diagnostics.
+3. PONIX create forms should submit `schema_id`. Server code may still display
+   `entity_schemas.schema_key` for human-readable routing and diagnostics, but
+   content rows no longer carry duplicated `schema_key` or `entity_type`
+   mirrors.
 4. Keep renderer code reviewed in the app. DB rows may store a `renderer_key`,
    but must not define executable React behavior.
 5. Apply production schema registry migrations only after review.
