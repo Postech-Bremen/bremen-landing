@@ -40,9 +40,14 @@ The bridge is now the primary runtime composition path.
 
 Current PONIX contract:
 
-- Public page composition reads use the `entity_relations` bridge by default.
-  Content graph QA now validates the graph directly instead of comparing
-  against the legacy mirrors.
+- Public slug-based page composition reads page and section display metadata
+  from the `page:` and `section:` shadow `entities`, then follows
+  `entity_relations` for page-to-section and section-to-content composition.
+  Content graph QA validates the graph directly instead of comparing against
+  legacy mirrors.
+- CMS draft preview and composer paths still resolve authoring records from
+  `pages` and `sections` by page/section id so existing edit URLs, audit
+  targets, and admin permissions remain stable.
 - CMS relation lists read page/section placement through `entity_relations`
   bridge rows, using relation `schema_id` values resolved from registered
   schema keys such as `relation/page-section/v1` and
