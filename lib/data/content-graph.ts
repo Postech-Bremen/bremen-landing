@@ -780,6 +780,38 @@ async function loadGraphPageUncached(
       })
     }
 
+    if (options.id) {
+      let pageEntityQuery = supabase
+        .from("entities")
+        .select(
+          "id, schema_id, slug, title, subtitle, summary, owner_member_id, published, data, created_at, updated_at",
+        )
+        .eq("id", options.id)
+        .eq("schema_id", schemas.pageSchemaId)
+
+      if (!includeDrafts) {
+        pageEntityQuery = pageEntityQuery.eq("published", true)
+      }
+
+      const { data: pageEntity, error: pageEntityError } =
+        await pageEntityQuery.maybeSingle()
+
+      if (!pageEntityError && pageEntity) {
+        const page = pageRowFromShadowEntity(pageEntity)
+
+        if (page) {
+          return await loadGraphPageFromEntityRelations({
+            page,
+            supabase,
+            includeDrafts,
+            schemas,
+            pageEntityId: pageEntity.id,
+            useShadowSections: true,
+          })
+        }
+      }
+    }
+
     let pageQuery = supabase
       .from("pages")
       .select("*")

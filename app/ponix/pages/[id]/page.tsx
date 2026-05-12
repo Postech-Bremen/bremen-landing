@@ -40,7 +40,7 @@ export default async function PonixPageRecordPage({
     loadCmsPageDetail(id),
     loadCmsPageRelations(id),
     loadCmsRelationEditorOptions({ includeEntities: false }),
-    loadCmsAuditEventsForTarget({ targetTable: "pages", targetId: id }),
+    loadCmsAuditEventsForTarget({ targetTable: "entities", targetId: id }),
     searchParams,
   ])
   const mutation = relationMutationState(search)

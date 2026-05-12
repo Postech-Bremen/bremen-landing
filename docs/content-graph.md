@@ -9,8 +9,9 @@ entity_schemas
       -> entities
 ```
 
-`pages` and `sections` remain domain tables because they are routable and
-renderer-facing records. Ordered page/section composition is stored in
+`pages` and `sections` currently remain compatibility tables for historical
+page/section records, but PONIX authoring now treats their graph `entities` as
+the CMS-facing record ids. Ordered page/section composition is stored in
 `entity_relations`; the legacy `page_sections` and `section_entities` mirror
 tables have been removed.
 
@@ -45,9 +46,12 @@ Current PONIX contract:
   `entity_relations` for page-to-section and section-to-content composition.
   Content graph QA validates the graph directly instead of comparing against
   legacy mirrors.
-- CMS draft preview and composer paths still resolve authoring records from
-  `pages` and `sections` by page/section id so existing edit URLs, audit
-  targets, and admin permissions remain stable.
+- CMS page and section list/detail/edit paths use graph `entities.id` for page
+  and section records. Page fields are projected from the page entity; section
+  renderer identity and props are projected from section entity `data`.
+- CMS draft preview and composer paths accept page entity ids, then render from
+  the same `entity_relations` graph used by public pages. Legacy page ids remain
+  a transitional fallback only where explicitly retained.
 - CMS relation lists read page/section placement through `entity_relations`
   bridge rows, using relation `schema_id` values resolved from registered
   schema keys such as `relation/page-section/v1` and
@@ -77,15 +81,17 @@ Current PONIX contract:
 | Table | Purpose |
 | --- | --- |
 | `entity_schemas` | DB-backed schema registry for page, section, entity, and relation records. This is the long-term source for CMS form metadata. |
-| `pages` | Routable page records such as `home`, `performances`, `videos`, `photos`, `history`, and `site`. |
-| `sections` | Renderer blocks with `section_type`, copy, and renderer props. |
+| `pages` | Compatibility mirror for routable page records such as `home`, `performances`, `videos`, `photos`, `history`, and `site`. PONIX authoring should prefer the page entity. |
+| `sections` | Compatibility mirror for renderer blocks. PONIX authoring should prefer the section entity with renderer identity in `entities.data`. |
 | `entities` | Reusable content units such as videos, photos, stats, posts, history milestones, activities, nav items, and social links. |
 | `entity_relations` | Ordered page-to-section, section-to-entity, and domain relations such as performance to recording/photo/post. |
 | `members` | Domain-specific member/auth/profile table. This intentionally remains separate from generic entities. |
 
 ## Renderer Contract
 
-The app chooses a UI renderer from `sections.section_type`.
+The app chooses a UI renderer from graph section metadata. Entity-native
+sections store it in `entities.data.section_type`; legacy mirrored sections
+expose the same value through `sections.section_type`.
 
 Examples:
 
@@ -177,7 +183,19 @@ Renderer implementations remain in React code. Database schemas may name a
 
 ## Where Data Belongs
 
-Use `sections` columns for section identity:
+Legacy `sections` rows still expose these columns for compatibility, but new
+PONIX authoring should model section identity on the section entity:
+
+- `entities.schema_id`
+- `entities.title`
+- `entities.subtitle`
+- `entities.published`
+- `entities.data.key`
+- `entities.data.section_type`
+- `entities.data.eyebrow`
+- `entities.data.props`
+
+The compatibility `sections` columns are:
 
 - `key`
 - `section_type`
@@ -187,7 +205,8 @@ Use `sections` columns for section identity:
 - `subtitle`
 - `published`
 
-Use `sections.props` for renderer-level copy and behavior:
+Compatibility `sections.props` and entity-native `entities.data.props` carry
+renderer-level copy and behavior:
 
 - `body`
 - `href`

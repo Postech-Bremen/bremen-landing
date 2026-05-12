@@ -14,23 +14,16 @@ type EntityRelationUpdate =
   Database["public"]["Tables"]["entity_relations"]["Update"]
 type ServerSupabaseClient = Awaited<ReturnType<typeof createClient>>
 
-type SourceEntityLink = {
-  slug: string | null
-}
-
 type PageSectionGraphRelation = {
   id: string
   from_entity_id: string
   to_entity_id: string
-  fromEntity?: SourceEntityLink | null
-  toEntity?: SourceEntityLink | null
 }
 
 type SectionEntityGraphRelation = {
   id: string
   from_entity_id: string
   to_entity_id: string
-  fromEntity?: SourceEntityLink | null
 }
 
 type ActionResult =
@@ -158,14 +151,6 @@ function shadowSlug(sourceTable: "pages" | "sections", sourceKey: string) {
   return `${sourceTable === "pages" ? PAGE_SHADOW_PREFIX : SECTION_SHADOW_PREFIX}${sourceKey}`
 }
 
-function sourceKeyFromLink(
-  link: SourceEntityLink | null | undefined,
-  sourceTable: "pages" | "sections",
-) {
-  const prefix = sourceTable === "pages" ? PAGE_SHADOW_PREFIX : SECTION_SHADOW_PREFIX
-  return link?.slug?.startsWith(prefix) ? link.slug.slice(prefix.length) : null
-}
-
 async function loadSchemaIdByKey({
   supabase,
   schemaKey,
@@ -223,6 +208,40 @@ async function loadShadowEntityId({
   sourceId: string
   label: string
 }) {
+  const { data: directEntity, error: directEntityError } = await supabase
+    .from("entities")
+    .select("id, schema_id")
+    .eq("id", sourceId)
+    .maybeSingle()
+
+  if (directEntityError) {
+    throw new Error(directEntityError.message)
+  }
+
+  if (directEntity) {
+    const validSchema =
+      sourceTable === "pages"
+        ? directEntity.schema_id ===
+          (await loadSchemaIdByKey({
+            supabase,
+            schemaKey: PAGE_ENTITY_SCHEMA_KEY,
+            label: "Page",
+          }))
+        : (
+            await loadSchemaIdsByKind({
+              supabase,
+              kind: "section",
+              label: "Section",
+            })
+          ).includes(directEntity.schema_id)
+
+    if (!validSchema) {
+      throw new Error(`${label} graph entity is not a ${label.toLowerCase()}.`)
+    }
+
+    return directEntity.id
+  }
+
   const source =
     sourceTable === "pages"
       ? await supabase
@@ -279,34 +298,6 @@ async function loadShadowEntityId({
   return data.id
 }
 
-async function loadPageIdBySlug(supabase: ServerSupabaseClient, slug: string) {
-  const { data, error } = await supabase
-    .from("pages")
-    .select("id")
-    .eq("slug", slug)
-    .maybeSingle()
-
-  if (error || !data?.id) {
-    throw new Error(error?.message ?? "Page source record not found.")
-  }
-
-  return data.id
-}
-
-async function loadSectionIdByKey(supabase: ServerSupabaseClient, key: string) {
-  const { data, error } = await supabase
-    .from("sections")
-    .select("id")
-    .eq("key", key)
-    .maybeSingle()
-
-  if (error || !data?.id) {
-    throw new Error(error?.message ?? "Section source record not found.")
-  }
-
-  return data.id
-}
-
 async function loadPageSectionGraphRelation(
   supabase: ServerSupabaseClient,
   graphRelationId: string,
@@ -322,9 +313,7 @@ async function loadPageSectionGraphRelation(
       `
         id,
         from_entity_id,
-        to_entity_id,
-        fromEntity:entities!entity_relations_from_entity_id_fkey(slug),
-        toEntity:entities!entity_relations_to_entity_id_fkey(slug)
+        to_entity_id
       `,
     )
     .eq("id", graphRelationId)
@@ -332,22 +321,15 @@ async function loadPageSectionGraphRelation(
     .maybeSingle()
 
   const relation = data as unknown as PageSectionGraphRelation | null
-  const pageSlug = sourceKeyFromLink(relation?.fromEntity, "pages")
-  const sectionKey = sourceKeyFromLink(relation?.toEntity, "sections")
 
-  if (error || !relation || !pageSlug || !sectionKey) {
+  if (error || !relation) {
     throw new Error(error?.message ?? "Page section graph relation not found.")
   }
 
-  const [pageId, sectionId] = await Promise.all([
-    loadPageIdBySlug(supabase, pageSlug),
-    loadSectionIdByKey(supabase, sectionKey),
-  ])
-
   return {
     ...relation,
-    pageId,
-    sectionId,
+    pageId: relation.from_entity_id,
+    sectionId: relation.to_entity_id,
   }
 }
 
@@ -366,8 +348,7 @@ async function loadSectionEntityGraphRelation(
       `
         id,
         from_entity_id,
-        to_entity_id,
-        fromEntity:entities!entity_relations_from_entity_id_fkey(slug)
+        to_entity_id
       `,
     )
     .eq("id", graphRelationId)
@@ -375,17 +356,14 @@ async function loadSectionEntityGraphRelation(
     .maybeSingle()
 
   const relation = data as unknown as SectionEntityGraphRelation | null
-  const sectionKey = sourceKeyFromLink(relation?.fromEntity, "sections")
 
-  if (error || !relation || !sectionKey) {
+  if (error || !relation) {
     throw new Error(error?.message ?? "Section graph relation not found.")
   }
 
-  const sectionId = await loadSectionIdByKey(supabase, sectionKey)
-
   return {
     ...relation,
-    sectionId,
+    sectionId: relation.from_entity_id,
     entityId: relation.to_entity_id,
   }
 }

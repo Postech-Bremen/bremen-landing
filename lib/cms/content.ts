@@ -35,6 +35,10 @@ const ENTITY_RELATION_SELECT = `
   fromEntity:entities!entity_relations_from_entity_id_fkey(id, slug, title, subtitle, summary, thumbnail_url, schema_id, data, published, sort_at),
   toEntity:entities!entity_relations_to_entity_id_fkey(id, slug, title, subtitle, summary, thumbnail_url, schema_id, data, published, sort_at)
 `
+const CMS_PAGE_ENTITY_SELECT =
+  "id, schema_id, slug, title, subtitle, summary, owner_member_id, published, data, created_at, updated_at"
+const CMS_SECTION_ENTITY_SELECT =
+  "id, schema_id, slug, title, subtitle, owner_member_id, published, data, created_at, updated_at"
 
 type SchemaSummary = {
   schemaKey: string
@@ -210,7 +214,7 @@ export type CmsEntityRelationContext = {
 export type CmsContentDetail =
   | {
       kind: "page"
-      table: "pages"
+      table: "entities"
       title: string
       subtitle: string | null
       published: boolean
@@ -219,7 +223,7 @@ export type CmsContentDetail =
     } & SchemaSummary
   | {
       kind: "section"
-      table: "sections"
+      table: "entities"
       title: string
       subtitle: string | null
       published: boolean
@@ -323,6 +327,94 @@ function entitySemanticKind(
   return schemaForEntity(entity, registry)?.semanticKind ?? "unregistered"
 }
 
+function isRecord(value: Json | unknown): value is Record<string, Json> {
+  return Boolean(value) && typeof value === "object" && !Array.isArray(value)
+}
+
+function jsonObject(value: Json): Record<string, Json> {
+  return isRecord(value) ? { ...value } : {}
+}
+
+function jsonObjectField(value: Json, key: string): Record<string, Json> {
+  const fieldValue = jsonObject(value)[key]
+  return isRecord(fieldValue) ? { ...fieldValue } : {}
+}
+
+function stringValue(value: Json | unknown) {
+  return typeof value === "string" && value.trim() ? value : null
+}
+
+function pageRowFromEntity(
+  entity: Pick<
+    EntityRow,
+    | "id"
+    | "slug"
+    | "title"
+    | "subtitle"
+    | "summary"
+    | "owner_member_id"
+    | "published"
+    | "data"
+    | "created_at"
+    | "updated_at"
+  >,
+): PageRow | null {
+  const data = jsonObject(entity.data)
+  const slug = shadowKey(entity, "pages") ?? stringValue(data.slug)
+
+  if (!slug) return null
+
+  return {
+    id: entity.id,
+    slug,
+    title: entity.title,
+    subtitle: entity.subtitle,
+    description: entity.summary,
+    owner_member_id: entity.owner_member_id,
+    published: entity.published,
+    props: jsonObjectField(entity.data, "props"),
+    created_at: entity.created_at,
+    updated_at: entity.updated_at,
+  }
+}
+
+function sectionRowFromEntity(
+  entity: Pick<
+    EntityRow,
+    | "id"
+    | "schema_id"
+    | "slug"
+    | "title"
+    | "subtitle"
+    | "owner_member_id"
+    | "published"
+    | "data"
+    | "created_at"
+    | "updated_at"
+  >,
+): SectionRow | null {
+  const data = jsonObject(entity.data)
+  const key = shadowKey(entity, "sections") ?? stringValue(data.key)
+  const sectionType = stringValue(data.section_type)
+
+  if (!key || !sectionType) return null
+
+  return {
+    id: entity.id,
+    key,
+    section_type: sectionType,
+    schema_id: entity.schema_id,
+    eyebrow: stringValue(data.eyebrow),
+    title: entity.title,
+    subtitle: entity.subtitle,
+    owner_member_id: entity.owner_member_id,
+    published: entity.published,
+    props: jsonObjectField(entity.data, "props"),
+    created_at: entity.created_at,
+    updated_at: entity.updated_at,
+  }
+}
+
 async function entitySchemaOptions(): Promise<CmsEntitySchemaOption[]> {
   const schemas = await loadCmsSchemasByKind("entity")
   return schemas
@@ -373,10 +465,10 @@ function relationList<T>(
   }
 }
 
-function linkedPage(page: RawPageLink | null): CmsLinkedPage | null {
-  if (!page) {
-    return null
-  }
+function linkedPageFromEntity(entity: RawEntityLink | null): CmsLinkedPage | null {
+  const page = entity ? pageRowFromEntity(entityWithTimestamps(entity)) : null
+
+  if (!page) return null
 
   return {
     id: page.id,
@@ -386,13 +478,13 @@ function linkedPage(page: RawPageLink | null): CmsLinkedPage | null {
   }
 }
 
-function linkedSection(
-  section: RawSectionLink | null,
+function linkedSectionFromEntity(
+  entity: RawEntityLink | null,
   registry: SchemaRegistryMap,
 ): CmsLinkedSection | null {
-  if (!section) {
-    return null
-  }
+  const section = entity ? sectionRowFromEntity(entityWithTimestamps(entity)) : null
+
+  if (!section) return null
 
   return {
     ...sectionSchemaSummary(section, registry),
@@ -427,25 +519,27 @@ function linkedEntity(
   }
 }
 
+function entityWithTimestamps(entity: RawEntityLink) {
+  return {
+    ...entity,
+    owner_member_id: null,
+    created_at: "",
+    updated_at: "",
+  }
+}
+
 function shadowSlug(sourceTable: "pages" | "sections", sourceKey: string) {
   return `${sourceTable === "pages" ? PAGE_SHADOW_PREFIX : SECTION_SHADOW_PREFIX}${sourceKey}`
 }
 
-function shadowKey(entity: RawEntityLink | null, sourceTable: "pages" | "sections") {
+function shadowKey(
+  entity: Pick<EntityRow, "slug"> | RawEntityLink | null,
+  sourceTable: "pages" | "sections",
+) {
   const prefix = sourceTable === "pages" ? PAGE_SHADOW_PREFIX : SECTION_SHADOW_PREFIX
   return entity?.slug?.startsWith(prefix) ? entity.slug.slice(prefix.length) : null
 }
 
-type RawPageLink = Pick<PageRow, "id" | "slug" | "title" | "published">
-type RawSectionLink = Pick<
-  SectionRow,
-  | "id"
-  | "key"
-  | "title"
-  | "section_type"
-  | "schema_id"
-  | "published"
->
 type RawEntityLink = Pick<
   EntityRow,
   | "id"
@@ -535,128 +629,126 @@ function byEntityRelationOrder(left: CmsEntityRelation, right: CmsEntityRelation
 
 export async function loadCmsPages(): Promise<CmsPageSummary[]> {
   const supabase = await createClient()
-  const pagesQuery = supabase
-    .from("pages")
-    .select("id, slug, title, subtitle, published, updated_at")
+  const registry = await loadCmsSchemaRegistryMap()
+  const { data, error } = await supabase
+    .from("entities")
+    .select(CMS_PAGE_ENTITY_SELECT)
+    .eq("schema_id", schemaIdForKey(registry, PAGE_ENTITY_SCHEMA_KEY))
     .order("slug", { ascending: true })
-  const [registry, result] = await Promise.all([
-    loadCmsSchemaRegistryMap(),
-    pagesQuery,
-  ])
-  const { data, error } = result
 
   if (error) {
     throw new Error(`Failed to load CMS pages: ${error.message}`)
   }
 
-  return (data ?? []).map((page) => ({
-    ...schemaSummary("page/default/v1", registry),
-    id: page.id,
-    slug: page.slug,
-    title: page.title,
-    subtitle: page.subtitle,
-    published: page.published,
-    updatedAt: page.updated_at,
-  }))
+  return (data ?? [])
+    .map((entity) => pageRowFromEntity(entity))
+    .filter((page): page is PageRow => Boolean(page))
+    .map((page) => ({
+      ...schemaSummary(PAGE_ENTITY_SCHEMA_KEY, registry),
+      id: page.id,
+      slug: page.slug,
+      title: page.title,
+      subtitle: page.subtitle,
+      published: page.published,
+      updatedAt: page.updated_at,
+    }))
+    .sort((left, right) => left.slug.localeCompare(right.slug, "ko"))
 }
 
 export async function loadCmsPageDetail(
   id: string,
 ): Promise<CmsContentDetail | null> {
   const supabase = await createClient()
-  const pageQuery = supabase
-    .from("pages")
-    .select("*")
+  const registry = await loadCmsSchemaRegistryMap()
+  const { data, error } = await supabase
+    .from("entities")
+    .select(CMS_PAGE_ENTITY_SELECT)
     .eq("id", id)
+    .eq("schema_id", schemaIdForKey(registry, PAGE_ENTITY_SCHEMA_KEY))
     .maybeSingle()
-  const [registry, result] = await Promise.all([
-    loadCmsSchemaRegistryMap(),
-    pageQuery,
-  ])
-  const { data, error } = result
 
   if (error) {
     throw new Error(`Failed to load CMS page detail: ${error.message}`)
   }
 
-  if (!data) {
+  const page = data ? pageRowFromEntity(data) : null
+
+  if (!page) {
     return null
   }
 
   return {
-    ...schemaSummary("page/default/v1", registry),
+    ...schemaSummary(PAGE_ENTITY_SCHEMA_KEY, registry),
     kind: "page",
-    table: "pages",
-    title: data.title,
-    subtitle: data.subtitle,
-    published: data.published,
-    updatedAt: data.updated_at,
-    row: data,
+    table: "entities",
+    title: page.title,
+    subtitle: page.subtitle,
+    published: page.published,
+    updatedAt: page.updated_at,
+    row: page,
   }
 }
 
 export async function loadCmsSections(): Promise<CmsSectionSummary[]> {
   const supabase = await createClient()
-  const sectionsQuery = supabase
-    .from("sections")
-    .select(
-      "id, key, section_type, schema_id, title, subtitle, published, updated_at",
-    )
-    .order("key", { ascending: true })
-  const [registry, result] = await Promise.all([
-    loadCmsSchemaRegistryMap(),
-    sectionsQuery,
-  ])
-  const { data, error } = result
+  const registry = await loadCmsSchemaRegistryMap()
+  const { data, error } = await supabase
+    .from("entities")
+    .select(CMS_SECTION_ENTITY_SELECT)
+    .in("schema_id", schemaIdsForKind(registry, "section"))
+    .order("title", { ascending: true })
 
   if (error) {
     throw new Error(`Failed to load CMS sections: ${error.message}`)
   }
 
-  return (data ?? []).map((section) => ({
-    ...sectionSchemaSummary(section, registry),
-    id: section.id,
-    key: section.key,
-    sectionType: section.section_type,
-    title: section.title,
-    subtitle: section.subtitle,
-    published: section.published,
-    updatedAt: section.updated_at,
-  }))
+  return (data ?? [])
+    .map((entity) => sectionRowFromEntity(entity))
+    .filter((section): section is SectionRow => Boolean(section))
+    .map((section) => ({
+      ...sectionSchemaSummary(section, registry),
+      id: section.id,
+      key: section.key,
+      sectionType: section.section_type,
+      title: section.title,
+      subtitle: section.subtitle,
+      published: section.published,
+      updatedAt: section.updated_at,
+    }))
+    .sort((left, right) => left.key.localeCompare(right.key, "ko"))
 }
 
 export async function loadCmsSectionDetail(
   id: string,
 ): Promise<CmsContentDetail | null> {
   const supabase = await createClient()
-  const sectionQuery = supabase
-    .from("sections")
-    .select("*")
+  const registry = await loadCmsSchemaRegistryMap()
+  const { data, error } = await supabase
+    .from("entities")
+    .select(CMS_SECTION_ENTITY_SELECT)
     .eq("id", id)
+    .in("schema_id", schemaIdsForKind(registry, "section"))
     .maybeSingle()
-  const [registry, result] = await Promise.all([
-    loadCmsSchemaRegistryMap(),
-    sectionQuery,
-  ])
-  const { data, error } = result
 
   if (error) {
     throw new Error(`Failed to load CMS section detail: ${error.message}`)
   }
 
-  if (!data) {
+  const section = data ? sectionRowFromEntity(data) : null
+
+  if (!section) {
     return null
   }
 
   return {
-    ...sectionSchemaSummary(data, registry),
+    ...sectionSchemaSummary(section, registry),
     kind: "section",
-    table: "sections",
-    title: data.title ?? data.key,
-    subtitle: data.subtitle,
-    published: data.published,
-    updatedAt: data.updated_at,
-    row: data,
+    table: "entities",
+    title: section.title ?? section.key,
+    subtitle: section.subtitle,
+    published: section.published,
+    updatedAt: section.updated_at,
+    row: section,
   }
 }
 
@@ -745,41 +837,19 @@ export async function loadCmsRelationEditorOptions({
   const entityQuery = countEntities
     ? supabase.from("entities").select(entitySelect, { count: "exact" })
     : supabase.from("entities").select(entitySelect)
-  const pagesQuery = supabase
-    .from("pages")
-    .select("id, slug, title, subtitle, published, updated_at")
-    .order("slug", { ascending: true })
-  const sectionsQuery = supabase
-    .from("sections")
-    .select(
-      "id, key, section_type, schema_id, title, subtitle, published, updated_at",
-    )
-    .order("key", { ascending: true })
   const entitiesPromise = includeEntities
     ? entityQuery
         .order("sort_at", { ascending: false })
         .range(0, Math.min(Math.max(entityLimit, 1), 100) - 1)
     : Promise.resolve({ data: [], error: null, count: null })
-  const [registry, schemaOptions, pagesResult, sectionsResult, entitiesResult] =
+  const [registry, schemaOptions, pages, sections, entitiesResult] =
     await Promise.all([
       loadCmsSchemaRegistryMap(),
       entitySchemaOptions(),
-      pagesQuery,
-      sectionsQuery,
+      loadCmsPages(),
+      loadCmsSections(),
       entitiesPromise,
     ])
-
-  if (sectionsResult.error) {
-    throw new Error(
-      `Failed to load CMS section options: ${sectionsResult.error.message}`,
-    )
-  }
-
-  if (pagesResult.error) {
-    throw new Error(
-      `Failed to load CMS page options: ${pagesResult.error.message}`,
-    )
-  }
 
   if (entitiesResult.error) {
     throw new Error(
@@ -788,25 +858,8 @@ export async function loadCmsRelationEditorOptions({
   }
 
   return {
-    pages: (pagesResult.data ?? []).map((page) => ({
-      ...schemaSummary("page/default/v1", registry),
-      id: page.id,
-      slug: page.slug,
-      title: page.title,
-      subtitle: page.subtitle,
-      published: page.published,
-      updatedAt: page.updated_at,
-    })),
-    sections: (sectionsResult.data ?? []).map((section) => ({
-      ...sectionSchemaSummary(section, registry),
-      id: section.id,
-      key: section.key,
-      sectionType: section.section_type,
-      title: section.title,
-      subtitle: section.subtitle,
-      published: section.published,
-      updatedAt: section.updated_at,
-    })),
+    pages,
+    sections,
     entitySchemas: schemaOptions,
     entities: (entitiesResult.data ?? []).map((entity) =>
       mapEntitySummary(entity, registry),
@@ -852,10 +905,6 @@ export async function loadCmsEntityDetail(
   }
 }
 
-function uniqueStrings(values: Array<string | null | undefined>) {
-  return [...new Set(values.filter((value): value is string => Boolean(value)))]
-}
-
 async function loadShadowEntityId({
   supabase,
   registry,
@@ -867,6 +916,27 @@ async function loadShadowEntityId({
   sourceTable: "pages" | "sections"
   sourceId: string
 }) {
+  const { data: directEntity, error: directEntityError } = await supabase
+    .from("entities")
+    .select("id, schema_id")
+    .eq("id", sourceId)
+    .maybeSingle()
+
+  if (directEntityError) {
+    throw new Error(
+      `Failed to load ${sourceTable} graph entity: ${directEntityError.message}`,
+    )
+  }
+
+  if (directEntity) {
+    const validSchema =
+      sourceTable === "pages"
+        ? directEntity.schema_id === schemaIdForKey(registry, PAGE_ENTITY_SCHEMA_KEY)
+        : schemaIdsForKind(registry, "section").includes(directEntity.schema_id)
+
+    return validSchema ? directEntity.id : null
+  }
+
   const source =
     sourceTable === "pages"
       ? await supabase
@@ -910,42 +980,6 @@ async function loadShadowEntityId({
   }
 
   return data?.id ?? null
-}
-
-async function loadPageLinksBySlug(
-  supabase: SupabaseClient,
-  pageSlugs: string[],
-) {
-  if (!pageSlugs.length) return new Map<string, RawPageLink>()
-
-  const { data, error } = await supabase
-    .from("pages")
-    .select("id, slug, title, published")
-    .in("slug", pageSlugs)
-
-  if (error) {
-    throw new Error(`Failed to load page bridge links: ${error.message}`)
-  }
-
-  return new Map((data ?? []).map((page) => [page.slug, page]))
-}
-
-async function loadSectionLinksByKey(
-  supabase: SupabaseClient,
-  sectionKeys: string[],
-) {
-  if (!sectionKeys.length) return new Map<string, RawSectionLink>()
-
-  const { data, error } = await supabase
-    .from("sections")
-    .select("id, key, title, section_type, schema_id, published")
-    .in("key", sectionKeys)
-
-  if (error) {
-    throw new Error(`Failed to load section bridge links: ${error.message}`)
-  }
-
-  return new Map((data ?? []).map((section) => [section.key, section]))
 }
 
 async function loadPageSectionRelationsFromEntityGraph({
@@ -1001,23 +1035,10 @@ async function loadPageSectionRelationsFromEntityGraph({
   }
 
   const rawRelations = (data ?? []) as unknown as RawEntityRelation[]
-  const pageSlugs = uniqueStrings(
-    rawRelations.map((relation) => shadowKey(relation.fromEntity, "pages")),
-  )
-  const sectionKeys = uniqueStrings(
-    rawRelations.map((relation) => shadowKey(relation.toEntity, "sections")),
-  )
-  const [pagesBySlug, sectionsByKey] = await Promise.all([
-    loadPageLinksBySlug(supabase, pageSlugs),
-    loadSectionLinksByKey(supabase, sectionKeys),
-  ])
-
   const relations = rawRelations
     .map((relation): CmsPageSectionRelation | null => {
-      const pageSlug = shadowKey(relation.fromEntity, "pages")
-      const sectionKey = shadowKey(relation.toEntity, "sections")
-      const page = pageSlug ? pagesBySlug.get(pageSlug) : null
-      const section = sectionKey ? sectionsByKey.get(sectionKey) : null
+      const page = linkedPageFromEntity(relation.fromEntity)
+      const section = linkedSectionFromEntity(relation.toEntity, registry)
       const mappedPageId = page?.id ?? pageId
       const mappedSectionId = section?.id ?? sectionId
 
@@ -1032,8 +1053,8 @@ async function loadPageSectionRelationsFromEntityGraph({
         sortOrder: relation.sort_order,
         props: relation.props,
         updatedAt: relation.updated_at,
-        page: linkedPage(page ?? null),
-        section: linkedSection(section ?? null, registry),
+        page,
+        section,
       }
     })
     .filter((relation): relation is CmsPageSectionRelation => Boolean(relation))
@@ -1086,15 +1107,9 @@ async function loadSectionEntityRelationsFromEntityGraph({
   }
 
   const rawRelations = (data ?? []) as unknown as RawEntityRelation[]
-  const sectionKeys = uniqueStrings(
-    rawRelations.map((relation) => shadowKey(relation.fromEntity, "sections")),
-  )
-  const sectionsByKey = await loadSectionLinksByKey(supabase, sectionKeys)
-
   const relations = rawRelations
     .map((relation): CmsSectionEntityRelation | null => {
-      const sectionKey = shadowKey(relation.fromEntity, "sections")
-      const section = sectionKey ? sectionsByKey.get(sectionKey) : null
+      const section = linkedSectionFromEntity(relation.fromEntity, registry)
       const mappedSectionId = section?.id ?? sectionId
 
       if (!mappedSectionId || !relation.toEntity) {
@@ -1112,7 +1127,7 @@ async function loadSectionEntityRelationsFromEntityGraph({
         sortOrder: relation.sort_order,
         props: relation.props,
         updatedAt: relation.updated_at,
-        section: linkedSection(section ?? null, registry),
+        section,
         entity: linkedEntity(relation.toEntity, registry),
       }
     })
