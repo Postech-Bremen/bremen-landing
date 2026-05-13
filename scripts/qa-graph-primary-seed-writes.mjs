@@ -3,6 +3,7 @@
 import { readFileSync } from "node:fs"
 
 const scanFiles = [
+  "scripts/content-graph-write-helpers.mjs",
   "scripts/apply-instagram-feed.mjs",
   "scripts/apply-scraped-content.mjs",
   "scripts/generate-instagram-feed-migration.mjs",
@@ -14,6 +15,30 @@ const applyScriptFiles = new Set([
 ])
 
 const forbiddenPatterns = [
+  {
+    label: "direct pages Supabase table access",
+    pattern: /(?:^|[^\w])from\(\s*["'`]pages["'`]\s*\)/,
+  },
+  {
+    label: "direct sections Supabase table access",
+    pattern: /(?:^|[^\w])from\(\s*["'`]sections["'`]\s*\)/,
+  },
+  {
+    label: "direct pages upsert helper target",
+    pattern: /upsertChunked\(\s*supabase\s*,\s*["'`]pages["'`]/,
+  },
+  {
+    label: "direct sections upsert helper target",
+    pattern: /upsertChunked\(\s*supabase\s*,\s*["'`]sections["'`]/,
+  },
+  {
+    label: "generated pages compatibility SQL",
+    pattern: /\bpublic\.pages\b/i,
+  },
+  {
+    label: "generated sections compatibility SQL",
+    pattern: /\bpublic\.sections\b/i,
+  },
   {
     label: "direct page_sections Supabase table access",
     pattern: /(?:^|[^\w])from\(\s*["'`]page_sections["'`]\s*\)/,
@@ -149,6 +174,14 @@ function runSelfTest() {
     "scripts/apply-example.mjs",
     "insert into public.entity_relations (source_table) values ('section_entities')",
   )
+  const pagesShouldFail = scanText(
+    "scripts/apply-example.mjs",
+    'await supabase.from("pages").select("id")',
+  )
+  const sectionsSqlShouldFail = scanText(
+    "scripts/generate-example.mjs",
+    "join public.sections section_ref on section_ref.key = links.section_key",
+  )
   const entityTypeSqlShouldFail = scanText(
     "scripts/generate-example.mjs",
     "where entity.entity_type = 'video'",
@@ -178,6 +211,8 @@ function runSelfTest() {
     shouldFail.length !== 1 ||
     sqlShouldFail.length !== 1 ||
     sourceMarkerShouldFail.length !== 1 ||
+    pagesShouldFail.length !== 1 ||
+    sectionsSqlShouldFail.length !== 1 ||
     entityTypeSqlShouldFail.length !== 1 ||
     sectionSchemaKeySqlShouldFail.length !== 1 ||
     sectionSchemaKeyColumnShouldFail.length !== 1 ||
@@ -197,10 +232,10 @@ console.log("Graph-primary seed write guard")
 console.table([
   {
     scannedFiles: scanFiles.length,
-      forbiddenPatterns: forbiddenPatterns.length,
-      applyScriptForbiddenPatterns: applyScriptForbiddenPatterns.length,
-      violations: violations.length,
-      selfTest: "ok",
+    forbiddenPatterns: forbiddenPatterns.length,
+    applyScriptForbiddenPatterns: applyScriptForbiddenPatterns.length,
+    violations: violations.length,
+    selfTest: "ok",
   },
 ])
 
@@ -212,7 +247,7 @@ if (violations.length) {
     )
   }
   console.error(
-    "\nUse scripts/content-graph-write-helpers.mjs so writes target entity_relations without legacy relation source markers.",
+    "\nUse scripts/content-graph-write-helpers.mjs so page/section writes target entities and composition writes target entity_relations without compatibility tables.",
   )
   process.exitCode = 1
 }

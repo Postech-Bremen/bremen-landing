@@ -2,6 +2,9 @@ import { createClient } from "@supabase/supabase-js"
 import { readFileSync } from "node:fs"
 import {
   deleteSectionEntityRelations,
+  loadPageEntityMapBySlug,
+  loadSectionEntityMapByKey,
+  upsertSectionEntities,
   upsertPageSectionRelations,
   upsertSectionEntityRelations,
 } from "./content-graph-write-helpers.mjs"
@@ -117,8 +120,9 @@ async function main() {
     "section/performance-updates/v1",
   )
 
-  requireOk(
-    await supabase.from("sections").upsert(
+  const performanceUpdatesByKey = await upsertSectionEntities(
+    supabase,
+    [
       {
         key: "performances-updates",
         section_type: "entity_post_grid",
@@ -129,35 +133,32 @@ async function main() {
         published: true,
         props: {},
       },
-      { onConflict: "key" },
-    ),
-    "upsert performances-updates section",
+    ],
+    "upsert performances-updates section entity",
   )
 
-  const page = requireOk(
-    await supabase
-      .from("pages")
-      .select("id,slug")
-      .eq("slug", "performances")
-      .maybeSingle(),
-    "load performances page",
+  const pageBySlug = await loadPageEntityMapBySlug(
+    supabase,
+    ["performances"],
+    "load performances page entity",
   )
-  const performanceUpdatesSection = requireOk(
-    await supabase
-      .from("sections")
-      .select("id,key")
-      .eq("key", "performances-updates")
-      .maybeSingle(),
-    "load performances-updates section",
+  const sectionByKey = await loadSectionEntityMapByKey(
+    supabase,
+    ["photos-gallery", "performances-updates"],
+    "load Instagram target section entities",
   )
+  const page = pageBySlug.get("performances")
+  const performanceUpdatesSection =
+    performanceUpdatesByKey.get("performances-updates") ??
+    sectionByKey.get("performances-updates")
 
   if (page && performanceUpdatesSection) {
     await upsertPageSectionRelations(
       supabase,
       [
         {
-          page_id: page.id,
-          section_id: performanceUpdatesSection.id,
+          page_entity_id: page.id,
+          section_entity_id: performanceUpdatesSection.id,
           sort_order: 25,
           props: {},
         },
@@ -252,19 +253,12 @@ async function main() {
     )
   }
 
-  const gallerySection = requireOk(
-    await supabase
-      .from("sections")
-      .select("id,key")
-      .eq("key", "photos-gallery")
-      .maybeSingle(),
-    "load photos-gallery section",
-  )
+  const gallerySection = sectionByKey.get("photos-gallery")
 
   const sectionIds = [gallerySection?.id, performanceUpdatesSection?.id].filter(Boolean)
   if (sectionIds.length && instagramIds.length) {
     await deleteSectionEntityRelations(supabase, {
-      sectionIds,
+      sectionEntityIds: sectionIds,
       entityIds: instagramIds,
       label: "delete old Instagram section links",
     })
@@ -293,7 +287,7 @@ async function main() {
   const sectionEntities = [
     ...(gallerySection
       ? photos.map((entity, index) => ({
-          section_id: gallerySection.id,
+          section_entity_id: gallerySection.id,
           entity_id: entity.id,
           relation_type: "features_photo",
           slot: "gallery",
@@ -303,7 +297,7 @@ async function main() {
       : []),
     ...(performanceUpdatesSection
       ? posts.map((entity, index) => ({
-          section_id: performanceUpdatesSection.id,
+          section_entity_id: performanceUpdatesSection.id,
           entity_id: entity.id,
           relation_type: "features_post",
           slot: entity.data?.content_kind ?? "notice",

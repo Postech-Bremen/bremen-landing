@@ -2,7 +2,11 @@ import { createClient } from "@supabase/supabase-js"
 import { readFileSync } from "node:fs"
 import {
   deleteSectionEntityRelations,
+  loadPageEntityMapBySlug,
+  loadSectionEntityMapByKey,
+  upsertPageEntities,
   upsertPageSectionRelations,
+  upsertSectionEntities,
   upsertSectionEntityRelations,
 } from "./content-graph-write-helpers.mjs"
 
@@ -168,8 +172,9 @@ async function main() {
   const schemas = await loadSchemaRegistry(supabase)
   const defaultRelationSchemaId = schemaIdByKey(schemas, defaultRelationSchemaKey)
 
-  requireOk(
-    await supabase.from("pages").upsert(
+  await upsertPageEntities(
+    supabase,
+    [
       {
         slug: "history",
         title: "브레멘 히스토리",
@@ -178,63 +183,60 @@ async function main() {
         published: true,
         props: {},
       },
-      { onConflict: "slug" },
-    ),
-    "upsert history page",
+    ],
+    "upsert history page entity",
   )
 
-  requireOk(
-    await supabase.from("sections").upsert(
-      [
-        {
-          key: "videos-by-event",
-          section_type: "entity_grouped_grid",
-          schema_id: schemaIdByKey(schemas, "section/video-event-playlists/v1"),
-          eyebrow: "Events",
-          title: "Recordings by stage",
-          subtitle: "공연 단위로 묶어 보는 영상 기록",
-          published: true,
-          props: {},
-        },
-        {
-          key: "history-timeline",
-          section_type: "entity_timeline",
-          schema_id: schemaIdByKey(schemas, "section/history-timeline/v1"),
-          eyebrow: "Since 2001",
-          title: "Bremen History",
-          subtitle: "궤짝 유랑 악단에서 현재의 브레멘까지",
-          published: true,
-          props: {},
-        },
-      ],
-      { onConflict: "key" },
-    ),
-    "upsert extra sections",
+  await upsertSectionEntities(
+    supabase,
+    [
+      {
+        key: "videos-by-event",
+        section_type: "entity_grouped_grid",
+        schema_id: schemaIdByKey(schemas, "section/video-event-playlists/v1"),
+        eyebrow: "Events",
+        title: "Recordings by stage",
+        subtitle: "공연 단위로 묶어 보는 영상 기록",
+        published: true,
+        props: {},
+      },
+      {
+        key: "history-timeline",
+        section_type: "entity_timeline",
+        schema_id: schemaIdByKey(schemas, "section/history-timeline/v1"),
+        eyebrow: "Since 2001",
+        title: "Bremen History",
+        subtitle: "궤짝 유랑 악단에서 현재의 브레멘까지",
+        published: true,
+        props: {},
+      },
+    ],
+    "upsert extra section entities",
   )
 
-  const pages = requireOk(
-    await supabase.from("pages").select("id,slug").in("slug", ["videos", "history"]),
-    "load pages",
+  const pageBySlug = await loadPageEntityMapBySlug(
+    supabase,
+    ["videos", "history"],
+    "load page entities",
   )
-  const sections = requireOk(
-    await supabase.from("sections").select("id,key").in("key", sectionKeys),
-    "load sections",
+  const sectionByKey = await loadSectionEntityMapByKey(
+    supabase,
+    sectionKeys,
+    "load section entities",
   )
-  const pageBySlug = new Map(pages.map((page) => [page.slug, page]))
-  const sectionByKey = new Map(sections.map((section) => [section.key, section]))
 
   await upsertPageSectionRelations(
     supabase,
     [
       {
-        page_id: pageBySlug.get("videos").id,
-        section_id: sectionByKey.get("videos-by-event").id,
+        page_entity_id: pageBySlug.get("videos").id,
+        section_entity_id: sectionByKey.get("videos-by-event").id,
         sort_order: 25,
         props: {},
       },
       {
-        page_id: pageBySlug.get("history").id,
-        section_id: sectionByKey.get("history-timeline").id,
+        page_entity_id: pageBySlug.get("history").id,
+        section_entity_id: sectionByKey.get("history-timeline").id,
         sort_order: 10,
         props: {},
       },
@@ -364,15 +366,15 @@ async function main() {
     "upsert relations",
   )
 
-  const seededSections = requireOk(
-    await supabase.from("sections").select("id,key").in("key", sectionKeys),
-    "reload sections",
+  const seededSectionByKey = await loadSectionEntityMapByKey(
+    supabase,
+    sectionKeys,
+    "reload section entities",
   )
-  const seededSectionByKey = new Map(seededSections.map((section) => [section.key, section]))
-  const sectionIds = seededSections.map((section) => section.id)
+  const sectionIds = [...seededSectionByKey.values()].map((section) => section.id)
 
   await deleteSectionEntityRelations(supabase, {
-    sectionIds,
+    sectionEntityIds: sectionIds,
     label: "clear section entities",
   })
 
@@ -413,7 +415,7 @@ async function main() {
     if (!section) return
     items.forEach((item, index) => {
       sectionEntities.push({
-        section_id: section.id,
+        section_entity_id: section.id,
         entity_id: item.id,
         relation_type: "item",
         slot: slotForItem(item),

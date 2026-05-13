@@ -587,28 +587,63 @@ where ${semanticKindPredicate("public.entities", "video")}
   and slug is null
   and data ? 'youtube_id';
 
-insert into public.pages (slug, title, subtitle, description, published, props)
+insert into public.entities (schema_id, slug, title, subtitle, summary, published, data)
 values
-  ('history', '브레멘 히스토리', 'History', '브레멘의 시작과 치어로밴드, 공연 문화의 변화', true, '{}'::jsonb)
+  (
+    ${schemaIdExpr("page/default/v1")},
+    'page:history',
+    '브레멘 히스토리',
+    'History',
+    '브레멘의 시작과 치어로밴드, 공연 문화의 변화',
+    true,
+    '{"slug":"history","props":{}}'::jsonb
+  )
 on conflict (slug) do update
-set title = excluded.title,
+set schema_id = excluded.schema_id,
+    title = excluded.title,
     subtitle = excluded.subtitle,
-    description = excluded.description,
+    summary = excluded.summary,
     published = excluded.published,
-    props = excluded.props;
+    data = public.entities.data ||
+      (excluded.data - 'props') ||
+      jsonb_build_object(
+        'props',
+        coalesce(public.entities.data->'props', '{}'::jsonb) ||
+          coalesce(excluded.data->'props', '{}'::jsonb)
+      ),
+    updated_at = now();
 
-insert into public.sections (key, section_type, schema_id, eyebrow, title, subtitle, published, props)
+insert into public.entities (schema_id, slug, title, subtitle, published, data)
 values
-  ('videos-by-event', 'entity_grouped_grid', ${schemaIdExpr("section/video-event-playlists/v1")}, 'Events', 'Recordings by stage', '공연 단위로 묶어 보는 영상 기록', true, '{}'::jsonb),
-  ('history-timeline', 'entity_timeline', ${schemaIdExpr("section/history-timeline/v1")}, 'Since 2001', 'Bremen History', '궤짝 유랑 악단에서 현재의 브레멘까지', true, '{}'::jsonb)
-on conflict (key) do update
-set section_type = excluded.section_type,
-    schema_id = excluded.schema_id,
-    eyebrow = excluded.eyebrow,
+  (
+    ${schemaIdExpr("section/video-event-playlists/v1")},
+    'section:videos-by-event',
+    'Recordings by stage',
+    '공연 단위로 묶어 보는 영상 기록',
+    true,
+    '{"key":"videos-by-event","section_type":"entity_grouped_grid","eyebrow":"Events","props":{}}'::jsonb
+  ),
+  (
+    ${schemaIdExpr("section/history-timeline/v1")},
+    'section:history-timeline',
+    'Bremen History',
+    '궤짝 유랑 악단에서 현재의 브레멘까지',
+    true,
+    '{"key":"history-timeline","section_type":"entity_timeline","eyebrow":"Since 2001","props":{}}'::jsonb
+  )
+on conflict (slug) do update
+set schema_id = excluded.schema_id,
     title = excluded.title,
     subtitle = excluded.subtitle,
     published = excluded.published,
-    props = excluded.props;
+    data = public.entities.data ||
+      (excluded.data - 'props') ||
+      jsonb_build_object(
+        'props',
+        coalesce(public.entities.data->'props', '{}'::jsonb) ||
+          coalesce(excluded.data->'props', '{}'::jsonb)
+      ),
+    updated_at = now();
 
 with links(page_slug, section_key, sort_order) as (
   values
@@ -633,14 +668,12 @@ select
   links.sort_order,
   '{}'::jsonb
 from links
-join public.pages page_ref on page_ref.slug = links.page_slug
-join public.sections section_ref on section_ref.key = links.section_key
 join public.entities page_entity
   on page_entity.schema_id = ${schemaIdExpr("page/default/v1")}
- and page_entity.slug = 'page:' || page_ref.slug
+ and page_entity.slug = 'page:' || links.page_slug
 join public.entities section_entity
   on ${sectionSchemaPredicate("section_entity")}
- and section_entity.slug = 'section:' || section_ref.key
+ and section_entity.slug = 'section:' || links.section_key
 on conflict (from_entity_id, to_entity_id, relation_type, slot) do update
 set schema_id = excluded.schema_id,
     sort_order = excluded.sort_order,
@@ -775,20 +808,17 @@ set schema_id = excluded.schema_id,
     props = excluded.props;
 
 delete from public.entity_relations relation
-using public.entities section_entity, public.sections section_ref
+using public.entities section_entity
 where relation.schema_id = ${schemaIdExpr("relation/section-entity/v1")}
   and relation.from_entity_id = section_entity.id
   and ${sectionSchemaPredicate("section_entity")}
-  and section_entity.slug = 'section:' || section_ref.key
-  and section_ref.key in (${sectionKeys.map(sqlString).join(", ")});
+  and section_entity.slug in (${sectionKeys.map((key) => sqlString(`section:${key}`)).join(", ")});
 
 with target_section as (
   select section_entity.id as section_entity_id
-  from public.sections section_ref
-  join public.entities section_entity
-    on ${sectionSchemaPredicate("section_entity")}
-   and section_entity.slug = 'section:' || section_ref.key
-  where section_ref.key = 'performances-current-season'
+  from public.entities section_entity
+  where ${sectionSchemaPredicate("section_entity")}
+    and section_entity.slug = 'section:performances-current-season'
 ),
 ordered as (
   select
@@ -824,11 +854,9 @@ set schema_id = excluded.schema_id,
 
 with target_section as (
   select section_entity.id as section_entity_id
-  from public.sections section_ref
-  join public.entities section_entity
-    on ${sectionSchemaPredicate("section_entity")}
-   and section_entity.slug = 'section:' || section_ref.key
-  where section_ref.key = 'performances-archive'
+  from public.entities section_entity
+  where ${sectionSchemaPredicate("section_entity")}
+    and section_entity.slug = 'section:performances-archive'
 ),
 ordered as (
   select
@@ -867,11 +895,9 @@ set schema_id = excluded.schema_id,
 
 with target_section as (
   select section_entity.id as section_entity_id
-  from public.sections section_ref
-  join public.entities section_entity
-    on ${sectionSchemaPredicate("section_entity")}
-   and section_entity.slug = 'section:' || section_ref.key
-  where section_ref.key = 'videos-featured'
+  from public.entities section_entity
+  where ${sectionSchemaPredicate("section_entity")}
+    and section_entity.slug = 'section:videos-featured'
 ),
 ordered as (
   select
@@ -908,11 +934,9 @@ set schema_id = excluded.schema_id,
 
 with target_section as (
   select section_entity.id as section_entity_id
-  from public.sections section_ref
-  join public.entities section_entity
-    on ${sectionSchemaPredicate("section_entity")}
-   and section_entity.slug = 'section:' || section_ref.key
-  where section_ref.key = 'videos-popular'
+  from public.entities section_entity
+  where ${sectionSchemaPredicate("section_entity")}
+    and section_entity.slug = 'section:videos-popular'
 ),
 ordered as (
   select
@@ -950,11 +974,9 @@ set schema_id = excluded.schema_id,
 
 with target_section as (
   select section_entity.id as section_entity_id
-  from public.sections section_ref
-  join public.entities section_entity
-    on ${sectionSchemaPredicate("section_entity")}
-   and section_entity.slug = 'section:' || section_ref.key
-  where section_ref.key = 'videos-library'
+  from public.entities section_entity
+  where ${sectionSchemaPredicate("section_entity")}
+    and section_entity.slug = 'section:videos-library'
 ),
 ordered as (
   select
@@ -989,11 +1011,9 @@ set schema_id = excluded.schema_id,
 
 with target_section as (
   select section_entity.id as section_entity_id
-  from public.sections section_ref
-  join public.entities section_entity
-    on ${sectionSchemaPredicate("section_entity")}
-   and section_entity.slug = 'section:' || section_ref.key
-  where section_ref.key = 'videos-by-event'
+  from public.entities section_entity
+  where ${sectionSchemaPredicate("section_entity")}
+    and section_entity.slug = 'section:videos-by-event'
 ),
 ordered as (
   select
@@ -1028,11 +1048,9 @@ set schema_id = excluded.schema_id,
 
 with target_section as (
   select section_entity.id as section_entity_id
-  from public.sections section_ref
-  join public.entities section_entity
-    on ${sectionSchemaPredicate("section_entity")}
-   and section_entity.slug = 'section:' || section_ref.key
-  where section_ref.key = 'photos-gallery'
+  from public.entities section_entity
+  where ${sectionSchemaPredicate("section_entity")}
+    and section_entity.slug = 'section:photos-gallery'
 ),
 ordered as (
   select
@@ -1068,11 +1086,9 @@ set schema_id = excluded.schema_id,
 
 with target_section as (
   select section_entity.id as section_entity_id
-  from public.sections section_ref
-  join public.entities section_entity
-    on ${sectionSchemaPredicate("section_entity")}
-   and section_entity.slug = 'section:' || section_ref.key
-  where section_ref.key = 'history-timeline'
+  from public.entities section_entity
+  where ${sectionSchemaPredicate("section_entity")}
+    and section_entity.slug = 'section:history-timeline'
 ),
 ordered as (
   select
