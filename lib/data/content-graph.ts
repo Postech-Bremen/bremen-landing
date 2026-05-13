@@ -374,15 +374,17 @@ function uniqueStrings(values: Array<string | null | undefined>) {
   return [...new Set(values.filter((value): value is string => Boolean(value)))]
 }
 
-function shadowSlug(sourceTable: "pages" | "sections", sourceKey: string) {
-  return `${sourceTable === "pages" ? PAGE_SHADOW_PREFIX : SECTION_SHADOW_PREFIX}${sourceKey}`
+type ShadowEntityKind = "page" | "section"
+
+function shadowSlug(shadowKind: ShadowEntityKind, sourceKey: string) {
+  return `${shadowKind === "page" ? PAGE_SHADOW_PREFIX : SECTION_SHADOW_PREFIX}${sourceKey}`
 }
 
 function shadowKey(
   entity: EntityGraphLink | null | undefined,
-  sourceTable: "pages" | "sections",
+  shadowKind: ShadowEntityKind,
 ) {
-  const prefix = sourceTable === "pages" ? PAGE_SHADOW_PREFIX : SECTION_SHADOW_PREFIX
+  const prefix = shadowKind === "page" ? PAGE_SHADOW_PREFIX : SECTION_SHADOW_PREFIX
   return entity?.slug?.startsWith(prefix) ? entity.slug.slice(prefix.length) : null
 }
 
@@ -604,7 +606,7 @@ function pageRecordFromEntity(
 ): GraphPageRecord | null {
   const data = jsonObject(entity.data)
   const slug =
-    shadowKey(entity, "pages") ??
+    shadowKey(entity, "page") ??
     stringValue(data, "slug")
 
   if (!slug) return null
@@ -655,7 +657,7 @@ function graphSectionFromShadowEntity({
   if (!entity) return null
 
   const data = jsonObject(entity.data)
-  const key = shadowKey(entity, "sections") ?? stringValue(data, "key")
+  const key = shadowKey(entity, "section") ?? stringValue(data, "key")
   const sectionType = stringValue(data, "section_type")
 
   if (!key || !sectionType) return null
@@ -775,7 +777,7 @@ async function loadGraphPageUncached(
           "id, schema_id, slug, title, subtitle, summary, owner_member_id, published, data, created_at, updated_at",
         )
         .eq("schema_id", schemas.pageSchemaId)
-        .eq("slug", shadowSlug("pages", options.slug))
+        .eq("slug", shadowSlug("page", options.slug))
 
       if (!includeDrafts) {
         pageEntityQuery = pageEntityQuery.eq("published", true)
@@ -858,7 +860,7 @@ async function loadGraphPageFromEntityRelations({
       .from("entities")
       .select("id")
       .eq("schema_id", resolvedSchemas.pageSchemaId)
-      .eq("slug", shadowSlug("pages", page.slug))
+      .eq("slug", shadowSlug("page", page.slug))
       .maybeSingle()
 
     if (pageEntityError || !pageEntity) return { page, sections: [] }

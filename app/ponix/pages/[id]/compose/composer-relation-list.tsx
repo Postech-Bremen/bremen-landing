@@ -238,7 +238,6 @@ function SectionEntityRelationEditor({
   return (
     <div
       data-composer-relation-item={relation.id}
-      data-composer-relation-source-id={relation.sourceId}
       data-composer-relation-graph-id={relation.graphRelationId}
       data-composer-entity-id={relation.entityId}
       onDragOver={onDragOver}

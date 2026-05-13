@@ -147,7 +147,6 @@ export type CmsLinkedEntity = SchemaSummary & {
 export type CmsPageSectionRelation = {
   id: string
   graphRelationId: string
-  sourceId: string | null
   pageId: string
   sectionId: string
   sortOrder: number
@@ -160,7 +159,6 @@ export type CmsPageSectionRelation = {
 export type CmsSectionEntityRelation = {
   id: string
   graphRelationId: string
-  sourceId: string | null
   sectionId: string
   entityId: string
   relationType: string
@@ -386,7 +384,7 @@ function pageRowFromEntity(
   >,
 ): CmsPageRecord | null {
   const data = jsonObject(entity.data)
-  const slug = shadowKey(entity, "pages") ?? stringValue(data.slug)
+  const slug = shadowKey(entity, "page") ?? stringValue(data.slug)
 
   if (!slug) return null
 
@@ -420,7 +418,7 @@ function sectionRowFromEntity(
   >,
 ): CmsSectionRecord | null {
   const data = jsonObject(entity.data)
-  const key = shadowKey(entity, "sections") ?? stringValue(data.key)
+  const key = shadowKey(entity, "section") ?? stringValue(data.key)
   const sectionType = stringValue(data.section_type)
 
   if (!key || !sectionType) return null
@@ -556,9 +554,9 @@ function entityWithTimestamps(entity: RawEntityLink) {
 
 function shadowKey(
   entity: Pick<EntityRow, "slug"> | RawEntityLink | null,
-  sourceTable: "pages" | "sections",
+  shadowKind: "page" | "section",
 ) {
-  const prefix = sourceTable === "pages" ? PAGE_SHADOW_PREFIX : SECTION_SHADOW_PREFIX
+  const prefix = shadowKind === "page" ? PAGE_SHADOW_PREFIX : SECTION_SHADOW_PREFIX
   return entity?.slug?.startsWith(prefix) ? entity.slug.slice(prefix.length) : null
 }
 
@@ -930,30 +928,30 @@ export async function loadCmsEntityDetail(
 async function loadShadowEntityId({
   supabase,
   registry,
-  sourceTable,
-  sourceId,
+  shadowKind,
+  entityId,
 }: {
   supabase: SupabaseClient
   registry: SchemaRegistryMap
-  sourceTable: "pages" | "sections"
-  sourceId: string
+  shadowKind: "page" | "section"
+  entityId: string
 }) {
   const { data: entity, error } = await supabase
     .from("entities")
     .select("id, schema_id")
-    .eq("id", sourceId)
+    .eq("id", entityId)
     .maybeSingle()
 
   if (error) {
     throw new Error(
-      `Failed to load ${sourceTable} graph entity: ${error.message}`,
+      `Failed to load ${shadowKind} graph entity: ${error.message}`,
     )
   }
 
   if (!entity) return null
 
   const validSchema =
-    sourceTable === "pages"
+    shadowKind === "page"
       ? entity.schema_id === schemaIdForKey(registry, PAGE_ENTITY_SCHEMA_KEY)
       : schemaIdsForKind(registry, "section").includes(entity.schema_id)
 
@@ -977,16 +975,16 @@ async function loadPageSectionRelationsFromEntityGraph({
       ? loadShadowEntityId({
           supabase,
           registry,
-          sourceTable: "pages",
-          sourceId: pageId,
+          shadowKind: "page",
+          entityId: pageId,
         })
       : Promise.resolve(null),
     sectionId
       ? loadShadowEntityId({
           supabase,
           registry,
-          sourceTable: "sections",
-          sourceId: sectionId,
+          shadowKind: "section",
+          entityId: sectionId,
         })
       : Promise.resolve(null),
   ])
@@ -1025,7 +1023,6 @@ async function loadPageSectionRelationsFromEntityGraph({
       return {
         id: relation.id,
         graphRelationId: relation.id,
-        sourceId: null,
         pageId: mappedPageId,
         sectionId: mappedSectionId,
         sortOrder: relation.sort_order,
@@ -1057,8 +1054,8 @@ async function loadSectionEntityRelationsFromEntityGraph({
     ? await loadShadowEntityId({
         supabase,
         registry,
-        sourceTable: "sections",
-        sourceId: sectionId,
+        shadowKind: "section",
+        entityId: sectionId,
       })
     : null
 
@@ -1097,7 +1094,6 @@ async function loadSectionEntityRelationsFromEntityGraph({
       return {
         id: relation.id,
         graphRelationId: relation.id,
-        sourceId: null,
         sectionId: mappedSectionId,
         entityId: relation.to_entity_id,
         relationType: relation.relation_type,

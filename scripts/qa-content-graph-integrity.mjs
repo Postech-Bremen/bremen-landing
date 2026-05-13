@@ -71,8 +71,8 @@ function hasUsableRelationCopy(relation) {
   return Boolean(relation.relation_type && relation.slot)
 }
 
-function shadowKey(entity, sourceTable) {
-  const prefix = sourceTable === "pages" ? PAGE_SHADOW_PREFIX : SECTION_SHADOW_PREFIX
+function shadowKey(entity, shadowKind) {
+  const prefix = shadowKind === "page" ? PAGE_SHADOW_PREFIX : SECTION_SHADOW_PREFIX
   return entity?.slug?.startsWith(prefix) ? entity.slug.slice(prefix.length) : null
 }
 
@@ -85,11 +85,11 @@ function stringValue(value) {
 }
 
 function pageKey(entity) {
-  return shadowKey(entity, "pages") ?? stringValue(objectValue(entity?.data).slug)
+  return shadowKey(entity, "page") ?? stringValue(objectValue(entity?.data).slug)
 }
 
 function sectionKey(entity) {
-  return shadowKey(entity, "sections") ?? stringValue(objectValue(entity?.data).key)
+  return shadowKey(entity, "section") ?? stringValue(objectValue(entity?.data).key)
 }
 
 function sectionType(entity) {
@@ -129,9 +129,9 @@ async function loadSchemaContext(supabase) {
   }
 }
 
-async function checkEntityKeyUniqueness(supabase, sourceTable, schemas) {
+async function checkEntityKeyUniqueness(supabase, shadowKind, schemas) {
   const rows = requireOk(
-    sourceTable === "pages"
+    shadowKind === "page"
       ? await supabase
           .from("entities")
           .select("id, slug, title, data")
@@ -142,17 +142,17 @@ async function checkEntityKeyUniqueness(supabase, sourceTable, schemas) {
           .select("id, slug, title, data")
           .in("schema_id", schemas.sectionSchemaIds)
           .order("slug", { ascending: true }),
-    `${sourceTable} graph entities`,
+    `${shadowKind} graph entities`,
   )
 
-  const bySourceKey = new Map()
+  const byContentKey = new Map()
   const missingKeys = []
   for (const row of rows) {
-    const key = sourceTable === "pages" ? pageKey(row) : sectionKey(row)
+    const key = shadowKind === "page" ? pageKey(row) : sectionKey(row)
     if (!key) {
       missingKeys.push(
         issue("Graph entity is missing its stable content key", {
-          sourceTable,
+          shadowKind,
           entityId: row.id,
           slug: row.slug,
         }),
@@ -160,23 +160,23 @@ async function checkEntityKeyUniqueness(supabase, sourceTable, schemas) {
       continue
     }
 
-    const existing = bySourceKey.get(key) ?? []
+    const existing = byContentKey.get(key) ?? []
     existing.push(row)
-    bySourceKey.set(key, existing)
+    byContentKey.set(key, existing)
   }
 
-  const duplicates = [...bySourceKey.entries()]
+  const duplicates = [...byContentKey.entries()]
     .filter(([, entries]) => entries.length > 1)
-    .map(([sourceId, entries]) =>
+    .map(([contentKey, entries]) =>
       issue("Content key has multiple graph entities", {
-        sourceTable,
-        sourceId,
+        shadowKind,
+        contentKey,
         entityIds: entries.map((entry) => entry.id),
       }),
     )
 
   return {
-    sourceTable,
+    shadowKind,
     entities: rows.length,
     duplicates: [...duplicates, ...missingKeys],
     ok: duplicates.length === 0 && missingKeys.length === 0,
@@ -414,8 +414,8 @@ async function main() {
   )
 
   const entityKeyChecks = [
-    await checkEntityKeyUniqueness(supabase, "pages", schemas),
-    await checkEntityKeyUniqueness(supabase, "sections", schemas),
+    await checkEntityKeyUniqueness(supabase, "page", schemas),
+    await checkEntityKeyUniqueness(supabase, "section", schemas),
   ]
   const pageResults = []
   for (const page of pages) {
@@ -437,9 +437,9 @@ async function main() {
   console.log("\nGraph entity key cardinality")
   console.table(
     entityKeyChecks.map((result) => ({
-      sourceTable: result.sourceTable,
+      shadowKind: result.shadowKind,
       entities: result.entities,
-      duplicateSources: result.duplicates.length,
+      duplicateKeys: result.duplicates.length,
       integrity: result.ok ? "ok" : "failed",
     })),
   )
