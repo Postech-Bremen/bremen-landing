@@ -55,8 +55,6 @@ const schemaKinds = new Set<CmsSchemaKind>([
 ])
 
 const schemaTables = new Set<CmsSchemaDefinition["table"]>([
-  "pages",
-  "sections",
   "entities",
   "entity_relations",
 ])
@@ -148,16 +146,45 @@ function normalizeFields(value: Json): CmsFieldDefinition[] | null {
   return fields.length === value.length && fields.length > 0 ? fields : null
 }
 
+function normalizeSchemaTable(
+  kind: CmsSchemaKind,
+  tableName: string | null,
+): CmsSchemaDefinition["table"] | null {
+  if (kind === "relation") {
+    return tableName === "entity_relations" ? "entity_relations" : null
+  }
+
+  if (kind === "entity" && tableName === "entities") {
+    return "entities"
+  }
+
+  if (kind === "page" && (tableName === "entities" || tableName === "pages")) {
+    return "entities"
+  }
+
+  if (
+    kind === "section" &&
+    (tableName === "entities" || tableName === "sections")
+  ) {
+    return "entities"
+  }
+
+  return null
+}
+
 function normalizeSchemaRow(row: EntitySchemaRow): CmsSchemaDefinition | null {
   const kind = stringValue(row.kind)
-  const table = stringValue(row.table_name)
   const fields = normalizeFields(row.fields)
 
   if (
     !schemaKinds.has(kind as CmsSchemaKind) ||
-    !schemaTables.has(table as CmsSchemaDefinition["table"]) ||
     !fields
   ) {
+    return null
+  }
+
+  const table = normalizeSchemaTable(kind as CmsSchemaKind, stringValue(row.table_name))
+  if (!table || !schemaTables.has(table)) {
     return null
   }
 
@@ -165,7 +192,7 @@ function normalizeSchemaRow(row: EntitySchemaRow): CmsSchemaDefinition | null {
     schemaId: row.id,
     schemaKey: row.schema_key,
     kind: kind as CmsSchemaKind,
-    table: table as CmsSchemaDefinition["table"],
+    table,
     semanticKind: stringValue(row.semantic_kind) ?? "generic",
     semanticGroup: stringValue(row.semantic_group) ?? undefined,
     label: row.label,

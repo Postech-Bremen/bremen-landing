@@ -14,6 +14,9 @@ page/section records, but PONIX authoring now treats their graph `entities` as
 the CMS-facing record ids. Ordered page/section composition is stored in
 `entity_relations`; the legacy `page_sections` and `section_entities` mirror
 tables have been removed.
+Page and section schema registry entries are also entity-native: their
+canonical `entity_schemas.table_name` is `entities`, not the remaining
+compatibility tables.
 
 The older media domain tables `performances`, `videos`, and `photos` have been
 removed. Media/archive content now lives in `entities` and `entity_relations`.
@@ -81,7 +84,7 @@ Current PONIX contract:
 
 | Table | Purpose |
 | --- | --- |
-| `entity_schemas` | DB-backed schema registry for page, section, entity, and relation records. This is the long-term source for CMS form metadata. |
+| `entity_schemas` | DB-backed schema registry for page, section, entity, and relation records. Page, section, and entity schemas point to `entities`; relation schemas point to `entity_relations`. This is the long-term source for CMS form metadata. |
 | `pages` | Compatibility mirror for routable page records such as `home`, `performances`, `videos`, `photos`, `history`, and `site`. PONIX authoring should prefer the page entity. |
 | `sections` | Compatibility mirror for renderer blocks. PONIX authoring should prefer the section entity with renderer identity in `entities.data`. |
 | `entities` | Reusable content units such as videos, photos, stats, posts, history milestones, activities, nav items, and social links. |
@@ -122,6 +125,11 @@ There are now two layers:
 - `lib/cms/schema-registry.ts` remains the reviewed code fallback and renderer
   compatibility contract. Keep it in sync until DB-only schema editing has its
   own review and QA path.
+
+For active schemas, `table_name` is storage identity, not domain identity.
+`kind = 'page'`, `kind = 'section'`, and `kind = 'entity'` records should use
+`table_name = 'entities'`; `kind = 'relation'` records should use
+`table_name = 'entity_relations'`.
 
 Use the registry contract for:
 
