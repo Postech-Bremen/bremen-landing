@@ -6,7 +6,7 @@ import { requireCmsAdmin } from "@/lib/cms/auth"
 import { loadCmsEntityDetail } from "@/lib/cms/content"
 
 export const metadata: Metadata = {
-  title: "Edit PONIX Entity | 브레멘 Bremen",
+  title: "콘텐츠 수정 | Bremen Admin",
   robots: {
     index: false,
     follow: false,

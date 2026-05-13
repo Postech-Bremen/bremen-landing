@@ -12,9 +12,9 @@ const LOW_PRIORITY_FIELDS = new Set(["created_at", "updated_at"])
 
 export function CmsAuditTrailCard({
   audit,
-  title = "Audit trail",
-  description = "Append-only CMS changes recorded at the database boundary.",
-  emptyMessage = "No CMS changes have been recorded yet.",
+  title = "변경 이력",
+  description = "관리자 화면에서 남긴 변경 내용을 시간순으로 확인합니다.",
+  emptyMessage = "아직 기록된 변경 내역이 없습니다.",
 }: {
   audit: CmsAuditEventList
   title?: string
@@ -22,7 +22,7 @@ export function CmsAuditTrailCard({
   emptyMessage?: string
 }) {
   return (
-    <Card className="rounded-md border bg-card/95 shadow-xl">
+    <Card className="rounded-[1.5rem] border bg-card/95 shadow-sm">
       <CardHeader>
         <div className="flex flex-col gap-2 md:flex-row md:items-end md:justify-between">
           <div>
@@ -35,7 +35,7 @@ export function CmsAuditTrailCard({
             variant={audit.available ? "outline" : "secondary"}
             className="w-fit rounded-full"
           >
-            {audit.available ? "Audit enabled" : "Migration pending"}
+            {audit.available ? "기록 중" : "준비 필요"}
           </Badge>
         </div>
       </CardHeader>
@@ -50,7 +50,7 @@ export function CmsAuditTrailCard({
           <p className="rounded-md border bg-background/60 p-4 text-sm leading-relaxed text-muted-foreground">
             {audit.available
               ? emptyMessage
-              : "Audit storage is not available in this database yet. PONIX remains usable."}
+              : "이 환경에서는 아직 변경 이력을 저장하지 않습니다."}
           </p>
         )}
       </CardContent>
@@ -86,7 +86,7 @@ function AuditEventRow({ event }: { event: CmsAuditEvent }) {
           <p className="mt-1 truncate text-xs text-muted-foreground">
             {event.changedKeys.length > 0
               ? event.changedKeys.join(", ")
-              : "No top-level field diff"}
+              : "표시할 필드 변경 없음"}
           </p>
         </div>
         <p className="font-mono text-xs text-muted-foreground md:text-right">
@@ -102,14 +102,14 @@ function AuditEventRow({ event }: { event: CmsAuditEvent }) {
         </div>
       ) : (
         <p className="mt-4 rounded-md border bg-muted/25 p-3 text-sm text-muted-foreground">
-          No field-level diff is available for this event.
+          이 변경에는 자세한 필드 차이가 없습니다.
         </p>
       )}
 
       {(before || after) && (
         <details className="mt-4 rounded-md border bg-muted/25 p-3">
           <summary className="cursor-pointer text-xs font-medium uppercase tracking-[0.24em] text-muted-foreground">
-            Row snapshots
+            저장값 보기
           </summary>
           <div className="mt-3 grid gap-3 lg:grid-cols-2">
             <SnapshotBlock label="Before" value={before} />

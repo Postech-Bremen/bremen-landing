@@ -1,9 +1,6 @@
 import type { Metadata } from 'next'
 import { Instrument_Serif, Noto_Serif_KR } from 'next/font/google'
 import { Analytics } from '@vercel/analytics/next'
-import { Navigation } from '@/components/navigation'
-import { Footer } from '@/components/footer'
-import { loadSiteChrome } from '@/lib/data/content-graph'
 import './globals.css'
 
 const instrumentSerif = Instrument_Serif({
@@ -33,23 +30,13 @@ export default async function RootLayout({
 }: Readonly<{
   children: React.ReactNode
 }>) {
-  const siteChrome = await loadSiteChrome()
-
-  if (!siteChrome) {
-    throw new Error("Missing CMS site chrome configuration")
-  }
-
   return (
     <html
       lang="ko"
       className={`${instrumentSerif.variable} ${notoSerifKr.variable}`}
     >
       <body className="font-sans antialiased">
-        <div className="min-h-screen bg-background flex flex-col">
-          <Navigation config={siteChrome.navigation} />
-          <main className="pt-20 flex-1">{children}</main>
-          <Footer config={siteChrome.footer} />
-        </div>
+        {children}
         {process.env.NODE_ENV === 'production' && <Analytics />}
       </body>
     </html>

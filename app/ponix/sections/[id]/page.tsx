@@ -20,7 +20,7 @@ import {
 import { loadEditableSectionFields } from "@/lib/cms/section-editor.server"
 
 export const metadata: Metadata = {
-  title: "PONIX Section Detail | 브레멘 Bremen",
+  title: "섹션 상세 | Bremen Admin",
   robots: {
     index: false,
     follow: false,
@@ -58,14 +58,14 @@ export default async function PonixSectionRecordPage({
     <CmsDetailPage
       detail={detail}
       backHref="/ponix/sections"
-      backLabel="All sections"
+      backLabel="섹션 목록"
       audit={audit}
       actions={
         <Link
           href={`/ponix/sections/${id}/edit`}
           className="inline-flex h-9 items-center justify-center rounded-full bg-primary px-4 py-2 text-sm font-medium text-primary-foreground shadow-xs transition-colors hover:bg-primary/90"
         >
-          Edit section
+          섹션 수정
         </Link>
       }
     >
@@ -74,13 +74,13 @@ export default async function PonixSectionRecordPage({
         error={mutation.error}
       />
       <PageSectionRelationsCard
-        title="Page placements"
-        description="Pages that include this section."
+        title="사용 중인 페이지"
+        description="이 섹션이 표시되는 페이지입니다."
         relationList={relations.pageSectionList}
       />
       <SectionEntityRelationsCard
-        title="Curated entities"
-        description="Search existing entities, attach them here, and tune their order."
+        title="섹션 콘텐츠"
+        description="이 섹션에 노출되는 콘텐츠와 순서입니다."
         relationList={relations.sectionEntityList}
         editable
         editorOptions={options}

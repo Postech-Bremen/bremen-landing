@@ -198,7 +198,7 @@ export function PonixComposerWorkspace({
               <div>
                 <p className="caps text-muted-foreground">Live canvas</p>
                 <CardTitle className="font-serif text-3xl italic md:text-4xl">
-                  Edit in context
+                  화면을 보며 편집
                 </CardTitle>
                 <CardDescription>
                   실제 사이트 화면을 보며 섹션을 고르고, 오른쪽에서 바로 정리합니다.
@@ -206,7 +206,7 @@ export function PonixComposerWorkspace({
               </div>
               <Button asChild variant="outline" className="w-fit rounded-full">
                 <Link href={`/ponix/preview/pages/${pageId}`}>
-                  Preview route
+                  미리보기
                   <ArrowUpRight className="size-4" />
                 </Link>
               </Button>
@@ -252,11 +252,12 @@ function ComposerHeader({
 }) {
   return (
     <div className="relative overflow-hidden rounded-2xl border bg-card/95 p-5 shadow-sm md:p-7">
-      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_8%_0%,color-mix(in_oklch,var(--accent)_12%,transparent),transparent_34%),linear-gradient(135deg,color-mix(in_oklch,var(--secondary)_84%,transparent),transparent_42%)]" />
+      <div className="pointer-events-none absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-primary via-accent to-transparent" />
+      <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(135deg,color-mix(in_oklch,var(--secondary)_78%,transparent),transparent_46%)]" />
       <div className="relative flex flex-col gap-5 lg:flex-row lg:items-start lg:justify-between">
         <div>
-          <p className="caps mb-3 text-muted-foreground">PONIX / Composer</p>
-          <h1 className="font-serif text-[clamp(3rem,6vw,5.5rem)] italic leading-[0.86] tracking-tight">
+          <p className="caps mb-3 text-muted-foreground">페이지 구성</p>
+          <h1 className="font-serif text-[clamp(2.5rem,4vw,4.75rem)] italic leading-[0.9] tracking-tight">
             {title}
           </h1>
           <div className="mt-4 flex flex-wrap items-center gap-2">
@@ -267,16 +268,16 @@ function ComposerHeader({
               {kind}
             </span>
             <span className="rounded-full border px-2.5 py-0.5 text-xs">
-              {sectionCount} sections
+              {sectionCount}개 섹션
             </span>
           </div>
         </div>
         <div className="flex flex-wrap gap-2">
           <Button asChild variant="outline" className="rounded-full">
-            <Link href={`/ponix/pages/${pageId}`}>Record</Link>
+            <Link href={`/ponix/pages/${pageId}`}>상세 정보</Link>
           </Button>
           <Button asChild className="rounded-full">
-            <Link href={`/ponix/pages/${pageId}/edit`}>Page settings</Link>
+            <Link href={`/ponix/pages/${pageId}/edit`}>기본 정보</Link>
           </Button>
         </div>
       </div>

@@ -25,13 +25,14 @@ export function CmsListPage({
   children: ReactNode
 }) {
   return (
-    <section className="mx-auto flex w-full max-w-[96rem] flex-col gap-6">
-      <div className="relative overflow-hidden rounded-2xl border bg-card/95 p-5 shadow-sm md:p-7">
-        <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_12%_0%,color-mix(in_oklch,var(--accent)_12%,transparent),transparent_34%),linear-gradient(135deg,color-mix(in_oklch,var(--muted)_90%,transparent),transparent_42%)]" />
+    <section className="mx-auto flex w-full max-w-[92rem] flex-col gap-6">
+      <div className="relative overflow-hidden rounded-[1.75rem] border bg-card/95 p-5 shadow-sm md:p-7">
+        <div className="pointer-events-none absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-primary via-accent to-transparent" />
+        <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(135deg,color-mix(in_oklch,var(--muted)_72%,transparent),transparent_48%)]" />
         <div className="relative flex flex-col gap-5 md:flex-row md:items-start md:justify-between">
           <div className="min-w-0">
             <p className="caps mb-3 text-muted-foreground">{eyebrow}</p>
-            <h1 className="font-serif text-[clamp(3rem,6vw,5.5rem)] italic leading-[0.86] tracking-tight">
+            <h1 className="font-serif text-[clamp(2.5rem,4vw,4.75rem)] italic leading-[0.9] tracking-tight">
               {title}
             </h1>
             <p className="mt-4 max-w-3xl text-sm leading-relaxed text-muted-foreground md:text-base">
@@ -60,7 +61,7 @@ export function CmsTableCard({
   children: ReactNode
 }) {
   return (
-    <Card className="overflow-hidden rounded-2xl border bg-card/95 shadow-sm">
+    <Card className="overflow-hidden rounded-[1.5rem] border bg-card/95 shadow-sm">
       <CardHeader className="border-b bg-muted/20">
         <div className="flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
           <CardTitle className="font-serif text-2xl italic md:text-3xl">
@@ -92,7 +93,7 @@ export function CmsStatTile({
   return (
     <Card
       className={cn(
-        "rounded-2xl border bg-card/95 shadow-sm",
+        "rounded-[1.5rem] border bg-card/95 shadow-sm",
         accent && "border-transparent bg-primary text-primary-foreground",
       )}
     >
@@ -142,7 +143,7 @@ export function CmsRecordCard({
   return (
     <Link
       href={href}
-      className="group flex min-h-56 flex-col overflow-hidden rounded-2xl border bg-card/95 shadow-sm outline-none transition-all hover:-translate-y-0.5 hover:border-accent/35 hover:shadow-xl focus-visible:ring-[3px] focus-visible:ring-ring/50"
+      className="group flex min-h-56 flex-col overflow-hidden rounded-[1.5rem] border bg-card/95 shadow-sm outline-none transition-all hover:-translate-y-0.5 hover:border-accent/35 hover:shadow-xl focus-visible:ring-[3px] focus-visible:ring-ring/50"
     >
       {media && (
         <div className="relative h-28 overflow-hidden border-b bg-muted/40">
@@ -178,7 +179,7 @@ export function PublishBadge({ published }: { published: boolean }) {
       variant={published ? "default" : "outline"}
       className={cn("rounded-full", !published && "text-muted-foreground")}
     >
-      {published ? "Published" : "Draft"}
+      {published ? "공개" : "비공개"}
     </Badge>
   )
 }

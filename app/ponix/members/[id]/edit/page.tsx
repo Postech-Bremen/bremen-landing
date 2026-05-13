@@ -30,7 +30,7 @@ import { requireCmsAdmin } from "@/lib/cms/auth"
 import { loadCmsMemberDetail } from "@/lib/cms/members"
 
 export const metadata: Metadata = {
-  title: "PONIX Member Edit | 브레멘 Bremen",
+  title: "멤버 수정 | Bremen Admin",
   robots: {
     index: false,
     follow: false,
@@ -87,7 +87,7 @@ export default async function PonixMemberEditPage({
         <Card className="overflow-hidden rounded-xl bg-card/95 shadow-sm">
           <CardHeader className="border-b bg-muted/20">
             <CardTitle className="font-serif text-3xl italic">
-              Member access
+              멤버 권한
             </CardTitle>
             <CardDescription>
               승인된 멤버만 로그인 후 자기 정보를 관리할 수 있습니다. 관리자 권한은
@@ -130,7 +130,7 @@ export default async function PonixMemberEditPage({
         <Card className="mt-6 overflow-hidden rounded-xl bg-card/95 shadow-sm">
           <CardHeader className="border-b bg-muted/20">
             <CardTitle className="font-serif text-3xl italic">
-              Profile
+              공개 프로필
             </CardTitle>
             <CardDescription>
               멤버 페이지와 개인 정보 화면에 표시되는 정보입니다.

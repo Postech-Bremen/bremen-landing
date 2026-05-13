@@ -80,7 +80,7 @@ export function RelationMutationNotice({
   return (
     <Alert
       variant={error ? "destructive" : "default"}
-      className="rounded-md bg-card/95 shadow-xl"
+      className="rounded-[1.25rem] bg-card/95 shadow-sm"
     >
       <AlertDescription>{error ?? message}</AlertDescription>
     </Alert>
@@ -551,7 +551,7 @@ function RelationCard({
   children: ReactNode
 }) {
   return (
-    <Card className="rounded-md bg-card/95 shadow-xl">
+    <Card className="rounded-[1.5rem] bg-card/95 shadow-sm">
       <CardHeader className="border-b">
         <div className="flex flex-col gap-2 md:flex-row md:items-end md:justify-between">
           <div>
@@ -1074,12 +1074,12 @@ function StatusBadges({
       {missing && <BrokenBadge />}
       {draft && (
         <Badge variant="outline" className="rounded-full">
-          Draft target
+          비공개 항목
         </Badge>
       )}
       {unregistered && (
         <Badge variant="outline" className="rounded-full border-destructive/40">
-          Unregistered schema
+          형식 점검 필요
         </Badge>
       )}
       {healthy && (

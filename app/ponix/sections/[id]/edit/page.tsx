@@ -9,7 +9,7 @@ import {
 } from "@/lib/cms/content"
 
 export const metadata: Metadata = {
-  title: "Edit PONIX Section | 브레멘 Bremen",
+  title: "섹션 수정 | Bremen Admin",
   robots: {
     index: false,
     follow: false,

@@ -21,7 +21,7 @@ import {
 import type { CmsSchemaDefinition } from "@/lib/cms/schema-registry"
 
 export const metadata: Metadata = {
-  title: "New PONIX Entity | 브레멘 Bremen",
+  title: "콘텐츠 추가 | Bremen Admin",
   robots: {
     index: false,
     follow: false,
@@ -60,7 +60,7 @@ export default async function PonixNewEntityPage({
       schemas={schemas}
       error={
         schemaKey
-          ? `Schema ${schemaKey} cannot be created from CMS.`
+          ? `선택한 형식(${schemaKey})으로는 새 콘텐츠를 만들 수 없습니다.`
           : error
       }
     />
@@ -75,33 +75,32 @@ function SchemaPickerPage({
   error?: string
 }) {
   return (
-    <main className="relative min-h-[calc(100vh-5rem)] overflow-hidden">
+    <main className="relative min-h-screen overflow-hidden">
       <div className="pointer-events-none absolute inset-0 -z-10">
         <div className="absolute right-[-10rem] top-10 h-96 w-96 rounded-full bg-accent/10 blur-3xl" />
         <div className="absolute left-[-8rem] bottom-0 h-80 w-80 rounded-full bg-muted blur-3xl" />
       </div>
 
-      <section className="mx-auto max-w-6xl px-6 py-16 md:px-8 md:py-24">
+      <section className="mx-auto max-w-6xl px-1 py-4 md:py-8">
         <div className="mb-10 flex flex-col gap-6 md:flex-row md:items-start md:justify-between">
           <div>
-            <p className="caps mb-5">PONIX / New entity</p>
-            <h1 className="font-serif text-[clamp(3.25rem,8vw,6.5rem)] italic leading-[0.84] tracking-tight">
-              Choose schema
+            <p className="caps mb-5">콘텐츠 추가</p>
+            <h1 className="font-serif text-[clamp(2.5rem,5vw,5rem)] italic leading-[0.9] tracking-tight">
+              형식 선택
             </h1>
             <p className="mt-5 max-w-2xl text-sm leading-relaxed text-muted-foreground md:text-base">
-              Start with a registered entity schema. Imported source-only
-              schemas stay locked until their required source identifiers exist.
+              만들 콘텐츠의 종류를 먼저 고릅니다. 형식에 따라 입력 항목과 검증 방식이 달라집니다.
             </p>
           </div>
           <Button asChild variant="outline" className="w-fit rounded-full">
-            <Link href="/ponix/entities">All entities</Link>
+            <Link href="/ponix/entities">콘텐츠 목록</Link>
           </Button>
         </div>
 
         <div className="space-y-6">
           {error && (
             <Alert variant="destructive">
-              <AlertTitle>Schema unavailable</AlertTitle>
+              <AlertTitle>선택할 수 없는 형식입니다</AlertTitle>
               <AlertDescription>{error}</AlertDescription>
             </Alert>
           )}
@@ -110,7 +109,7 @@ function SchemaPickerPage({
             {schemas.map((schema) => (
               <Card
                 key={schema.schemaKey}
-                className="rounded-md bg-card/95 shadow-xl transition-transform hover:-translate-y-1"
+                className="rounded-[1.5rem] bg-card/95 shadow-sm transition-transform hover:-translate-y-1"
               >
                 <CardHeader className="border-b">
                   <div className="mb-3 flex flex-wrap items-center gap-2">
@@ -118,7 +117,7 @@ function SchemaPickerPage({
                       {semanticKindForSchema(schema)}
                     </Badge>
                     <Badge variant="secondary" className="rounded-full">
-                      {schema.fields.length} fields
+                      {schema.fields.length}개 항목
                     </Badge>
                   </div>
                   <CardTitle className="font-serif text-3xl italic">
@@ -136,7 +135,7 @@ function SchemaPickerPage({
                         schema.schemaKey,
                       )}`}
                     >
-                      Select
+                      선택
                     </Link>
                   </Button>
                 </CardContent>

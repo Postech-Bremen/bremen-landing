@@ -17,7 +17,7 @@ import {
 } from "@/lib/cms/content"
 
 export const metadata: Metadata = {
-  title: "PONIX Page Detail | 브레멘 Bremen",
+  title: "페이지 상세 | Bremen Admin",
   robots: {
     index: false,
     follow: false,
@@ -53,7 +53,7 @@ export default async function PonixPageRecordPage({
     <CmsDetailPage
       detail={detail}
       backHref="/ponix/pages"
-      backLabel="All pages"
+      backLabel="페이지 목록"
       audit={audit}
       actions={
         <div className="flex flex-wrap gap-2">
@@ -61,19 +61,19 @@ export default async function PonixPageRecordPage({
             href={`/ponix/pages/${id}/edit`}
             className="inline-flex h-9 items-center justify-center rounded-full border border-input bg-background px-4 py-2 text-sm font-medium shadow-xs transition-colors hover:bg-accent hover:text-accent-foreground"
           >
-            Edit page
+            기본 정보
           </Link>
           <Link
             href={`/ponix/pages/${id}/compose`}
             className="inline-flex h-9 items-center justify-center rounded-full bg-primary px-4 py-2 text-sm font-medium text-primary-foreground shadow-xs transition-colors hover:bg-primary/90"
           >
-            Compose page
+            화면 구성
           </Link>
           <Link
             href={`/ponix/preview/pages/${id}`}
             className="inline-flex h-9 items-center justify-center rounded-full border border-input bg-background px-4 py-2 text-sm font-medium shadow-xs transition-colors hover:bg-accent hover:text-accent-foreground"
           >
-            Preview
+            미리보기
           </Link>
         </div>
       }
@@ -83,8 +83,8 @@ export default async function PonixPageRecordPage({
         error={mutation.error}
       />
       <PageSectionRelationsCard
-        title="Page structure"
-        description="Sections attached to this page in render order."
+        title="페이지 구성"
+        description="이 페이지에 표시되는 섹션과 노출 순서입니다."
         relationList={relations.pageSectionList}
         editable
         editorOptions={options}

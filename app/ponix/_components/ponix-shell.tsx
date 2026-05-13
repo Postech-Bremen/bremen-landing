@@ -41,41 +41,41 @@ type PonixShellProps = {
 
 const navGroups = [
   {
-    label: "페이지와 콘텐츠",
+    label: "사이트 운영",
     items: [
       {
         href: "/ponix/pages",
-        label: "페이지 구성",
-        description: "실제 화면을 보며 섹션을 배치하고 수정",
+        label: "페이지 편집",
+        description: "공개 페이지의 섹션 순서와 화면 구성을 조정",
         icon: FileText,
       },
       {
         href: "/ponix/sections",
-        label: "섹션 문구",
-        description: "제목, 설명, 버튼, 노출 설정",
+        label: "섹션 관리",
+        description: "화면 블록의 문구, 버튼, 노출 상태를 정리",
         icon: Archive,
       },
       {
         href: "/ponix/entities",
-        label: "데이터",
-        description: "영상, 사진, 공연, 히스토리 기록",
+        label: "콘텐츠 자료",
+        description: "공연, 영상, 사진, 히스토리 원본을 관리",
         icon: Music2,
       },
       {
         href: "/ponix/relations",
-        label: "연결 관리",
-        description: "섹션과 데이터의 노출 순서",
+        label: "노출 순서",
+        description: "페이지, 섹션, 콘텐츠의 연결 관계를 확인",
         icon: GitBranch,
       },
     ],
   },
   {
-    label: "멤버",
+    label: "동아리 운영",
     items: [
       {
         href: "/ponix/members",
-        label: "멤버 관리",
-        description: "가입 승인, 권한, 활동 상태",
+        label: "멤버 운영",
+        description: "가입 승인, 권한, 활동 상태를 관리",
         icon: Users,
       },
     ],
@@ -123,13 +123,13 @@ export function PonixShell({ memberName, children }: PonixShellProps) {
           "--sidebar-width-icon": "3.25rem",
         } as CSSProperties
       }
-      className="min-h-[calc(100vh-5rem)] bg-[#f7f1e8]"
+      className="min-h-screen bg-[#f7f1e8]"
     >
       <div className="pointer-events-none fixed inset-0 -z-10 bg-[radial-gradient(circle_at_18%_10%,color-mix(in_oklch,var(--accent)_13%,transparent),transparent_32%),linear-gradient(135deg,color-mix(in_oklch,var(--secondary)_82%,transparent),transparent_46%)]" />
       <Sidebar
         variant="floating"
         collapsible="icon"
-        className="top-20 h-[calc(100svh-5rem)] border-r-0"
+        className="top-0 h-svh border-r-0"
       >
         <SidebarHeader className="p-3">
           <SidebarMenu>
@@ -144,7 +144,7 @@ export function PonixShell({ memberName, children }: PonixShellProps) {
                       PONIX
                     </div>
                     <div className="mt-1 text-[11px] font-medium text-sidebar-foreground/55">
-                      Bremen operations
+                      Bremen workspace
                     </div>
                   </div>
                 </Link>
@@ -156,15 +156,15 @@ export function PonixShell({ memberName, children }: PonixShellProps) {
         <SidebarContent className="px-2 py-2">
           <div className="mx-1 mb-3 rounded-2xl border bg-sidebar-accent/45 p-3 group-data-[collapsible=icon]:hidden">
             <div className="mb-3 flex items-center justify-between">
-              <p className="caps text-sidebar-foreground/55">Workspace</p>
+              <p className="caps text-sidebar-foreground/55">Today</p>
               <CheckCircle2 className="size-4 text-emerald-700" />
             </div>
             <p className="text-sm font-medium leading-snug">
-              실제 화면과 데이터를 한 곳에서 관리합니다.
+              공개 사이트에 보이는 화면과 데이터를 이곳에서 관리합니다.
             </p>
             <div className="mt-3 grid grid-cols-2 gap-2 text-xs text-sidebar-foreground/60">
-              <span className="rounded-lg bg-sidebar/70 px-2 py-1">Canvas</span>
-              <span className="rounded-lg bg-sidebar/70 px-2 py-1">Content graph</span>
+              <span className="rounded-lg bg-sidebar/70 px-2 py-1">화면 구성</span>
+              <span className="rounded-lg bg-sidebar/70 px-2 py-1">콘텐츠 관리</span>
             </div>
           </div>
 
@@ -208,7 +208,7 @@ export function PonixShell({ memberName, children }: PonixShellProps) {
         <SidebarSeparator />
         <SidebarFooter className="p-3">
           <div className="rounded-2xl border bg-sidebar-accent/50 p-3 group-data-[collapsible=icon]:hidden">
-            <p className="caps text-sidebar-foreground/60">접속 계정</p>
+            <p className="caps text-sidebar-foreground/60">Signed in</p>
             <p className="mt-1 truncate text-sm font-medium">{memberName}</p>
           </div>
         </SidebarFooter>
@@ -216,20 +216,20 @@ export function PonixShell({ memberName, children }: PonixShellProps) {
       </Sidebar>
 
       <div className="flex min-w-0 flex-1 flex-col">
-        <div className="sticky top-16 z-20 flex h-16 items-center gap-3 border-b bg-background/80 px-4 backdrop-blur-xl md:top-20 md:px-6">
+        <div className="sticky top-0 z-20 flex h-16 items-center gap-3 border-b bg-background/85 px-4 backdrop-blur-xl md:px-6">
           <SidebarTrigger className="size-8 md:hidden" />
           <div className="hidden size-9 items-center justify-center rounded-xl border bg-card shadow-sm md:flex">
             <LayoutDashboard className="size-4" />
           </div>
           <div className="min-w-0 flex-1">
-            <p className="caps text-muted-foreground">Command center</p>
+            <p className="caps text-muted-foreground">Admin workspace</p>
             <p className="truncate text-sm font-medium">
-              페이지 구성, 데이터, 멤버 운영을 한 화면에서 이어갑니다.
+              사이트 편집, 콘텐츠 관리, 멤버 운영을 한 화면에서 이어갑니다.
             </p>
           </div>
           <Button asChild size="sm" variant="outline" className="rounded-full">
             <Link href="/">
-              사이트 보기
+              공개 사이트
               <ArrowUpRight className="size-3.5" />
             </Link>
           </Button>

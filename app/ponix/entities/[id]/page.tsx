@@ -18,7 +18,7 @@ import {
 } from "@/lib/cms/content"
 
 export const metadata: Metadata = {
-  title: "PONIX Entity Detail | 브레멘 Bremen",
+  title: "콘텐츠 상세 | Bremen Admin",
   robots: {
     index: false,
     follow: false,
@@ -54,14 +54,14 @@ export default async function PonixEntityRecordPage({
     <CmsDetailPage
       detail={detail}
       backHref="/ponix/entities"
-      backLabel="All entities"
+      backLabel="콘텐츠 목록"
       audit={audit}
       actions={
         <Link
           href={`/ponix/entities/${id}/edit`}
           className="inline-flex h-9 items-center justify-center rounded-full bg-primary px-4 py-2 text-sm font-medium text-primary-foreground shadow-xs transition-colors hover:bg-primary/90"
         >
-          Edit entity
+          콘텐츠 수정
         </Link>
       }
     >
@@ -70,8 +70,8 @@ export default async function PonixEntityRecordPage({
         error={mutation.error}
       />
       <SectionEntityRelationsCard
-        title="Section placements"
-        description="Sections that curate this entity."
+        title="노출 위치"
+        description="이 콘텐츠를 보여주는 섹션입니다."
         relationList={relations.sectionEntityList}
         editable
         editorOptions={options}
@@ -79,8 +79,8 @@ export default async function PonixEntityRecordPage({
         redirectTo={`/ponix/entities/${id}`}
       />
       <EntityRelationsCard
-        title="Outgoing relations"
-        description="Entities linked from this record."
+        title="연결된 콘텐츠"
+        description="이 콘텐츠에서 이어지는 다른 기록입니다."
         relations={relations.outgoingEntityRelations}
         editable
         editorOptions={options}
@@ -88,8 +88,8 @@ export default async function PonixEntityRecordPage({
         redirectTo={`/ponix/entities/${id}`}
       />
       <EntityRelationsCard
-        title="Incoming relations"
-        description="Entities that link to this record."
+        title="연결해 둔 콘텐츠"
+        description="이 콘텐츠를 참조하는 다른 기록입니다."
         relations={relations.incomingEntityRelations}
         editable
         allowAdd={false}

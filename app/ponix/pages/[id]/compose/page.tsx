@@ -52,7 +52,7 @@ import { loadDraftCompositionPage } from "@/lib/data/content-graph"
 import type { GraphSection } from "@/lib/data/content-graph"
 
 export const metadata: Metadata = {
-  title: "PONIX Page Composer | 브레멘 Bremen",
+  title: "페이지 구성 | Bremen Admin",
   robots: {
     index: false,
     follow: false,

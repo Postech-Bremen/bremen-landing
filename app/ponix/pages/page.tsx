@@ -14,7 +14,7 @@ import { requireCmsAdmin } from "@/lib/cms/auth"
 import { loadCmsPages } from "@/lib/cms/content"
 
 export const metadata: Metadata = {
-  title: "PONIX Pages | 브레멘 Bremen",
+  title: "페이지 편집 | Bremen Admin",
   robots: {
     index: false,
     follow: false,
@@ -29,15 +29,15 @@ export default async function PonixPagesPage() {
 
   return (
     <CmsListPage
-      eyebrow="PONIX / Pages"
-      title="Page Studio"
-      description="공개 사이트의 각 페이지를 실제 화면 기준으로 열고, 섹션과 데이터를 이어서 관리합니다."
+      eyebrow="사이트 운영 / 페이지"
+      title="Page desk"
+      description="홈, 공연, 영상, 사진처럼 공개 사이트에 보이는 페이지를 실제 화면 흐름에 맞춰 편집합니다."
     >
       <CmsStatGrid>
-        <CmsStatTile label="Pages" value={pages.length} detail="관리 중인 공개 페이지" accent />
-        <CmsStatTile label="Published" value={publishedCount} detail="사이트에 노출 중" />
-        <CmsStatTile label="Draft" value={pages.length - publishedCount} detail="검토가 필요한 페이지" />
-        <CmsStatTile label="Home" value={homePage ? "Ready" : "Missing"} detail="메인 페이지 구성 상태" />
+        <CmsStatTile label="페이지" value={pages.length} detail="관리 중인 공개 화면" accent />
+        <CmsStatTile label="공개 중" value={publishedCount} detail="방문자에게 보이는 페이지" />
+        <CmsStatTile label="비공개" value={pages.length - publishedCount} detail="아직 숨겨진 페이지" />
+        <CmsStatTile label="홈" value={homePage ? "준비됨" : "누락"} detail="메인 화면 구성 상태" />
       </CmsStatGrid>
 
       <CmsRecordGrid>
@@ -47,8 +47,8 @@ export default async function PonixPagesPage() {
             href={`/ponix/pages/${page.id}/compose`}
             eyebrow={`/${page.slug === "home" ? "" : page.slug}`}
             title={page.title}
-            description={page.subtitle ?? "화면 구성과 섹션 연결을 관리합니다."}
-            actionLabel="Compose"
+            description={page.subtitle ?? "섹션 순서와 연결된 콘텐츠를 조정합니다."}
+            actionLabel="구성 열기"
             badges={
               <>
                 <PublishBadge published={page.published} />
@@ -58,7 +58,7 @@ export default async function PonixPagesPage() {
                 />
               </>
             }
-            meta={`Updated ${formatCmsDate(page.updatedAt)}`}
+            meta={`수정 ${formatCmsDate(page.updatedAt)}`}
           />
         ))}
       </CmsRecordGrid>
