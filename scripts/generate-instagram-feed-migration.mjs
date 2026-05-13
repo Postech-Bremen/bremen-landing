@@ -319,46 +319,44 @@ const sql = `-- Bremen — expanded Instagram feed seed.
 -- Captured ${feed.total} posts from ${feed.pages.length} paginated feed pages.
 -- Thumbnails are stored in Supabase Storage bucket images/instagram.
 
-insert into public.sections (
-  key,
-  section_type,
+insert into public.entities (
   schema_id,
-  eyebrow,
+  slug,
   title,
   subtitle,
   published,
-  props
+  data
 )
 values (
-  'performances-updates',
-  'entity_post_grid',
   ${schemaIdExpr("section/performance-updates/v1")},
-  'Notice board',
+  'section:performances-updates',
   'Around the stages',
   '공연 전후의 소식',
   true,
-  '{}'::jsonb
+  '{"key":"performances-updates","section_type":"entity_post_grid","eyebrow":"Notice board","props":{}}'::jsonb
 )
-on conflict (key) do update
-set section_type = excluded.section_type,
-    schema_id = excluded.schema_id,
-    eyebrow = excluded.eyebrow,
+on conflict (slug) do update
+set schema_id = excluded.schema_id,
     title = excluded.title,
     subtitle = excluded.subtitle,
     published = excluded.published,
-    props = excluded.props;
+    data = public.entities.data ||
+      (excluded.data - 'props') ||
+      jsonb_build_object(
+        'props',
+        coalesce(public.entities.data->'props', '{}'::jsonb) ||
+          coalesce(excluded.data->'props', '{}'::jsonb)
+      ),
+    updated_at = now();
 
 with target as (
   select page_entity.id as page_entity_id, section_entity.id as section_entity_id
-  from public.pages page
-  join public.sections section on section.key = 'performances-updates'
-  join public.entities page_entity
-    on page_entity.schema_id = ${schemaIdExpr("page/default/v1")}
-   and page_entity.slug = 'page:' || page.slug
+  from public.entities page_entity
   join public.entities section_entity
     on ${sectionSchemaPredicate("section_entity")}
-   and section_entity.slug = 'section:' || section.key
-  where page.slug = 'performances'
+   and section_entity.slug = 'section:performances-updates'
+  where page_entity.schema_id = ${schemaIdExpr("page/default/v1")}
+    and page_entity.slug = 'page:performances'
 )
 insert into public.entity_relations (
   from_entity_id,
@@ -453,22 +451,19 @@ set schema_id = excluded.schema_id,
     props = excluded.props;
 
 delete from public.entity_relations relation
-using public.entities section_entity, public.sections section_ref, public.entities entity
+using public.entities section_entity, public.entities entity
 where relation.schema_id = ${schemaIdExpr("relation/section-entity/v1")}
   and relation.from_entity_id = section_entity.id
   and relation.to_entity_id = entity.id
   and ${sectionSchemaPredicate("section_entity")}
-  and section_entity.slug = 'section:' || section_ref.key
-  and section_ref.key = 'photos-gallery'
+  and section_entity.slug = 'section:photos-gallery'
   and entity.data->>'source' = 'instagram';
 
 with target_section as (
   select section_entity.id as section_entity_id
-  from public.sections section_ref
-  join public.entities section_entity
-    on ${sectionSchemaPredicate("section_entity")}
-   and section_entity.slug = 'section:' || section_ref.key
-  where section_ref.key = 'photos-gallery'
+  from public.entities section_entity
+  where ${sectionSchemaPredicate("section_entity")}
+    and section_entity.slug = 'section:photos-gallery'
 ),
 ordered as (
   select
@@ -505,22 +500,19 @@ set schema_id = excluded.schema_id,
     props = excluded.props;
 
 delete from public.entity_relations relation
-using public.entities section_entity, public.sections section_ref, public.entities entity
+using public.entities section_entity, public.entities entity
 where relation.schema_id = ${schemaIdExpr("relation/section-entity/v1")}
   and relation.from_entity_id = section_entity.id
   and relation.to_entity_id = entity.id
   and ${sectionSchemaPredicate("section_entity")}
-  and section_entity.slug = 'section:' || section_ref.key
-  and section_ref.key = 'performances-updates'
+  and section_entity.slug = 'section:performances-updates'
   and entity.data->>'source' = 'instagram';
 
 with target_section as (
   select section_entity.id as section_entity_id
-  from public.sections section_ref
-  join public.entities section_entity
-    on ${sectionSchemaPredicate("section_entity")}
-   and section_entity.slug = 'section:' || section_ref.key
-  where section_ref.key = 'performances-updates'
+  from public.entities section_entity
+  where ${sectionSchemaPredicate("section_entity")}
+    and section_entity.slug = 'section:performances-updates'
 ),
 ordered as (
   select

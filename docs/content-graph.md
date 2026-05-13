@@ -58,9 +58,10 @@ Current PONIX contract:
 - Routine CMS composition writes target `entity_relations` without legacy
   source markers.
 - Maintenance apply scripts and generated seed migrations that refresh scraped
-  or Instagram content should also write section placement through
-  `entity_relations`, not directly through `page_sections` or
-  `section_entities`.
+  or Instagram content should treat page and section records as graph
+  `entities`, then write placement through `entity_relations`. They must not
+  require the compatibility `pages`, `sections`, `page_sections`, or
+  `section_entities` tables.
 - Code that mutates page or section composition must pass the graph relation id.
 - `pnpm run qa:content-graph` checks graph-only page composition integrity:
   page/section entity key uniqueness, section ordering, relation contracts, and
@@ -72,8 +73,9 @@ Current PONIX contract:
 - Use `pnpm run qa:legacy-media-table-readiness` after media graph changes to
   verify runtime code does not reintroduce direct legacy media table reads and
   the post-drop entity graph still exposes performance/video/photo content.
-- `pnpm run qa:graph-primary-seed-writes` checks that seed apply scripts and
-  migration generators do not reintroduce direct legacy composition writes.
+- `pnpm run qa:graph-primary-seed-writes` checks that seed apply scripts,
+  write helpers, and migration generators do not reintroduce direct
+  compatibility page/section table access or legacy composition writes.
 
 ## Tables
 
