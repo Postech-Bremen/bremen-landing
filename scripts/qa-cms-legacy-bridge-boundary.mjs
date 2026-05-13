@@ -4,7 +4,7 @@ import { existsSync, readdirSync, readFileSync, statSync } from "node:fs"
 import path from "node:path"
 
 const repoRoot = process.cwd()
-const scanRoots = ["app/ponix", "app/ponix-canvas", "lib/cms"]
+const scanRoots = ["app/ponix", "app/ponix-canvas", "lib/cms", "lib/data"]
 const codeExtensions = new Set([".ts", ".tsx", ".js", ".jsx", ".mjs"])
 const allowedFiles = new Set()
 
@@ -20,6 +20,14 @@ const forbiddenPatterns = [
   {
     label: "legacy relation source_table marker",
     pattern: /source_table\s*:\s*["'`](page_sections|section_entities)["'`]/,
+  },
+  {
+    label: "direct pages compatibility table access",
+    pattern: /(?:^|[^\w])from\(\s*["'`]pages["'`]\s*\)/,
+  },
+  {
+    label: "direct sections compatibility table access",
+    pattern: /(?:^|[^\w])from\(\s*["'`]sections["'`]\s*\)/,
   },
 ]
 
@@ -77,11 +85,21 @@ function runSelfTest() {
     "app/ponix/relations/actions.ts",
     'source_table: "section_entities"',
   )
+  const pageAccess = findViolations(
+    "lib/data/content-graph.ts",
+    'await supabase.from("pages").select("*")',
+  )
+  const sectionAccess = findViolations(
+    "lib/data/content-graph.ts",
+    'await supabase.from("sections").select("id")',
+  )
 
   if (
     blocked.length !== 1 ||
     retiredBoundary.length !== 1 ||
-    sourceMarker.length !== 1
+    sourceMarker.length !== 1 ||
+    pageAccess.length !== 1 ||
+    sectionAccess.length !== 1
   ) {
     throw new Error("Self-test failed for CMS legacy bridge boundary guard.")
   }
@@ -106,14 +124,14 @@ console.table([
 ])
 
 if (violations.length) {
-  console.error("\nDirect legacy composition table access found in runtime CMS code:")
+  console.error("\nDirect legacy/compatibility table access found in runtime code:")
   for (const violation of violations) {
     console.error(
       `- ${violation.file}:${violation.line} ${violation.rule}: ${violation.text}`,
     )
   }
   console.error(
-    "\nRuntime CMS code must stay graph-primary through entity_relations. Keep legacy mirror parity checks in QA scripts only.",
+    "\nRuntime CMS and public loaders must stay graph-primary through entities/entity_relations. Keep legacy table reads in classified QA or migration scripts only.",
   )
   process.exitCode = 1
 }

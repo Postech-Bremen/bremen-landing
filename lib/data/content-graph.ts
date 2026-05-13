@@ -18,7 +18,6 @@ import {
 } from "@/lib/data/videos"
 
 type EntityRow = Database["public"]["Tables"]["entities"]["Row"]
-type PageRow = Database["public"]["Tables"]["pages"]["Row"]
 type EntityRelationRow = Database["public"]["Tables"]["entity_relations"]["Row"]
 type ContentEntityRow = Pick<
   EntityRow,
@@ -40,6 +39,19 @@ const PAGE_SHADOW_PREFIX = "page:"
 const SECTION_SHADOW_PREFIX = "section:"
 const CONTENT_ENTITY_SELECT =
   "id, schema_id, slug, title, subtitle, summary, thumbnail_url, data, sort_at"
+
+type GraphPageRecord = {
+  id: string
+  slug: string
+  title: string
+  subtitle: string | null
+  description: string | null
+  owner_member_id: string | null
+  published: boolean
+  props: Json
+  created_at: string
+  updated_at: string
+}
 
 export type GraphSectionItem = {
   entity: ContentEntityRow
@@ -65,7 +77,7 @@ export type GraphSection = {
 }
 
 export type GraphPage = {
-  page: PageRow
+  page: GraphPageRecord
   sections: GraphSection[]
 }
 
@@ -578,7 +590,7 @@ function socialKind(value: string | null): SiteSocialItem["kind"] {
   return "link"
 }
 
-function contentPageFromGraph(page: PageRow): ContentPageConfig {
+function contentPageFromGraph(page: GraphPageRecord): ContentPageConfig {
   return {
     slug: page.slug,
     title: page.title,
@@ -587,7 +599,9 @@ function contentPageFromGraph(page: PageRow): ContentPageConfig {
   }
 }
 
-function pageRowFromShadowEntity(entity: PageShadowEntityRow): PageRow | null {
+function pageRecordFromEntity(
+  entity: PageShadowEntityRow,
+): GraphPageRecord | null {
   const data = jsonObject(entity.data)
   const slug =
     shadowKey(entity, "pages") ??
@@ -754,29 +768,33 @@ async function loadGraphPageUncached(
 
     if (!schemas) return null
 
-    if (options.slug && !options.id && !includeDrafts) {
-      const { data: pageEntity, error: pageEntityError } = await supabase
+    if (options.slug && !options.id) {
+      let pageEntityQuery = supabase
         .from("entities")
         .select(
           "id, schema_id, slug, title, subtitle, summary, owner_member_id, published, data, created_at, updated_at",
         )
         .eq("schema_id", schemas.pageSchemaId)
         .eq("slug", shadowSlug("pages", options.slug))
-        .eq("published", true)
-        .maybeSingle()
+
+      if (!includeDrafts) {
+        pageEntityQuery = pageEntityQuery.eq("published", true)
+      }
+
+      const { data: pageEntity, error: pageEntityError } =
+        await pageEntityQuery.maybeSingle()
 
       if (pageEntityError || !pageEntity) return null
 
-      const page = pageRowFromShadowEntity(pageEntity)
+      const page = pageRecordFromEntity(pageEntity)
       if (!page) return null
 
       return await loadGraphPageFromEntityRelations({
         page,
         supabase,
-        includeDrafts: false,
+        includeDrafts,
         schemas,
         pageEntityId: pageEntity.id,
-        useShadowSections: true,
       })
     }
 
@@ -797,7 +815,7 @@ async function loadGraphPageUncached(
         await pageEntityQuery.maybeSingle()
 
       if (!pageEntityError && pageEntity) {
-        const page = pageRowFromShadowEntity(pageEntity)
+        const page = pageRecordFromEntity(pageEntity)
 
         if (page) {
           return await loadGraphPageFromEntityRelations({
@@ -806,38 +824,12 @@ async function loadGraphPageUncached(
             includeDrafts,
             schemas,
             pageEntityId: pageEntity.id,
-            useShadowSections: true,
           })
         }
       }
     }
 
-    let pageQuery = supabase
-      .from("pages")
-      .select("*")
-
-    if (options.id) {
-      pageQuery = pageQuery.eq("id", options.id)
-    } else if (options.slug) {
-      pageQuery = pageQuery.eq("slug", options.slug)
-    } else {
-      return null
-    }
-
-    if (!includeDrafts) {
-      pageQuery = pageQuery.eq("published", true)
-    }
-
-    const { data: page, error: pageError } = await pageQuery.maybeSingle()
-
-    if (pageError || !page) return null
-
-    return await loadGraphPageFromEntityRelations({
-      page,
-      supabase,
-      includeDrafts,
-      schemas,
-    })
+    return null
   } catch {
     return null
   }
@@ -849,14 +841,12 @@ async function loadGraphPageFromEntityRelations({
   includeDrafts,
   schemas,
   pageEntityId,
-  useShadowSections = false,
 }: {
   supabase: PublicSupabaseClient
-  page: PageRow
+  page: GraphPageRecord
   includeDrafts: boolean
   schemas?: ContentGraphSchemaContext
   pageEntityId?: string
-  useShadowSections?: boolean
 }): Promise<GraphPage> {
   const resolvedSchemas = schemas ?? await loadContentGraphSchemaContext(supabase)
   if (!resolvedSchemas) return { page, sections: [] }
@@ -894,113 +884,32 @@ async function loadGraphPageFromEntityRelations({
   const graphPageSections =
     pageSectionRelations as unknown as EntityGraphRelation[]
 
-  if (useShadowSections) {
-    const sections = graphPageSections
-      .filter((relation) => includeDrafts || relation.toEntity?.published === true)
-      .map((relation) =>
-        graphSectionFromShadowEntity({
-          entity: relation.toEntity,
-          schemas: resolvedSchemas,
-          sortOrder: relation.sort_order,
-        }),
-      )
-      .filter((section): section is GraphSection => Boolean(section))
-    const sectionShadowIds = sections.map((section) => section.id)
-    const itemsBySectionId = await loadSectionItemsByShadowId({
-      supabase,
-      sectionShadowIds,
-      relationSchemaId: resolvedSchemas.sectionEntityRelationSchemaId,
-      includeDrafts,
-    })
-
-    if (!itemsBySectionId) return { page, sections: [] }
-
-    return {
-      page,
-      sections: sections.map((section) => ({
-        ...section,
-        items: itemsBySectionId.get(section.id) ?? [],
-      })),
-    }
-  }
-
-  const sectionKeys = uniqueStrings(
-    graphPageSections.map((relation) => shadowKey(relation.toEntity, "sections")),
-  )
-
-  if (!sectionKeys.length) return { page, sections: [] }
-
-  let sectionsQuery = supabase
-    .from("sections")
-    .select("id, key, section_type, schema_id, eyebrow, title, subtitle, props")
-    .in("key", sectionKeys)
-
-  if (!includeDrafts) {
-    sectionsQuery = sectionsQuery.eq("published", true)
-  }
-
-  const { data: sections, error: sectionsError } = await sectionsQuery
-
-  if (sectionsError || !sections?.length) {
-    return { page, sections: [] }
-  }
-
-  const sectionShadowIds = uniqueStrings(
-    graphPageSections.map((relation) => relation.toEntity?.id),
-  )
-  const itemsByShadowId = await loadSectionItemsByShadowId({
+  const sections = graphPageSections
+    .filter((relation) => includeDrafts || relation.toEntity?.published === true)
+    .map((relation) =>
+      graphSectionFromShadowEntity({
+        entity: relation.toEntity,
+        schemas: resolvedSchemas,
+        sortOrder: relation.sort_order,
+      }),
+    )
+    .filter((section): section is GraphSection => Boolean(section))
+  const sectionShadowIds = sections.map((section) => section.id)
+  const itemsBySectionId = await loadSectionItemsByShadowId({
     supabase,
     sectionShadowIds,
     relationSchemaId: resolvedSchemas.sectionEntityRelationSchemaId,
     includeDrafts,
   })
 
-  if (!itemsByShadowId) return { page, sections: [] }
-
-  const sectionByKey = new Map(sections.map((section) => [section.key, section]))
-  const sectionKeyByShadowId = new Map(
-    graphPageSections
-      .map((relation) => [
-        relation.toEntity?.id,
-        shadowKey(relation.toEntity, "sections"),
-      ])
-      .filter((entry): entry is [string, string] => Boolean(entry[0] && entry[1])),
-  )
-  const itemsBySectionId = new Map<string, GraphSectionItem[]>()
-
-  for (const [sectionShadowId, items] of itemsByShadowId.entries()) {
-    const sectionKey = sectionKeyByShadowId.get(sectionShadowId)
-    const section = sectionKey ? sectionByKey.get(sectionKey) : null
-    if (!section) continue
-
-    itemsBySectionId.set(section.id, items)
-  }
+  if (!itemsBySectionId) return { page, sections: [] }
 
   return {
     page,
-    sections: graphPageSections
-      .map((relation) => {
-        const sectionKey = shadowKey(relation.toEntity, "sections")
-        const section = sectionKey ? sectionByKey.get(sectionKey) : null
-        if (!section) return null
-
-        return {
-          id: section.id,
-          key: section.key,
-          sectionType: section.section_type,
-          schemaId: section.schema_id,
-          schemaKey:
-            resolvedSchemas.schemaKeyById.get(section.schema_id) ??
-            `unregistered:${section.schema_id}`,
-          eyebrow: section.eyebrow,
-          title: section.title,
-          subtitle: section.subtitle,
-          props: section.props,
-          sortOrder: relation.sort_order,
-          items: itemsBySectionId.get(section.id) ?? [],
-        }
-      })
-      .filter((section): section is GraphSection => Boolean(section)),
+    sections: sections.map((section) => ({
+      ...section,
+      items: itemsBySectionId.get(section.id) ?? [],
+    })),
   }
 }
 

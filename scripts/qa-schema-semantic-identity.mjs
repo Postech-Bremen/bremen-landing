@@ -44,6 +44,14 @@ function issue(message, context = {}) {
   return { message, context }
 }
 
+function objectValue(value) {
+  return value && typeof value === "object" && !Array.isArray(value) ? value : {}
+}
+
+function stringValue(value) {
+  return typeof value === "string" && value.trim() ? value : null
+}
+
 async function main() {
   loadEnv(envPath)
 
@@ -67,20 +75,14 @@ async function main() {
   const entities = requireOk(
     await supabase
       .from("entities")
-      .select("id, schema_id, slug, title")
+      .select("id, schema_id, slug, title, data")
       .order("title", { ascending: true }),
     "entities semantic identity",
-  )
-  const sections = requireOk(
-    await supabase
-      .from("sections")
-      .select("id, schema_id, key, title")
-      .order("key", { ascending: true }),
-    "sections schema identity",
   )
 
   const schemaById = new Map(schemas.map((schema) => [schema.id, schema]))
   const failures = []
+  let sectionEntityCount = 0
 
   for (const schema of schemas) {
     if (!schema.semantic_kind || !String(schema.semantic_kind).trim()) {
@@ -119,30 +121,29 @@ async function main() {
         }),
       )
     }
-  }
 
-  for (const section of sections) {
-    const schema = section.schema_id ? schemaById.get(section.schema_id) : null
+    if (schema?.kind !== "section") continue
 
-    if (!schema) {
+    sectionEntityCount += 1
+    const data = objectValue(entity.data)
+    if (!stringValue(data.key) && !entity.slug?.startsWith("section:")) {
       failures.push(
-        issue("Section cannot resolve an active schema", {
-          sectionId: section.id,
-          schemaId: section.schema_id,
-          key: section.key,
+        issue("Section entity is missing a stable key", {
+          sectionEntityId: entity.id,
+          schemaId: entity.schema_id,
+          schemaKey: schema.schema_key,
+          slug: entity.slug,
         }),
       )
-      continue
     }
 
-    if (schema.kind !== "section") {
+    if (!stringValue(data.section_type)) {
       failures.push(
-        issue("Section schema has non-section kind", {
-          sectionId: section.id,
-          schemaId: section.schema_id,
+        issue("Section entity is missing renderer type", {
+          sectionEntityId: entity.id,
+          schemaId: entity.schema_id,
           schemaKey: schema.schema_key,
-          key: section.key,
-          schemaKind: schema.kind,
+          slug: entity.slug,
         }),
       )
     }
@@ -153,15 +154,15 @@ async function main() {
     {
       activeSchemas: schemas.length,
       entities: entities.length,
-      sections: sections.length,
+      sectionEntities: sectionEntityCount,
       missingSemanticKind: failures.filter((failure) =>
         failure.message.includes("missing semantic_kind"),
       ).length,
       unresolvedEntities: failures.filter((failure) =>
         failure.message.includes("Entity cannot resolve"),
       ).length,
-      unresolvedSections: failures.filter((failure) =>
-        failure.message.includes("Section cannot resolve"),
+      invalidSectionEntities: failures.filter((failure) =>
+        failure.message.includes("Section entity"),
       ).length,
       semanticDrift: failures.filter((failure) =>
         failure.message.includes("differs"),

@@ -18,8 +18,6 @@ const SECTION_ENTITY_RELATION_SCHEMA_KEY = "relation/section-entity/v1"
 const PAGE_SHADOW_PREFIX = "page:"
 const SECTION_SHADOW_PREFIX = "section:"
 
-type PageRow = Database["public"]["Tables"]["pages"]["Row"]
-type SectionRow = Database["public"]["Tables"]["sections"]["Row"]
 type EntityRow = Database["public"]["Tables"]["entities"]["Row"]
 type SupabaseClient = Awaited<ReturnType<typeof createClient>>
 
@@ -39,6 +37,34 @@ const CMS_PAGE_ENTITY_SELECT =
   "id, schema_id, slug, title, subtitle, summary, owner_member_id, published, data, created_at, updated_at"
 const CMS_SECTION_ENTITY_SELECT =
   "id, schema_id, slug, title, subtitle, owner_member_id, published, data, created_at, updated_at"
+
+type CmsPageRecord = {
+  id: string
+  slug: string
+  title: string
+  subtitle: string | null
+  description: string | null
+  owner_member_id: string | null
+  published: boolean
+  props: Json
+  created_at: string
+  updated_at: string
+}
+
+type CmsSectionRecord = {
+  id: string
+  key: string
+  section_type: string
+  schema_id: string
+  eyebrow: string | null
+  title: string | null
+  subtitle: string | null
+  owner_member_id: string | null
+  published: boolean
+  props: Json
+  created_at: string
+  updated_at: string
+}
 
 type SchemaSummary = {
   schemaKey: string
@@ -219,7 +245,7 @@ export type CmsContentDetail =
       subtitle: string | null
       published: boolean
       updatedAt: string
-      row: PageRow
+      row: CmsPageRecord
     } & SchemaSummary
   | {
       kind: "section"
@@ -228,7 +254,7 @@ export type CmsContentDetail =
       subtitle: string | null
       published: boolean
       updatedAt: string
-      row: SectionRow
+      row: CmsSectionRecord
     } & SchemaSummary
   | {
       kind: "entity"
@@ -314,7 +340,7 @@ function entitySchemaSummary(
 }
 
 function sectionSchemaSummary(
-  section: Pick<SectionRow, "schema_id">,
+  section: Pick<CmsSectionRecord, "schema_id">,
   registry: SchemaRegistryMap,
 ): SchemaSummary {
   return schemaReferenceSummary(section, registry)
@@ -358,7 +384,7 @@ function pageRowFromEntity(
     | "created_at"
     | "updated_at"
   >,
-): PageRow | null {
+): CmsPageRecord | null {
   const data = jsonObject(entity.data)
   const slug = shadowKey(entity, "pages") ?? stringValue(data.slug)
 
@@ -392,7 +418,7 @@ function sectionRowFromEntity(
     | "created_at"
     | "updated_at"
   >,
-): SectionRow | null {
+): CmsSectionRecord | null {
   const data = jsonObject(entity.data)
   const key = shadowKey(entity, "sections") ?? stringValue(data.key)
   const sectionType = stringValue(data.section_type)
@@ -528,10 +554,6 @@ function entityWithTimestamps(entity: RawEntityLink) {
   }
 }
 
-function shadowSlug(sourceTable: "pages" | "sections", sourceKey: string) {
-  return `${sourceTable === "pages" ? PAGE_SHADOW_PREFIX : SECTION_SHADOW_PREFIX}${sourceKey}`
-}
-
 function shadowKey(
   entity: Pick<EntityRow, "slug"> | RawEntityLink | null,
   sourceTable: "pages" | "sections",
@@ -642,7 +664,7 @@ export async function loadCmsPages(): Promise<CmsPageSummary[]> {
 
   return (data ?? [])
     .map((entity) => pageRowFromEntity(entity))
-    .filter((page): page is PageRow => Boolean(page))
+    .filter((page): page is CmsPageRecord => Boolean(page))
     .map((page) => ({
       ...schemaSummary(PAGE_ENTITY_SCHEMA_KEY, registry),
       id: page.id,
@@ -704,7 +726,7 @@ export async function loadCmsSections(): Promise<CmsSectionSummary[]> {
 
   return (data ?? [])
     .map((entity) => sectionRowFromEntity(entity))
-    .filter((section): section is SectionRow => Boolean(section))
+    .filter((section): section is CmsSectionRecord => Boolean(section))
     .map((section) => ({
       ...sectionSchemaSummary(section, registry),
       id: section.id,
@@ -916,70 +938,26 @@ async function loadShadowEntityId({
   sourceTable: "pages" | "sections"
   sourceId: string
 }) {
-  const { data: directEntity, error: directEntityError } = await supabase
+  const { data: entity, error } = await supabase
     .from("entities")
     .select("id, schema_id")
     .eq("id", sourceId)
     .maybeSingle()
 
-  if (directEntityError) {
+  if (error) {
     throw new Error(
-      `Failed to load ${sourceTable} graph entity: ${directEntityError.message}`,
+      `Failed to load ${sourceTable} graph entity: ${error.message}`,
     )
   }
 
-  if (directEntity) {
-    const validSchema =
-      sourceTable === "pages"
-        ? directEntity.schema_id === schemaIdForKey(registry, PAGE_ENTITY_SCHEMA_KEY)
-        : schemaIdsForKind(registry, "section").includes(directEntity.schema_id)
+  if (!entity) return null
 
-    return validSchema ? directEntity.id : null
-  }
-
-  const source =
+  const validSchema =
     sourceTable === "pages"
-      ? await supabase
-          .from("pages")
-          .select("slug")
-          .eq("id", sourceId)
-          .maybeSingle()
-      : await supabase
-          .from("sections")
-          .select("key")
-          .eq("id", sourceId)
-          .maybeSingle()
+      ? entity.schema_id === schemaIdForKey(registry, PAGE_ENTITY_SCHEMA_KEY)
+      : schemaIdsForKind(registry, "section").includes(entity.schema_id)
 
-  if (source.error) {
-    throw new Error(`Failed to load ${sourceTable} source: ${source.error.message}`)
-  }
-
-  const sourceKey =
-    sourceTable === "pages"
-      ? (source.data as { slug?: string } | null)?.slug
-      : (source.data as { key?: string } | null)?.key
-
-  if (!sourceKey) {
-    return null
-  }
-
-  let query = supabase
-    .from("entities")
-    .select("id")
-    .eq("slug", shadowSlug(sourceTable, sourceKey))
-
-  query =
-    sourceTable === "pages"
-      ? query.eq("schema_id", schemaIdForKey(registry, PAGE_ENTITY_SCHEMA_KEY))
-      : query.in("schema_id", schemaIdsForKind(registry, "section"))
-
-  const { data, error } = await query.maybeSingle()
-
-  if (error) {
-    throw new Error(`Failed to load ${sourceTable} graph entity: ${error.message}`)
-  }
-
-  return data?.id ?? null
+  return validSchema ? entity.id : null
 }
 
 async function loadPageSectionRelationsFromEntityGraph({

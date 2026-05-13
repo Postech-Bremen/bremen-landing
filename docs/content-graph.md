@@ -50,8 +50,7 @@ Current PONIX contract:
   and section records. Page fields are projected from the page entity; section
   renderer identity and props are projected from section entity `data`.
 - CMS draft preview and composer paths accept page entity ids, then render from
-  the same `entity_relations` graph used by public pages. Legacy page ids remain
-  a transitional fallback only where explicitly retained.
+  the same `entity_relations` graph used by public pages.
 - CMS relation lists read page/section placement through `entity_relations`
   bridge rows, using relation `schema_id` values resolved from registered
   schema keys such as `relation/page-section/v1` and
@@ -64,8 +63,8 @@ Current PONIX contract:
   `section_entities`.
 - Code that mutates page or section composition must pass the graph relation id.
 - `pnpm run qa:content-graph` checks graph-only page composition integrity:
-  page shadow cardinality, section ordering, relation contracts, and missing or
-  unpublished section/entity references.
+  page/section entity key uniqueness, section ordering, relation contracts, and
+  missing or unpublished section/entity references.
 - Runtime CMS code must not read `page_sections` or `section_entities`.
   Use `pnpm run qa:cms-legacy-bridge-boundary` after CMS loader changes.
 - Use `pnpm run qa:legacy-mirror-readiness` when touching historical mirror
@@ -270,13 +269,27 @@ Profile-visible role text is member-editable and separate from permissions.
 ### Update Section Copy
 
 ```sql
-update public.sections
+update public.entities section_entity
 set title = 'New title',
     subtitle = '새 제목',
-    props = coalesce(props, '{}'::jsonb) || jsonb_build_object(
-      'body', 'New body copy'
+    data = coalesce(section_entity.data, '{}'::jsonb) || jsonb_build_object(
+      'props',
+      coalesce(section_entity.data -> 'props', '{}'::jsonb) || jsonb_build_object(
+        'body', 'New body copy'
+      )
     )
-where key = 'home-join';
+from public.entity_schemas schema_ref
+where section_entity.schema_id = schema_ref.id
+  and schema_ref.kind = 'section'
+  and schema_ref.active = true
+  and coalesce(
+    case
+      when section_entity.slug like 'section:%'
+      then substring(section_entity.slug from 9)
+      else null
+    end,
+    section_entity.data ->> 'key'
+  ) = 'home-join';
 ```
 
 ### Add a Content Entity
@@ -317,25 +330,30 @@ insert into public.entity_relations (
   props
 )
 select
-  section_shadow.id,
+  section_entity.id,
   entity_ref.id,
   relation_schema.id,
   'item',
   'default',
   120,
   '{}'::jsonb
-from public.sections section_ref
-join public.entities section_shadow
-  on section_shadow.schema_id in (
-    select id from public.entity_schemas
-    where kind = 'section' and active = true
-  )
- and section_shadow.slug = 'section:' || section_ref.key
+from public.entities section_entity
 join public.entities entity_ref on entity_ref.slug = 'history-2026-new-season'
+join public.entity_schemas section_schema
+  on section_entity.schema_id = section_schema.id
+ and section_schema.kind = 'section'
+ and section_schema.active = true
 join public.entity_schemas relation_schema
   on relation_schema.schema_key = 'relation/section-entity/v1'
  and relation_schema.active = true
-where section_ref.key = 'history-timeline'
+where coalesce(
+    case
+      when section_entity.slug like 'section:%'
+      then substring(section_entity.slug from 9)
+      else null
+    end,
+    section_entity.data ->> 'key'
+  ) = 'history-timeline'
 on conflict (from_entity_id, to_entity_id, relation_type, slot) do update
 set sort_order = excluded.sort_order,
     props = excluded.props,
@@ -347,73 +365,83 @@ set sort_order = excluded.sort_order,
 ```sql
 update public.entity_relations page_section_relation
 set sort_order = 30
-from public.pages page_ref
-join public.entities page_shadow
-  on page_shadow.schema_id = (
-    select id from public.entity_schemas
-    where schema_key = 'page/default/v1' and active = true
-  )
- and page_shadow.slug = 'page:' || page_ref.slug
-join public.sections section_ref on section_ref.key = 'home-activities'
-join public.entities section_shadow
-  on section_shadow.schema_id in (
+from public.entities page_entity
+join public.entities section_entity
+  on section_entity.schema_id in (
     select id from public.entity_schemas
     where kind = 'section' and active = true
   )
- and section_shadow.slug = 'section:' || section_ref.key
 join public.entity_schemas relation_schema
   on relation_schema.schema_key = 'relation/page-section/v1'
  and relation_schema.active = true
-where page_section_relation.from_entity_id = page_shadow.id
-  and page_section_relation.to_entity_id = section_shadow.id
+where page_entity.schema_id = (
+  select id from public.entity_schemas
+  where schema_key = 'page/default/v1' and active = true
+)
+  and page_entity.slug = 'page:home'
+  and coalesce(
+    case
+      when section_entity.slug like 'section:%'
+      then substring(section_entity.slug from 9)
+      else null
+    end,
+    section_entity.data ->> 'key'
+  ) = 'home-activities'
+  and page_section_relation.from_entity_id = page_entity.id
+  and page_section_relation.to_entity_id = section_entity.id
   and page_section_relation.schema_id = relation_schema.id
-  and page_section_relation.slot = 'sections'
-  and page_ref.slug = 'home';
+  and page_section_relation.slot = 'sections';
 ```
 
 ## Required Content Checks
 
 After changing content graph data, verify:
 
-- affected page exists and is published
-- expected sections exist and are published
+- affected page entity exists and is published
+- expected section entities exist and are published
 - required entity sections have enough linked entities
 - linked entities are published
-- `section_type` still has a renderer
+- `entities.data.section_type` still has a renderer
 - page no longer relies on removed section keys
 
 Useful query:
 
 ```sql
 select
-  p.slug,
+  coalesce(
+    case
+      when page_entity.slug like 'page:%'
+      then substring(page_entity.slug from 6)
+      else null
+    end,
+    page_entity.data ->> 'slug'
+  ) as page_slug,
   page_section_relation.sort_order,
-  s.key,
-  s.section_type,
+  coalesce(
+    case
+      when section_entity.slug like 'section:%'
+      then substring(section_entity.slug from 9)
+      else null
+    end,
+    section_entity.data ->> 'key'
+  ) as section_key,
+  section_entity.data ->> 'section_type' as section_type,
   count(content_entity.id) as entity_count
-from public.pages p
-join public.entities page_shadow
-  on page_shadow.schema_id = (
-    select id from public.entity_schemas
-    where schema_key = 'page/default/v1' and active = true
-  )
- and page_shadow.slug = 'page:' || p.slug
+from public.entities page_entity
 join public.entity_relations page_section_relation
-  on page_section_relation.from_entity_id = page_shadow.id
+  on page_section_relation.from_entity_id = page_entity.id
  and page_section_relation.schema_id = (
     select id from public.entity_schemas
     where schema_key = 'relation/page-section/v1' and active = true
- )
- and page_section_relation.slot = 'sections'
-join public.entities section_shadow
-  on section_shadow.id = page_section_relation.to_entity_id
- and section_shadow.schema_id in (
+  )
+join public.entities section_entity
+  on section_entity.id = page_section_relation.to_entity_id
+ and section_entity.schema_id in (
     select id from public.entity_schemas
     where kind = 'section' and active = true
- )
-join public.sections s on section_shadow.slug = 'section:' || s.key
+  )
 left join public.entity_relations section_item_relation
-  on section_item_relation.from_entity_id = section_shadow.id
+  on section_item_relation.from_entity_id = section_entity.id
  and section_item_relation.schema_id = (
     select id from public.entity_schemas
     where schema_key = 'relation/section-entity/v1' and active = true
@@ -421,9 +449,12 @@ left join public.entity_relations section_item_relation
 left join public.entities content_entity
   on content_entity.id = section_item_relation.to_entity_id
  and content_entity.published = true
-where p.slug in ('home', 'site', 'performances', 'videos', 'photos', 'history')
-  and p.published = true
-  and s.published = true
-group by p.slug, page_section_relation.sort_order, s.key, s.section_type
-order by p.slug, page_section_relation.sort_order;
+where page_entity.schema_id = (
+    select id from public.entity_schemas
+    where schema_key = 'page/default/v1' and active = true
+  )
+  and page_entity.published = true
+  and section_entity.published = true
+group by page_slug, page_section_relation.sort_order, section_key, section_type
+order by page_slug, page_section_relation.sort_order;
 ```
