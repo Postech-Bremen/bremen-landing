@@ -38,7 +38,7 @@ export function getPageEditorSchema(): CmsSchemaDefinition | null {
 }
 
 export function isPageEditorSchema(schema: CmsSchemaDefinition) {
-  return schema.kind === "page" && schema.table === "pages"
+  return schema.kind === "page" && schema.schemaKey === "page/default/v1"
 }
 
 export function getEditablePageFields() {

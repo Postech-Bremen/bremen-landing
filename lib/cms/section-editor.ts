@@ -35,7 +35,7 @@ export function getSectionEditorSchema(
 }
 
 export function isSectionEditorSchema(schema: CmsSchemaDefinition) {
-  return schema.kind === "section" && schema.table === "sections"
+  return schema.kind === "section"
 }
 
 const sectionTypeBySchemaKey: Record<string, string> = {

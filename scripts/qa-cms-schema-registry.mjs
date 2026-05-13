@@ -127,6 +127,25 @@ function compareFields(codeFields, dbFields) {
   }
 }
 
+function canonicalTableName(kind, tableName) {
+  if (kind === "relation") {
+    return tableName === "entity_relations" ? "entity_relations" : tableName
+  }
+
+  if (kind === "entity") {
+    return tableName
+  }
+
+  if (
+    (kind === "page" && tableName === "pages") ||
+    (kind === "section" && tableName === "sections")
+  ) {
+    return "entities"
+  }
+
+  return tableName
+}
+
 async function main() {
   loadEnv(envPath)
 
@@ -163,6 +182,9 @@ async function main() {
       codeSchema && Array.isArray(dbSchema?.fields) && dbSchema.fields.length > 0
         ? compareFields(codeSchema.fields, dbSchema.fields)
         : null
+    const canonicalDbTable = dbSchema
+      ? canonicalTableName(dbSchema.kind, dbSchema.table_name)
+      : null
     const relationSlotsMatch =
       codeSchema && dbSchema
         ? sameList(codeSchema.relationSlots ?? [], dbSchema.relation_slots ?? [])
@@ -177,7 +199,8 @@ async function main() {
       kindMatch: Boolean(codeSchema && dbSchema && codeSchema.kind === dbSchema.kind),
       codeTable: codeSchema?.table ?? null,
       dbTable: dbSchema?.table_name ?? null,
-      tableMatch: Boolean(codeSchema && dbSchema && codeSchema.table === dbSchema.table_name),
+      canonicalDbTable,
+      tableMatch: Boolean(codeSchema && dbSchema && codeSchema.table === canonicalDbTable),
       codeSemanticKind: codeSchema?.semanticKind ?? null,
       dbSemanticKind: dbSchema?.semantic_kind ?? null,
       semanticKindMatch: Boolean(
@@ -216,6 +239,9 @@ async function main() {
         row.inDb &&
         (!row.kindMatch || !row.tableMatch || !row.relationSlotsMatch),
     ).length,
+    legacyCanonicalDbTables: rows.filter(
+      (row) => row.dbTable && row.dbTable !== row.canonicalDbTable,
+    ).length,
     semanticMismatch: rows.filter(
       (row) =>
         row.inCode &&
@@ -247,6 +273,10 @@ async function main() {
   const fieldMismatches = rows.filter(
     (row) => row.inCode && row.inDb && row.dbFields > 0 && !row.fieldsMatch,
   )
+  const invalidCodeTables = codeRegistry.filter((schema) => {
+    if (schema.kind === "relation") return schema.table !== "entity_relations"
+    return schema.table !== "entities"
+  })
   const metadataMismatches = rows.filter(
     (row) =>
       row.inCode &&
@@ -267,6 +297,7 @@ async function main() {
         dbKind: row.dbKind,
         codeTable: row.codeTable,
         dbTable: row.dbTable,
+        canonicalDbTable: row.canonicalDbTable,
         codeSemanticKind: row.codeSemanticKind,
         dbSemanticKind: row.dbSemanticKind,
         codeSemanticGroup: row.codeSemanticGroup,
@@ -283,6 +314,21 @@ async function main() {
       console.error(row.schemaKey)
       console.error(JSON.stringify(row.fieldComparison, null, 2))
     }
+  }
+
+  if (invalidCodeTables.length) {
+    console.error("\nCode registry uses non-canonical storage table names:")
+    console.table(
+      invalidCodeTables.map((schema) => ({
+        schemaKey: schema.schemaKey,
+        kind: schema.kind,
+        table: schema.table,
+      })),
+    )
+    console.error(
+      "Page, section, and entity schemas must store content in entities; relation schemas must store links in entity_relations.",
+    )
+    process.exit(1)
   }
 
   if (strict) {

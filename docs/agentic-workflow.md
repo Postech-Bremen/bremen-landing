@@ -9,7 +9,7 @@ Start from an issue. If no issue exists, the first agent task is to draft one us
 Agents should classify every task as one or more of:
 
 - `code`: React, Next.js, Tailwind, shadcn/ui, loaders, validation, tests
-- `content`: `pages`, `sections`, `entities`, `entity_relations`
+- `content`: page/section `entities`, content `entities`, `entity_relations`
 - `schema`: tables, columns, indexes, functions, triggers, RLS, storage policies
 - `ops`: Vercel, Supabase Auth, SMTP, domains, environment variables
 - `research`: YouTube, Instagram, history PDF, references, visual direction
@@ -22,7 +22,8 @@ Agents may do these without additional approval after an issue exists:
 - Propose implementation plans.
 - Edit code within the issue scope.
 - Add migrations for review.
-- Add data migrations that upsert content by stable keys such as `slug` or `key`.
+- Add data migrations that upsert entity graph content by stable keys such as
+  `entities.slug` or `entities.data.key`.
 - Run read-only Supabase queries through MCP.
 - Run local quality checks.
 - Draft GitHub issues using `.github/ISSUE_TEMPLATE`.

@@ -35,7 +35,7 @@ export type CmsSchemaDefinition = {
   schemaId?: string
   schemaKey: string
   kind: CmsSchemaKind
-  table: "pages" | "sections" | "entities" | "entity_relations"
+  table: "entities" | "entity_relations"
   semanticKind: string
   semanticGroup?: string
   label: string
@@ -94,7 +94,7 @@ const sectionSchema = (
 ): CmsSchemaDraft => ({
   schemaKey,
   kind: "section",
-  table: "sections",
+  table: "entities",
   label,
   description,
   fields: [...sectionBaseFields, ...propsFields],
@@ -209,7 +209,7 @@ const rawCmsSchemaRegistry: CmsSchemaDraft[] = [
   {
     schemaKey: "page/default/v1",
     kind: "page",
-    table: "pages",
+    table: "entities",
     semanticKind: "page",
     semanticGroup: "site",
     label: "Page",
