@@ -134,8 +134,9 @@ For content graph tasks:
 
 1. Identify page slug and section keys.
 2. Determine whether this is content data, renderer behavior, or schema.
-3. Prefer upserts by stable keys (`pages.slug`, `sections.key`, `entities.slug`).
-4. Link with `entity_relations`; the legacy `section_entities` mirror table has
+3. Prefer upserts by stable graph keys (`entities.slug`, `entities.data.key`,
+   and deterministic `page:` / `section:` entity slugs).
+4. Link with `entity_relations`; the legacy page/section mirror tables have
    been removed.
 5. Verify counts with the query in `docs/content-graph.md`.
 
