@@ -7,18 +7,18 @@ what changed, but it does not add broad rollback controls in the first slice.
 ## Current Content Graph Audit Scope
 
 Migration `20260505000039_cms_audit_events.sql` introduced
-`public.cms_audit_events`. After the legacy mirror removal in
-`20260509000048_drop_legacy_mirror_tables.sql`, active CMS content graph audit
-coverage is centered on:
+`public.cms_audit_events`. After the legacy mirror removals in
+`20260509000048_drop_legacy_mirror_tables.sql` and
+`20260513000067_drop_page_section_compat_tables.sql`, active CMS content graph
+audit coverage is centered on:
 
-- `pages`
-- `sections`
 - `entities`
 - `entity_relations`
 
 Historical audit rows can still contain `target_table` values for removed
-legacy mirror tables. Treat those as immutable history, not active write
-targets.
+legacy mirror or compatibility tables such as `pages`, `sections`,
+`page_sections`, and `section_entities`. Treat those as immutable history, not
+active write targets.
 
 Each audit event stores:
 

@@ -9,14 +9,11 @@ entity_schemas
       -> entities
 ```
 
-`pages` and `sections` currently remain compatibility tables for historical
-page/section records, but PONIX authoring now treats their graph `entities` as
-the CMS-facing record ids. Ordered page/section composition is stored in
-`entity_relations`; the legacy `page_sections` and `section_entities` mirror
-tables have been removed.
-Page and section schema registry entries are also entity-native: their
-canonical `entity_schemas.table_name` is `entities`, not the remaining
-compatibility tables.
+Page and section records now live directly in `entities`. Ordered page/section
+composition is stored in `entity_relations`; the legacy `pages`, `sections`,
+`page_sections`, and `section_entities` compatibility tables have been removed.
+Page and section schema registry entries are entity-native: their canonical
+`entity_schemas.table_name` is `entities`.
 
 The older media domain tables `performances`, `videos`, and `photos` have been
 removed. Media/archive content now lives in `entities` and `entity_relations`.
@@ -24,18 +21,18 @@ removed. Media/archive content now lives in `entities` and `entity_relations`.
 ## Entity Graph Bridge
 
 Migration `20260506000042_entity_graph_bridge.sql` started the safe transition
-by mirroring page and section records into the generic graph:
+by copying page and section records into the generic graph:
 
-- `pages` rows get shadow `entities` rows using the `page/default/v1` schema.
-- `sections` rows get shadow `entities` rows using registered section schemas.
+- Former `pages` rows became `entities` rows using the `page/default/v1` schema.
+- Former `sections` rows became `entities` rows using registered section schemas.
 - Page-to-section composition uses `entity_relations` rows from page entity to
   section entity.
 - Section-to-content composition uses `entity_relations` rows from section
   entity to content entity.
 
-The bridge resolves page/section shadow `entities` through deterministic slugs:
-`page:<pages.slug>` and `section:<sections.key>`. Legacy source marker columns
-on `entities` and `entity_relations` have been retired.
+Page and section `entities` are resolved through deterministic slugs:
+`page:<slug>` and `section:<key>`. Legacy source marker columns on `entities`
+and `entity_relations` have been retired.
 `entity_relations` no longer uses legacy mirror source markers after
 `20260511000052_retire_legacy_relation_source_markers.sql`; relation identity
 comes from `schema_id`, `relation_type`, `slot`, and the relation id.
@@ -61,15 +58,14 @@ Current PONIX contract:
 - Routine CMS composition writes target `entity_relations` without legacy
   source markers.
 - Maintenance apply scripts and generated seed migrations that refresh scraped
-  or Instagram content should treat page and section records as graph
-  `entities`, then write placement through `entity_relations`. They must not
-  require the compatibility `pages`, `sections`, `page_sections`, or
-  `section_entities` tables.
+  or Instagram content must treat page and section records as graph `entities`,
+  then write placement through `entity_relations`. They must not require the
+  removed `pages`, `sections`, `page_sections`, or `section_entities` tables.
 - Code that mutates page or section composition must pass the graph relation id.
 - `pnpm run qa:content-graph` checks graph-only page composition integrity:
   page/section entity key uniqueness, section ordering, relation contracts, and
   missing or unpublished section/entity references.
-- Runtime CMS code must not read `page_sections` or `section_entities`.
+- Runtime CMS code must not read removed compatibility tables.
   Use `pnpm run qa:cms-legacy-bridge-boundary` after CMS loader changes.
 - Use `pnpm run qa:legacy-mirror-readiness` when touching historical mirror
   references. The command now reports no active blockers after Stage 5 removal.
@@ -85,8 +81,6 @@ Current PONIX contract:
 | Table | Purpose |
 | --- | --- |
 | `entity_schemas` | DB-backed schema registry for page, section, entity, and relation records. Page, section, and entity schemas point to `entities`; relation schemas point to `entity_relations`. This is the long-term source for CMS form metadata. |
-| `pages` | Compatibility mirror for routable page records such as `home`, `performances`, `videos`, `photos`, `history`, and `site`. PONIX authoring should prefer the page entity. |
-| `sections` | Compatibility mirror for renderer blocks. PONIX authoring should prefer the section entity with renderer identity in `entities.data`. |
 | `entities` | Reusable content units such as videos, photos, stats, posts, history milestones, activities, nav items, and social links. |
 | `entity_relations` | Ordered page-to-section, section-to-entity, and domain relations such as performance to recording/photo/post. |
 | `members` | Domain-specific member/auth/profile table. This intentionally remains separate from generic entities. |
@@ -94,8 +88,7 @@ Current PONIX contract:
 ## Renderer Contract
 
 The app chooses a UI renderer from graph section metadata. Entity-native
-sections store it in `entities.data.section_type`; legacy mirrored sections
-expose the same value through `sections.section_type`.
+sections store it in `entities.data.section_type`.
 
 Examples:
 
@@ -133,7 +126,6 @@ For active schemas, `table_name` is storage identity, not domain identity.
 
 Use the registry contract for:
 
-- `sections.props`
 - `entities.data`
 - `entity_relations.props`
 
@@ -192,7 +184,6 @@ Renderer implementations remain in React code. Database schemas may name a
 
 ## Where Data Belongs
 
-Legacy `sections` rows still expose these columns for compatibility, but new
 PONIX authoring should model section identity on the section entity:
 
 - `entities.schema_id`
@@ -204,18 +195,7 @@ PONIX authoring should model section identity on the section entity:
 - `entities.data.eyebrow`
 - `entities.data.props`
 
-The compatibility `sections` columns are:
-
-- `key`
-- `section_type`
-- `schema_id`
-- `eyebrow`
-- `title`
-- `subtitle`
-- `published`
-
-Compatibility `sections.props` and entity-native `entities.data.props` carry
-renderer-level copy and behavior:
+Entity-native `entities.data.props` carries renderer-level copy and behavior:
 
 - `body`
 - `href`
