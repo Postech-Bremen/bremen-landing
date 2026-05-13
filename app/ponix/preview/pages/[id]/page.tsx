@@ -12,7 +12,7 @@ import {
 } from "@/lib/data/content-graph"
 
 export const metadata: Metadata = {
-  title: "PONIX Draft Preview | 브레멘 Bremen",
+  title: "미리보기 | Bremen Admin",
   robots: {
     index: false,
     follow: false,
@@ -49,21 +49,21 @@ function PreviewBanner({
   pageId: string
 }) {
   return (
-    <aside className="sticky top-20 z-40 border-b bg-background/92 backdrop-blur-md">
+    <aside className="sticky top-0 z-40 border-b bg-background/92 backdrop-blur-md">
       <div className="mx-auto flex max-w-6xl flex-col gap-3 px-6 py-4 md:flex-row md:items-center md:justify-between md:px-8">
         <div>
           <div className="mb-1 flex flex-wrap items-center gap-2">
-            <Badge>Draft preview</Badge>
+            <Badge>관리자 미리보기</Badge>
             <Badge variant="outline" className="font-mono">
               {preview.kind}
             </Badge>
           </div>
           <p className="text-sm text-muted-foreground">
-            PONIX admin preview. Public routes still hide unpublished content.
+            비공개 항목까지 확인하는 관리자용 화면입니다. 공개 사이트 노출 상태는 바뀌지 않습니다.
           </p>
         </div>
         <Button asChild variant="outline" className="w-fit rounded-full">
-          <Link href={`/ponix/pages/${pageId}`}>Back to page record</Link>
+          <Link href={`/ponix/pages/${pageId}`}>페이지 상세로 돌아가기</Link>
         </Button>
       </div>
     </aside>

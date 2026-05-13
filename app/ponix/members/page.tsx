@@ -22,7 +22,7 @@ import { requireCmsAdmin } from "@/lib/cms/auth"
 import { loadCmsMembers } from "@/lib/cms/members"
 
 export const metadata: Metadata = {
-  title: "PONIX Members | 브레멘 Bremen",
+  title: "멤버 운영 | Bremen Admin",
   robots: {
     index: false,
     follow: false,
@@ -41,18 +41,18 @@ export default async function PonixMembersPage() {
 
   return (
     <CmsListPage
-      eyebrow="PONIX / 멤버"
-      title="Member Ops"
-      description="가입 승인, 관리자 권한, 활동 상태와 공개 멤버 카드에 보이는 정보를 관리합니다."
+      eyebrow="동아리 운영 / 멤버"
+      title="Member room"
+      description="가입한 부원을 확인하고, 관리자 권한과 활동 상태를 필요할 때 바로 조정합니다."
     >
       <CmsStatGrid>
-        <CmsStatTile label="Members" value={stats.total} detail="등록된 멤버" accent />
-        <CmsStatTile label="Accounts" value={stats.linkedAuth} detail="로그인 가능 계정" />
-        <CmsStatTile label="Approved" value={stats.approved} detail="멤버 공간 접근" />
-        <CmsStatTile label="Active" value={stats.active} detail="현재 활동 상태" />
+        <CmsStatTile label="멤버" value={stats.total} detail="등록된 전체 멤버" accent />
+        <CmsStatTile label="계정 연결" value={stats.linkedAuth} detail="로그인 가능한 멤버" />
+        <CmsStatTile label="승인 완료" value={stats.approved} detail="멤버 공간 접근 가능" />
+        <CmsStatTile label="활동 중" value={stats.active} detail="현재 활동 상태" />
       </CmsStatGrid>
 
-      <CmsTableCard title="Roster control" meta={`${members.length}명`}>
+      <CmsTableCard title="멤버 명단" meta={`${members.length}명`}>
         <Table>
           <TableHeader>
             <TableRow>

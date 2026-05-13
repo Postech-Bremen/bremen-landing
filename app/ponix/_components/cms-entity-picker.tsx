@@ -203,7 +203,7 @@ export function CmsEntityPicker({
                         </Badge>
                         {!entity.published && (
                           <Badge variant="secondary" className="rounded-full">
-                            Draft
+                            비공개
                           </Badge>
                         )}
                       </div>

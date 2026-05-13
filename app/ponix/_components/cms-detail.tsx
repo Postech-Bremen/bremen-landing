@@ -31,10 +31,10 @@ import { CmsAuditTrailCard } from "./cms-audit-card"
 import { formatCmsDate, PublishBadge, SchemaBadge } from "./cms-list"
 
 const sourceLabels: Record<CmsFieldSource, string> = {
-  column: "Column",
-  props: "Props",
-  data: "Data",
-  relation_props: "Relation props",
+  column: "기본 정보",
+  props: "화면 설정",
+  data: "콘텐츠 정보",
+  relation_props: "연결 설정",
 }
 
 export async function CmsDetailPage({
@@ -56,15 +56,16 @@ export async function CmsDetailPage({
   const fieldCount = schema?.fields.length ?? 0
 
   return (
-    <section className="mx-auto flex w-full max-w-[96rem] flex-col gap-6">
-      <div className="relative overflow-hidden rounded-2xl border bg-card/95 p-5 shadow-sm md:p-7">
-        <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_10%_0%,color-mix(in_oklch,var(--accent)_11%,transparent),transparent_34%),linear-gradient(135deg,color-mix(in_oklch,var(--muted)_88%,transparent),transparent_42%)]" />
+    <section className="mx-auto flex w-full max-w-[92rem] flex-col gap-6">
+      <div className="relative overflow-hidden rounded-[1.75rem] border bg-card/95 p-5 shadow-sm md:p-7">
+        <div className="pointer-events-none absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-primary via-accent to-transparent" />
+        <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(135deg,color-mix(in_oklch,var(--muted)_72%,transparent),transparent_48%)]" />
         <div className="relative flex flex-col gap-5 md:flex-row md:items-start md:justify-between">
           <div className="min-w-0">
             <p className="caps mb-3 text-muted-foreground">
-              PONIX / {detail.table}
+              관리자 / {detail.kind}
             </p>
-            <h1 className="font-serif text-[clamp(3rem,6vw,5.5rem)] italic leading-[0.86] tracking-tight">
+            <h1 className="font-serif text-[clamp(2.5rem,4vw,4.75rem)] italic leading-[0.9] tracking-tight">
               {detail.title}
             </h1>
             {detail.subtitle && (
@@ -96,22 +97,22 @@ export async function CmsDetailPage({
         <Alert variant="destructive" className="rounded-2xl">
           <AlertTitle>수정 화면을 만들 스키마가 없습니다</AlertTitle>
           <AlertDescription>
-            데이터는 존재하지만 <code>{detail.schemaKey}</code> 형태를 PONIX가
-            아직 해석하지 못합니다.
+            이 항목은 저장되어 있지만 아직 관리자 화면에서 안전하게 수정할
+            입력 양식이 등록되지 않았습니다.
           </AlertDescription>
         </Alert>
       )}
 
       <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_22rem]">
-        <Card className="overflow-hidden rounded-2xl bg-card/95 shadow-sm">
+        <Card className="overflow-hidden rounded-[1.5rem] bg-card/95 shadow-sm">
           <CardHeader className="border-b bg-muted/20">
             <div className="flex flex-col gap-2 md:flex-row md:items-end md:justify-between">
               <div>
                 <CardTitle className="font-serif text-2xl italic md:text-3xl">
-                  Editable fields
+                  수정 가능한 항목
                 </CardTitle>
                 <CardDescription>
-                  PONIX가 알고 있는 항목과 현재 저장된 값을 확인합니다.
+                  관리자가 바꿀 수 있는 값과 현재 저장된 내용을 확인합니다.
                 </CardDescription>
               </div>
               <p className="caps text-muted-foreground">{fieldCount} fields</p>
@@ -129,26 +130,26 @@ export async function CmsDetailPage({
         </Card>
 
         <div className="space-y-6">
-          <Card className="rounded-2xl bg-card/95 shadow-sm">
+          <Card className="rounded-[1.5rem] bg-card/95 shadow-sm">
             <CardHeader>
               <CardTitle className="font-serif text-2xl italic md:text-3xl">
-                Record
+                기본 정보
               </CardTitle>
               <CardDescription>
-                이 항목을 찾고 추적하는 데 쓰는 기본 정보입니다.
+                항목을 찾고 변경 이력을 추적하는 데 쓰는 정보입니다.
               </CardDescription>
             </CardHeader>
             <CardContent>
               <dl className="space-y-4 text-sm">
                 <MetaRow label="ID" value={detail.row.id} mono />
-                <MetaRow label="Table" value={detail.table} mono />
-                <MetaRow label="Schema" value={detail.schemaKey} mono />
+                <MetaRow label="저장 위치" value={detail.table} mono />
+                <MetaRow label="입력 양식" value={detail.schemaKey} mono />
                 <MetaRow
-                  label="Updated"
+                  label="수정"
                   value={formatCmsDate(detail.updatedAt)}
                 />
                 <MetaRow
-                  label="Created"
+                  label="생성"
                   value={formatCmsDate(detail.row.created_at)}
                 />
               </dl>
@@ -158,19 +159,19 @@ export async function CmsDetailPage({
           {audit && (
             <CmsAuditTrailCard
               audit={audit}
-              title="Record audit"
-              description="Recent changes for this CMS record."
-              emptyMessage="No changes have been recorded for this record yet."
+              title="변경 이력"
+              description="이 항목에 누가 어떤 변경을 남겼는지 확인합니다."
+              emptyMessage="아직 기록된 변경 내역이 없습니다."
             />
           )}
 
-          <Card className="rounded-2xl bg-card/95 shadow-sm">
+          <Card className="rounded-[1.5rem] bg-card/95 shadow-sm">
             <CardHeader>
               <CardTitle className="font-serif text-2xl italic md:text-3xl">
-                Raw data
+                원본 데이터
               </CardTitle>
               <CardDescription>
-                문제가 있을 때 확인하는 원본 저장값입니다.
+                화면에 보이는 값과 저장값이 다를 때 확인합니다.
               </CardDescription>
             </CardHeader>
             <CardContent>
@@ -198,11 +199,11 @@ function FieldTable({
     <Table>
       <TableHeader>
         <TableRow>
-          <TableHead>Field</TableHead>
-          <TableHead>Source</TableHead>
-          <TableHead>Type</TableHead>
-          <TableHead>Value</TableHead>
-          <TableHead>Rules</TableHead>
+          <TableHead>항목</TableHead>
+          <TableHead>영역</TableHead>
+          <TableHead>형식</TableHead>
+          <TableHead>현재 값</TableHead>
+          <TableHead>조건</TableHead>
         </TableRow>
       </TableHeader>
       <TableBody>

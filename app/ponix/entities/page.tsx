@@ -16,7 +16,7 @@ import { requireCmsAdmin } from "@/lib/cms/auth"
 import { loadCmsEntities } from "@/lib/cms/content"
 
 export const metadata: Metadata = {
-  title: "PONIX Entities | 브레멘 Bremen",
+  title: "콘텐츠 자료 | Bremen Admin",
   robots: {
     index: false,
     follow: false,
@@ -35,20 +35,20 @@ export default async function PonixEntitiesPage() {
 
   return (
     <CmsListPage
-      eyebrow="PONIX / Entities"
-      title="Data Library"
-      description="영상, 사진, 공연, 히스토리처럼 여러 페이지와 섹션에서 다시 쓰는 원본 데이터입니다."
+      eyebrow="사이트 운영 / 콘텐츠"
+      title="Content vault"
+      description="공연, 영상, 사진, 히스토리 기록처럼 사이트 여러 곳에서 다시 쓰는 콘텐츠 원본을 관리합니다."
       actions={
         <Button asChild className="w-fit rounded-full">
-          <Link href="/ponix/entities/new">새 데이터</Link>
+          <Link href="/ponix/entities/new">콘텐츠 추가</Link>
         </Button>
       }
     >
       <CmsStatGrid>
-        <CmsStatTile label="Loaded" value={entities.length} detail={meta} accent />
-        <CmsStatTile label="Published" value={publishedCount} detail="노출 가능한 데이터" />
-        <CmsStatTile label="Types" value={typeCount} detail="공연, 영상, 사진 등" />
-        <CmsStatTile label="Schemas" value={schemaCount} detail="등록된 데이터 형태" />
+        <CmsStatTile label="표시 중" value={entities.length} detail={meta} accent />
+        <CmsStatTile label="공개 중" value={publishedCount} detail="사이트에 사용할 수 있는 콘텐츠" />
+        <CmsStatTile label="분류" value={typeCount} detail="공연, 영상, 사진 등" />
+        <CmsStatTile label="형식" value={schemaCount} detail="등록된 입력 양식" />
       </CmsStatGrid>
 
       <CmsRecordGrid>
@@ -59,7 +59,7 @@ export default async function PonixEntitiesPage() {
             eyebrow={entity.entityType}
             title={entity.title}
             description={entity.subtitle ?? entity.slug ?? entity.id}
-            actionLabel="Edit data"
+            actionLabel="콘텐츠 열기"
             badges={
               <>
                 <PublishBadge published={entity.published} />
@@ -69,7 +69,7 @@ export default async function PonixEntitiesPage() {
                 />
               </>
             }
-            meta={`Sort ${formatCmsDate(entity.sortAt)}`}
+            meta={`기준일 ${formatCmsDate(entity.sortAt)}`}
             media={
               entity.thumbnailUrl ? (
                 // eslint-disable-next-line @next/next/no-img-element

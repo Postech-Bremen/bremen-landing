@@ -45,41 +45,42 @@ export async function CmsPageEditorPage({
   const propsFields = editableFields.filter((field) => field.source === "props")
 
   return (
-    <main className="relative min-h-[calc(100vh-5rem)] overflow-hidden">
+    <main className="relative min-h-screen overflow-hidden">
       <div className="pointer-events-none absolute inset-0 -z-10">
         <div className="absolute right-[-10rem] top-10 h-96 w-96 rounded-full bg-accent/10 blur-3xl" />
         <div className="absolute left-[-8rem] bottom-0 h-80 w-80 rounded-full bg-muted blur-3xl" />
       </div>
 
-      <section className="mx-auto max-w-5xl px-6 py-16 md:px-8 md:py-24">
+      <section className="mx-auto max-w-5xl px-1 py-4 md:py-8">
         <div className="mb-10 flex flex-col gap-6 md:flex-row md:items-start md:justify-between">
           <div>
-            <p className="caps mb-5">PONIX / Edit page</p>
-            <h1 className="font-serif text-[clamp(3.25rem,8vw,6.5rem)] italic leading-[0.84] tracking-tight">
+            <p className="caps mb-5">페이지 편집</p>
+            <h1 className="font-serif text-[clamp(2.5rem,5vw,5rem)] italic leading-[0.9] tracking-tight">
               {detail.title}
             </h1>
             <p className="mt-5 max-w-2xl text-sm leading-relaxed text-muted-foreground md:text-base">
-              Edit route-level copy, publish state, and registered page props.
+              페이지 제목, 설명, 공개 상태처럼 사이트 전체 흐름에 영향을 주는
+              기본 정보를 수정합니다.
             </p>
             <div className="mt-6 flex flex-wrap items-center gap-2">
               <Badge variant="outline" className="rounded-full font-mono">
                 /{detail.row.slug === "home" ? "" : detail.row.slug}
               </Badge>
               <Badge variant="secondary" className="rounded-full">
-                {schema?.label ?? "Unregistered schema"}
+                {schema?.label ?? "등록되지 않은 형식"}
               </Badge>
             </div>
           </div>
           <Button asChild variant="outline" className="w-fit rounded-full">
-            <Link href={`/ponix/pages/${detail.row.id}`}>Back to page</Link>
+            <Link href={`/ponix/pages/${detail.row.id}`}>상세로 돌아가기</Link>
           </Button>
         </div>
 
         {!schema ? (
           <Alert variant="destructive">
-            <AlertTitle>Schema is not editable</AlertTitle>
+            <AlertTitle>수정할 수 없는 페이지입니다</AlertTitle>
             <AlertDescription>
-              The default page schema is not registered as a page editor schema.
+              이 페이지에 맞는 입력 양식이 아직 등록되지 않았습니다.
             </AlertDescription>
           </Alert>
         ) : (
@@ -97,15 +98,14 @@ export async function CmsPageEditorPage({
               savedDescription="페이지 기본 정보가 저장되었습니다."
             />
 
-            <Card className="rounded-md bg-card/95 shadow-xl">
+            <Card className="rounded-[1.5rem] bg-card/95 shadow-sm">
               <CardHeader className="border-b">
                 <CardTitle className="font-serif text-3xl italic">
-                  Locked route
-                </CardTitle>
-                <CardDescription>
-                  Page slug controls the public route and stays locked in this
-                  editor.
-                </CardDescription>
+                    고정된 주소
+                  </CardTitle>
+                  <CardDescription>
+                    공개 사이트 주소를 결정하는 값이라 이 화면에서는 바꾸지 않습니다.
+                  </CardDescription>
               </CardHeader>
               <CardContent className="grid gap-4 px-6 py-6 md:grid-cols-2">
                 <ReadonlyMeta label="Slug" value={detail.row.slug} />
@@ -114,26 +114,26 @@ export async function CmsPageEditorPage({
             </Card>
 
             <EditorCard
-              title="Page fields"
-              description="Route-level copy and publish state."
+              title="기본 정보"
+              description="페이지 제목, 설명, 공개 상태입니다."
               fields={columnFields}
               detail={detail}
             />
 
             <EditorCard
-              title="Page props"
-              description="Schema-registered JSON props for page-level metadata."
+              title="추가 설정"
+              description="페이지 단위로 저장되는 선택 설정입니다."
               fields={propsFields}
               detail={detail}
             />
 
-            <div className="flex flex-col gap-3 rounded-md border bg-card/95 p-4 shadow-xl sm:flex-row sm:items-center sm:justify-between">
+            <div className="flex flex-col gap-3 rounded-[1.25rem] border bg-card/95 p-4 shadow-sm sm:flex-row sm:items-center sm:justify-between">
               <p className="text-sm text-muted-foreground">
                 저장하면 페이지 제목, 설명, 공개 상태만 바뀝니다. 섹션 구성은 그대로 둡니다.
               </p>
               <div className="flex gap-2">
                 <Button asChild type="button" variant="outline">
-                  <Link href={`/ponix/pages/${detail.row.id}`}>Cancel</Link>
+                  <Link href={`/ponix/pages/${detail.row.id}`}>취소</Link>
                 </Button>
                   <CmsSubmitButton>페이지 저장</CmsSubmitButton>
                 </div>
@@ -157,7 +157,7 @@ function EditorCard({
   detail: CmsPageDetail
 }) {
   return (
-    <Card className="rounded-md bg-card/95 shadow-xl">
+    <Card className="rounded-[1.5rem] bg-card/95 shadow-sm">
       <CardHeader className="border-b">
         <div className="flex flex-col gap-2 md:flex-row md:items-end md:justify-between">
           <div>
@@ -239,7 +239,7 @@ function renderFieldInput({
           defaultChecked={Boolean(value)}
         />
         <Label htmlFor={id} className="text-sm font-normal">
-          Published
+          공개
         </Label>
       </div>
     )

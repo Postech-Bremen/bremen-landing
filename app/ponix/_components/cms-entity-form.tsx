@@ -50,42 +50,41 @@ export async function CmsEntityEditorPage({
   const formId = `cms-entity-form-${detail.row.id}`
 
   return (
-    <main className="relative min-h-[calc(100vh-5rem)] overflow-hidden">
+    <main className="relative min-h-screen overflow-hidden">
       <div className="pointer-events-none absolute inset-0 -z-10">
         <div className="absolute right-[-10rem] top-10 h-96 w-96 rounded-full bg-accent/10 blur-3xl" />
         <div className="absolute left-[-8rem] bottom-0 h-80 w-80 rounded-full bg-muted blur-3xl" />
       </div>
 
-      <section className="mx-auto max-w-6xl px-6 py-16 md:px-8 md:py-24">
+      <section className="mx-auto max-w-6xl px-1 py-4 md:py-8">
         <div className="mb-10 flex flex-col gap-6 md:flex-row md:items-start md:justify-between">
           <div>
-            <p className="caps mb-5">PONIX / Edit entity</p>
-            <h1 className="font-serif text-[clamp(3.25rem,8vw,6.5rem)] italic leading-[0.84] tracking-tight">
+            <p className="caps mb-5">콘텐츠 수정</p>
+            <h1 className="font-serif text-[clamp(2.5rem,5vw,5rem)] italic leading-[0.9] tracking-tight">
               {detail.title}
             </h1>
             <p className="mt-5 max-w-2xl text-sm leading-relaxed text-muted-foreground md:text-base">
-              Edit reusable content fields and the canonical thumbnail URL.
+              사이트 곳곳에서 쓰이는 콘텐츠의 제목, 썸네일, 세부 정보를 수정합니다.
             </p>
             <div className="mt-6 flex flex-wrap items-center gap-2">
               <Badge variant="outline" className="rounded-full font-mono">
                 {detail.entityType}
               </Badge>
               <Badge variant="secondary" className="rounded-full">
-                {schema?.label ?? "Unregistered schema"}
+                {schema?.label ?? "등록되지 않은 형식"}
               </Badge>
             </div>
           </div>
           <Button asChild variant="outline" className="w-fit rounded-full">
-            <Link href={`/ponix/entities/${detail.row.id}`}>Back to entity</Link>
+            <Link href={`/ponix/entities/${detail.row.id}`}>상세로 돌아가기</Link>
           </Button>
         </div>
 
         {!schema ? (
           <Alert variant="destructive">
-            <AlertTitle>Schema is not editable</AlertTitle>
+            <AlertTitle>수정할 수 없는 콘텐츠입니다</AlertTitle>
             <AlertDescription>
-              This entity uses <code>{detail.schemaKey}</code>, which is not
-              registered as an entity editor schema.
+              이 콘텐츠에 맞는 입력 양식이 아직 등록되지 않았습니다.
             </AlertDescription>
           </Alert>
         ) : (
@@ -108,19 +107,18 @@ export async function CmsEntityEditorPage({
                 savedDescription="데이터 항목이 저장되었습니다."
               />
 
-              <Card className="rounded-md bg-card/95 shadow-xl">
+              <Card className="rounded-[1.5rem] bg-card/95 shadow-sm">
                 <CardHeader className="border-b">
                   <CardTitle className="font-serif text-3xl italic">
-                    Locked identity
+                    고정된 식별 정보
                   </CardTitle>
                   <CardDescription>
-                    These values define entity behavior and are not editable in
-                    this slice.
+                    콘텐츠 분류와 입력 양식을 결정하는 값이라 이 화면에서는 바꾸지 않습니다.
                   </CardDescription>
                 </CardHeader>
                 <CardContent className="grid gap-4 px-6 py-6 md:grid-cols-3">
-                  <ReadonlyMeta label="Semantic kind" value={detail.entityType} />
-                  <ReadonlyMeta label="Schema" value={detail.schemaKey} />
+                  <ReadonlyMeta label="분류" value={detail.entityType} />
+                  <ReadonlyMeta label="입력 양식" value={detail.schemaKey} />
                   <ReadonlyMeta label="ID" value={detail.row.id} />
                 </CardContent>
               </Card>
@@ -128,28 +126,28 @@ export async function CmsEntityEditorPage({
               <ThumbnailCard detail={detail} />
 
               <EditorCard
-                title="Entity fields"
-                description="Shared columns used by cards, lists, and detail views."
+                title="기본 정보"
+                description="카드, 목록, 상세 화면에서 공통으로 쓰는 값입니다."
                 fields={columnFields}
                 detail={detail}
               />
 
               <EditorCard
-                title="Schema data"
-                description="Schema-registered JSON data for this entity type."
+                title="콘텐츠 세부 정보"
+                description="콘텐츠 종류별로 필요한 추가 정보입니다."
                 fields={dataFields}
                 detail={detail}
               />
 
-              <div className="flex flex-col gap-3 rounded-md border bg-card/95 p-4 shadow-xl sm:flex-row sm:items-center sm:justify-between">
+              <div className="flex flex-col gap-3 rounded-[1.25rem] border bg-card/95 p-4 shadow-sm sm:flex-row sm:items-center sm:justify-between">
                 <p className="text-sm text-muted-foreground">
-                  Saving updates this entity row only. Relations stay untouched.
+                  저장하면 이 콘텐츠의 정보만 바뀝니다. 배치된 섹션과 순서는 그대로 둡니다.
                 </p>
                 <div className="flex gap-2">
                   <Button asChild type="button" variant="outline">
-                    <Link href={`/ponix/entities/${detail.row.id}`}>Cancel</Link>
+                    <Link href={`/ponix/entities/${detail.row.id}`}>취소</Link>
                   </Button>
-                  <CmsSubmitButton>데이터 저장</CmsSubmitButton>
+                  <CmsSubmitButton>콘텐츠 저장</CmsSubmitButton>
                 </div>
               </div>
             </div>
@@ -168,14 +166,13 @@ export async function CmsEntityEditorPage({
 
 function ThumbnailCard({ detail }: { detail: CmsEntityDetail }) {
   return (
-    <Card className="rounded-md bg-card/95 shadow-xl">
+    <Card className="rounded-[1.5rem] bg-card/95 shadow-sm">
       <CardHeader className="border-b">
         <CardTitle className="font-serif text-3xl italic">
-          Thumbnail upload
+          대표 이미지
         </CardTitle>
         <CardDescription>
-          Uploading a new image stores it in the shared images bucket and
-          replaces <code>thumbnail_url</code>.
+          새 이미지를 올리면 Supabase Storage에 저장되고 이 콘텐츠의 썸네일로 반영됩니다.
         </CardDescription>
       </CardHeader>
       <CardContent className="grid gap-5 px-6 py-6 md:grid-cols-[12rem_minmax(0,1fr)]">
@@ -190,15 +187,14 @@ function ThumbnailCard({ detail }: { detail: CmsEntityDetail }) {
           </div>
         ) : (
           <div className="grid h-32 w-48 max-w-full place-items-center rounded-md border bg-muted text-sm text-muted-foreground">
-            No thumbnail
+            대표 이미지 없음
           </div>
         )}
         <div className="space-y-2">
-          <Label htmlFor="thumbnail_file">Upload image</Label>
+          <Label htmlFor="thumbnail_file">이미지 업로드</Label>
           <ProfileImageInput id="thumbnail_file" name="thumbnail_file" />
           <p className="text-xs leading-relaxed text-muted-foreground">
-            Leave empty to keep the current URL. Manual URL edits are available
-            in Entity fields for already-hosted assets.
+            비워 두면 기존 이미지를 유지합니다. 이미 업로드된 이미지는 URL로도 관리할 수 있습니다.
           </p>
         </div>
       </CardContent>
@@ -218,7 +214,7 @@ function EditorCard({
   detail: CmsEntityDetail
 }) {
   return (
-    <Card className="rounded-md bg-card/95 shadow-xl">
+    <Card className="rounded-[1.5rem] bg-card/95 shadow-sm">
       <CardHeader className="border-b">
         <div className="flex flex-col gap-2 md:flex-row md:items-end md:justify-between">
           <div>
@@ -235,7 +231,7 @@ function EditorCard({
           ))
         ) : (
           <p className="text-sm text-muted-foreground">
-            No editable fields in this group.
+            이 묶음에는 수정할 항목이 없습니다.
           </p>
         )}
       </CardContent>

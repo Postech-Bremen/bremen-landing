@@ -253,12 +253,12 @@ function PreviewShell({
 }) {
   return (
     <div className="xl:sticky xl:top-24">
-      <Card className="overflow-hidden rounded-md bg-card/95 shadow-xl">
+      <Card className="overflow-hidden rounded-[1.5rem] bg-card/95 shadow-sm">
         <CardHeader className="border-b">
           <p className="caps text-muted-foreground">{eyebrow}</p>
           <CardTitle className="font-serif text-3xl italic">{title}</CardTitle>
           <CardDescription>
-            Common CMS preview rendered from the current form state.
+            저장 전 현재 입력값이 화면에 어떻게 보일지 확인합니다.
           </CardDescription>
         </CardHeader>
         <CardContent className="bg-muted/25 p-4">{children}</CardContent>
@@ -459,7 +459,7 @@ function EntityPreviewCard({
       <div className="space-y-5 p-5">
         <div className="flex flex-wrap gap-2">
           <Badge variant={snapshot.published ? "default" : "outline"}>
-            {snapshot.published ? "Published" : "Draft"}
+            {snapshot.published ? "공개" : "비공개"}
           </Badge>
           <Badge variant="secondary">{schemaLabel}</Badge>
           <Badge variant="outline" className="font-mono">
@@ -504,7 +504,7 @@ function SectionPreviewCard({
     <section className="space-y-5 rounded-md border bg-background p-5 shadow-sm">
       <div className="flex flex-wrap gap-2">
         <Badge variant={snapshot.published ? "default" : "outline"}>
-          {snapshot.published ? "Published" : "Draft"}
+          {snapshot.published ? "공개" : "비공개"}
         </Badge>
         <Badge variant="secondary">{schemaLabel}</Badge>
         <Badge variant="outline" className="font-mono">

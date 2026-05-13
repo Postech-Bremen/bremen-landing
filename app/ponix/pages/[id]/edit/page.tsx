@@ -6,7 +6,7 @@ import { requireCmsAdmin } from "@/lib/cms/auth"
 import { loadCmsPageDetail } from "@/lib/cms/content"
 
 export const metadata: Metadata = {
-  title: "PONIX Edit Page | 브레멘 Bremen",
+  title: "페이지 기본 정보 | Bremen Admin",
   robots: {
     index: false,
     follow: false,
