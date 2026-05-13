@@ -193,19 +193,19 @@ async function loadSchemaIdsByKind({
 
 async function loadShadowEntityId({
   supabase,
-  sourceTable,
-  sourceId,
+  shadowKind,
+  entityId,
   label,
 }: {
   supabase: ServerSupabaseClient
-  sourceTable: "pages" | "sections"
-  sourceId: string
+  shadowKind: "page" | "section"
+  entityId: string
   label: string
 }) {
   const { data: entity, error } = await supabase
     .from("entities")
     .select("id, schema_id")
-    .eq("id", sourceId)
+    .eq("id", entityId)
     .maybeSingle()
 
   if (error) {
@@ -217,7 +217,7 @@ async function loadShadowEntityId({
   }
 
   const validSchema =
-    sourceTable === "pages"
+    shadowKind === "page"
       ? entity.schema_id ===
         (await loadSchemaIdByKey({
           supabase,
@@ -320,14 +320,14 @@ export async function addPageSectionRelationAction(formData: FormData) {
     const [pageEntityId, sectionEntityId, relationSchemaId] = await Promise.all([
       loadShadowEntityId({
         supabase,
-        sourceTable: "pages",
-        sourceId: pageId,
+        shadowKind: "page",
+        entityId: pageId,
         label: "Page",
       }),
       loadShadowEntityId({
         supabase,
-        sourceTable: "sections",
-        sourceId: sectionId,
+        shadowKind: "section",
+        entityId: sectionId,
         label: "Section",
       }),
       loadSchemaIdByKey({
@@ -455,8 +455,8 @@ export async function addSectionEntityRelationAction(formData: FormData) {
     const [sectionEntityId, relationSchemaId] = await Promise.all([
       loadShadowEntityId({
         supabase,
-        sourceTable: "sections",
-        sourceId: sectionId,
+        shadowKind: "section",
+        entityId: sectionId,
         label: "Section",
       }),
       loadSchemaIdByKey({
@@ -644,8 +644,8 @@ export async function reorderSectionEntityRelationsAction({
     const [sectionShadowId, relationSchemaId] = await Promise.all([
       loadShadowEntityId({
         supabase,
-        sourceTable: "sections",
-        sourceId: sectionId,
+        shadowKind: "section",
+        entityId: sectionId,
         label: "Section",
       }),
       loadSchemaIdByKey({

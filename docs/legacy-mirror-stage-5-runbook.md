@@ -14,7 +14,7 @@ CMS work.
 
 ## Current Production Snapshot
 
-Captured on 2026-05-11 with `pnpm run qa:legacy-media-table-readiness`,
+Updated on 2026-05-13 with `pnpm run qa:legacy-media-table-readiness`,
 `pnpm run qa:legacy-mirror-readiness`, and Supabase MCP `list_tables`:
 
 - `public.page_sections`: removed.
@@ -22,10 +22,12 @@ Captured on 2026-05-11 with `pnpm run qa:legacy-media-table-readiness`,
 - `public.performances`: removed.
 - `public.videos`: removed.
 - `public.photos`: removed.
-- Active public tables: `members`, `entities`, `entity_relations`, `pages`,
-  `sections`, `cms_audit_events`, `entity_schemas`.
-- Entity graph media summary: 33 performance entities, 215 video entities, 31
-  photo entities.
+- `public.pages`: removed.
+- `public.sections`: removed.
+- Active public tables: `members`, `entities`, `entity_relations`,
+  `cms_audit_events`, `entity_schemas`.
+- Entity graph summary: 6 page entities, 19 section entities, 33 performance
+  entities, 215 video entities, 31 photo entities.
 - `qa:legacy-mirror-readiness` reports zero active blocker references.
 - Follow-up migration `20260511000052_retire_legacy_relation_source_markers.sql`
   retires inert `entity_relations.source_table/source_id` markers that pointed
