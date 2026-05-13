@@ -49,10 +49,6 @@ function bySortThenCreated(left, right) {
   )
 }
 
-function uniqueStrings(values) {
-  return [...new Set(values.filter((value) => typeof value === "string" && value))]
-}
-
 function stable(value) {
   if (Array.isArray(value)) return value.map((item) => stable(item))
   if (!value || typeof value !== "object") return value
@@ -75,13 +71,29 @@ function hasUsableRelationCopy(relation) {
   return Boolean(relation.relation_type && relation.slot)
 }
 
-function shadowSlug(sourceTable, sourceKey) {
-  return `${sourceTable === "pages" ? PAGE_SHADOW_PREFIX : SECTION_SHADOW_PREFIX}${sourceKey}`
-}
-
 function shadowKey(entity, sourceTable) {
   const prefix = sourceTable === "pages" ? PAGE_SHADOW_PREFIX : SECTION_SHADOW_PREFIX
   return entity?.slug?.startsWith(prefix) ? entity.slug.slice(prefix.length) : null
+}
+
+function objectValue(value) {
+  return value && typeof value === "object" && !Array.isArray(value) ? value : {}
+}
+
+function stringValue(value) {
+  return typeof value === "string" && value.trim() ? value : null
+}
+
+function pageKey(entity) {
+  return shadowKey(entity, "pages") ?? stringValue(objectValue(entity?.data).slug)
+}
+
+function sectionKey(entity) {
+  return shadowKey(entity, "sections") ?? stringValue(objectValue(entity?.data).key)
+}
+
+function sectionType(entity) {
+  return stringValue(objectValue(entity?.data).section_type)
 }
 
 async function loadSchemaContext(supabase) {
@@ -117,35 +129,36 @@ async function loadSchemaContext(supabase) {
   }
 }
 
-async function checkShadowUniqueness(supabase, sourceTable, schemas) {
-  const sourceRows = requireOk(
-    sourceTable === "pages"
-      ? await supabase.from("pages").select("id, slug").order("slug", { ascending: true })
-      : await supabase.from("sections").select("id, key").order("key", { ascending: true }),
-    `${sourceTable} source records`,
-  )
-  const sourceKeys = new Set(
-    sourceRows.map((row) => (sourceTable === "pages" ? row.slug : row.key)),
-  )
+async function checkEntityKeyUniqueness(supabase, sourceTable, schemas) {
   const rows = requireOk(
     sourceTable === "pages"
       ? await supabase
           .from("entities")
-          .select("id, slug, title")
+          .select("id, slug, title, data")
           .eq("schema_id", schemas.pageSchemaId)
           .order("slug", { ascending: true })
       : await supabase
           .from("entities")
-          .select("id, slug, title")
+          .select("id, slug, title, data")
           .in("schema_id", schemas.sectionSchemaIds)
           .order("slug", { ascending: true }),
-    `${sourceTable} shadow entities`,
+    `${sourceTable} graph entities`,
   )
 
   const bySourceKey = new Map()
+  const missingKeys = []
   for (const row of rows) {
-    const key = shadowKey(row, sourceTable)
-    if (!key) continue
+    const key = sourceTable === "pages" ? pageKey(row) : sectionKey(row)
+    if (!key) {
+      missingKeys.push(
+        issue("Graph entity is missing its stable content key", {
+          sourceTable,
+          entityId: row.id,
+          slug: row.slug,
+        }),
+      )
+      continue
+    }
 
     const existing = bySourceKey.get(key) ?? []
     existing.push(row)
@@ -155,75 +168,32 @@ async function checkShadowUniqueness(supabase, sourceTable, schemas) {
   const duplicates = [...bySourceKey.entries()]
     .filter(([, entries]) => entries.length > 1)
     .map(([sourceId, entries]) =>
-      issue("Source record has multiple graph shadow entities", {
+      issue("Content key has multiple graph entities", {
         sourceTable,
         sourceId,
         entityIds: entries.map((entry) => entry.id),
       }),
     )
-  const missing = [...sourceKeys]
-    .filter((sourceKey) => !bySourceKey.has(sourceKey))
-    .map((sourceKey) =>
-      issue("Source record is missing a graph shadow entity", {
-        sourceTable,
-        sourceKey,
-      }),
-    )
-  const extras = [...bySourceKey.keys()]
-    .filter((sourceKey) => !sourceKeys.has(sourceKey))
-    .map((sourceKey) =>
-      issue("Graph shadow entity has no matching source record", {
-        sourceTable,
-        sourceKey,
-      }),
-    )
 
   return {
     sourceTable,
-    shadows: rows.length,
-    duplicates: [...duplicates, ...missing, ...extras],
-    ok: duplicates.length === 0 && missing.length === 0 && extras.length === 0,
+    entities: rows.length,
+    duplicates: [...duplicates, ...missingKeys],
+    ok: duplicates.length === 0 && missingKeys.length === 0,
   }
-}
-
-async function loadPageEntity(supabase, page, schemas) {
-  const rows = requireOk(
-    await supabase
-      .from("entities")
-      .select("id, slug, title")
-      .eq("schema_id", schemas.pageSchemaId)
-      .eq("slug", shadowSlug("pages", page.slug)),
-    `page shadow entity ${page.slug}`,
-  )
-
-  return rows
 }
 
 async function checkPageComposition(supabase, page, schemas) {
   const issues = []
-  const pageEntities = await loadPageEntity(supabase, page, schemas)
+  const slug = pageKey(page)
 
-  if (pageEntities.length !== 1) {
+  if (!slug) {
     issues.push(
-      issue("Published page must resolve to exactly one graph shadow entity", {
-        page: page.slug,
-        pageId: page.id,
-        shadowCount: pageEntities.length,
-        shadowIds: pageEntities.map((entity) => entity.id),
+      issue("Published page entity must expose a stable route slug", {
+        pageEntityId: page.id,
+        rawSlug: page.slug,
       }),
     )
-  }
-
-  const pageEntity = pageEntities[0]
-  if (!pageEntity) {
-    return {
-      slug: page.slug,
-      sections: 0,
-      items: 0,
-      pageSectionRelations: 0,
-      sectionItemRelations: 0,
-      issues,
-    }
   }
 
   const pageSectionRelations = requireOk(
@@ -245,14 +215,15 @@ async function checkPageComposition(supabase, page, schemas) {
             schema_id,
             slug,
             title,
-            published
+            published,
+            data
           )
         `,
       )
       .eq("schema_id", schemas.pageSectionRelationSchemaId)
-      .eq("from_entity_id", pageEntity.id)
+      .eq("from_entity_id", page.id)
       .order("sort_order", { ascending: true }),
-    `page graph section relations ${page.slug}`,
+    `page graph section relations ${slug ?? page.id}`,
   )
 
   const duplicateSectionTargets = new Map()
@@ -263,7 +234,7 @@ async function checkPageComposition(supabase, page, schemas) {
     ) {
       issues.push(
         issue("Page relation has an invalid relation contract", {
-          page: page.slug,
+          page: slug ?? page.id,
           relationId: relation.id,
           relationType: relation.relation_type,
           slot: relation.slot,
@@ -271,11 +242,11 @@ async function checkPageComposition(supabase, page, schemas) {
       )
     }
 
-    const sectionKey = shadowKey(relation.toEntity, "sections")
-    if (!sectionKey) {
+    const targetSectionKey = sectionKey(relation.toEntity)
+    if (!targetSectionKey) {
       issues.push(
-        issue("Page relation must target a section shadow entity", {
-          page: page.slug,
+        issue("Page relation must target a section entity with a stable key", {
+          page: slug ?? page.id,
           relationId: relation.id,
           toEntity: relation.toEntity,
         }),
@@ -283,16 +254,16 @@ async function checkPageComposition(supabase, page, schemas) {
       continue
     }
 
-    const existing = duplicateSectionTargets.get(sectionKey) ?? []
+    const existing = duplicateSectionTargets.get(targetSectionKey) ?? []
     existing.push(relation.id)
-    duplicateSectionTargets.set(sectionKey, existing)
+    duplicateSectionTargets.set(targetSectionKey, existing)
   }
 
   for (const [sectionKey, relationIds] of duplicateSectionTargets.entries()) {
     if (relationIds.length > 1) {
       issues.push(
         issue("Page contains the same section more than once", {
-          page: page.slug,
+          page: slug ?? page.id,
           sectionKey,
           relationIds,
         }),
@@ -300,44 +271,40 @@ async function checkPageComposition(supabase, page, schemas) {
     }
   }
 
-  const sectionIds = uniqueStrings(
-    pageSectionRelations.map((relation) => shadowKey(relation.toEntity, "sections")),
-  )
-  const sections = sectionIds.length
-    ? requireOk(
-        await supabase
-          .from("sections")
-          .select("id, key, title, published")
-          .in("key", sectionIds)
-          .eq("published", true),
-        `published sections ${page.slug}`,
-      )
-    : []
-  const sectionByKey = new Map(sections.map((section) => [section.key, section]))
-  const sectionShadowIds = []
-  const sectionIdByShadowId = new Map()
+  const sections = []
+  const sectionEntityIds = []
+  const sectionIdByEntityId = new Map()
 
   for (const relation of pageSectionRelations) {
-    const sectionKey = shadowKey(relation.toEntity, "sections")
-    if (!sectionKey) continue
+    const targetSectionKey = sectionKey(relation.toEntity)
+    if (!targetSectionKey) continue
 
-    const section = sectionByKey.get(sectionKey)
-    if (!section) {
+    if (
+      !relation.toEntity ||
+      !schemas.sectionSchemaIds.includes(relation.toEntity.schema_id) ||
+      relation.toEntity.published !== true ||
+      !sectionType(relation.toEntity)
+    ) {
       issues.push(
-        issue("Page relation targets a missing or unpublished section", {
-          page: page.slug,
+        issue("Page relation targets an invalid or unpublished section entity", {
+          page: slug ?? page.id,
           relationId: relation.id,
-          sectionKey,
+          sectionKey: targetSectionKey,
+          sectionEntityId: relation.to_entity_id,
+          schemaId: relation.toEntity?.schema_id,
+          published: relation.toEntity?.published,
+          sectionType: sectionType(relation.toEntity),
         }),
       )
       continue
     }
 
-    sectionShadowIds.push(relation.toEntity.id)
-    sectionIdByShadowId.set(relation.toEntity.id, section.id)
+    sectionEntityIds.push(relation.toEntity.id)
+    sectionIdByEntityId.set(relation.toEntity.id, relation.toEntity.id)
+    sections.push(relation.toEntity)
   }
 
-  const sectionItemRelations = sectionShadowIds.length
+  const sectionItemRelations = sectionEntityIds.length
     ? requireOk(
         await supabase
           .from("entity_relations")
@@ -362,18 +329,18 @@ async function checkPageComposition(supabase, page, schemas) {
             `,
           )
           .eq("schema_id", schemas.sectionEntityRelationSchemaId)
-          .in("from_entity_id", sectionShadowIds),
-        `section item graph relations ${page.slug}`,
+          .in("from_entity_id", sectionEntityIds),
+        `section item graph relations ${slug ?? page.id}`,
       )
     : []
 
   const itemsBySectionId = new Map()
   for (const relation of [...sectionItemRelations].sort(bySortThenCreated)) {
-    const sectionId = sectionIdByShadowId.get(relation.from_entity_id)
+    const sectionId = sectionIdByEntityId.get(relation.from_entity_id)
     if (!sectionId) {
       issues.push(
         issue("Item relation is attached to a section outside this page", {
-          page: page.slug,
+          page: slug ?? page.id,
           relationId: relation.id,
           fromEntityId: relation.from_entity_id,
         }),
@@ -384,7 +351,7 @@ async function checkPageComposition(supabase, page, schemas) {
     if (!hasUsableRelationCopy(relation)) {
       issues.push(
         issue("Item relation must define renderer-facing relation copy", {
-          page: page.slug,
+          page: slug ?? page.id,
           relationId: relation.id,
           sectionId,
           relationType: relation.relation_type,
@@ -396,7 +363,7 @@ async function checkPageComposition(supabase, page, schemas) {
     if (!relation.toEntity?.id || relation.toEntity.published !== true) {
       issues.push(
         issue("Item relation targets a missing or unpublished entity", {
-          page: page.slug,
+          page: slug ?? page.id,
           relationId: relation.id,
           sectionId,
           targetEntityId: relation.to_entity_id,
@@ -411,7 +378,7 @@ async function checkPageComposition(supabase, page, schemas) {
   }
 
   return {
-    slug: page.slug,
+    slug: slug ?? page.id,
     sections: sections.length,
     items: [...itemsBySectionId.values()].reduce(
       (total, items) => total + items.length,
@@ -438,16 +405,17 @@ async function main() {
   const schemas = await loadSchemaContext(supabase)
   const pages = requireOk(
     await supabase
-      .from("pages")
-      .select("id, slug, title, published")
+      .from("entities")
+      .select("id, schema_id, slug, title, published, data")
+      .eq("schema_id", schemas.pageSchemaId)
       .eq("published", true)
       .order("slug", { ascending: true }),
     "published pages",
   )
 
-  const shadowChecks = [
-    await checkShadowUniqueness(supabase, "pages", schemas),
-    await checkShadowUniqueness(supabase, "sections", schemas),
+  const entityKeyChecks = [
+    await checkEntityKeyUniqueness(supabase, "pages", schemas),
+    await checkEntityKeyUniqueness(supabase, "sections", schemas),
   ]
   const pageResults = []
   for (const page of pages) {
@@ -466,18 +434,18 @@ async function main() {
     })),
   )
 
-  console.log("\nGraph shadow cardinality")
+  console.log("\nGraph entity key cardinality")
   console.table(
-    shadowChecks.map((result) => ({
+    entityKeyChecks.map((result) => ({
       sourceTable: result.sourceTable,
-      shadows: result.shadows,
+      entities: result.entities,
       duplicateSources: result.duplicates.length,
       integrity: result.ok ? "ok" : "failed",
     })),
   )
 
   const failures = [
-    ...shadowChecks.flatMap((result) => result.duplicates),
+    ...entityKeyChecks.flatMap((result) => result.duplicates),
     ...pageResults.flatMap((result) => result.issues),
   ]
 

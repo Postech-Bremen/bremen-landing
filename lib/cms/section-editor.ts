@@ -3,9 +3,12 @@ import type {
   CmsSchemaDefinition,
 } from "@/lib/cms/schema-registry"
 import { getCmsSchema, getCmsSchemasByKind } from "@/lib/cms/schema-registry"
-import type { Database, Json } from "@/lib/supabase/types"
+import type { Json } from "@/lib/supabase/types"
 
-type SectionRow = Database["public"]["Tables"]["sections"]["Row"]
+type SectionEditorRecord = {
+  props: Json
+  [key: string]: unknown
+}
 
 const editableSectionColumns = new Set(["eyebrow", "title", "subtitle", "published"])
 
@@ -133,7 +136,7 @@ export function jsonObject(value: Json): CmsJsonObject {
 }
 
 export function getSectionFieldValue(
-  section: SectionRow,
+  section: SectionEditorRecord,
   field: CmsEditableSectionField,
 ) {
   if (field.source === "props") {

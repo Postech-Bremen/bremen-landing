@@ -3,9 +3,12 @@ import type {
   CmsSchemaDefinition,
 } from "@/lib/cms/schema-registry"
 import { getCmsSchema } from "@/lib/cms/schema-registry"
-import type { Database, Json } from "@/lib/supabase/types"
+import type { Json } from "@/lib/supabase/types"
 
-type PageRow = Database["public"]["Tables"]["pages"]["Row"]
+type PageEditorRecord = {
+  props: Json
+  [key: string]: unknown
+}
 
 const editablePageColumns = new Set([
   "title",
@@ -71,7 +74,7 @@ export function jsonObject(value: Json): CmsJsonObject {
 }
 
 export function getPageFieldValue(
-  page: PageRow,
+  page: PageEditorRecord,
   field: CmsEditablePageField,
 ) {
   if (field.source === "props") {
