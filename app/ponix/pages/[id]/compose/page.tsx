@@ -241,12 +241,12 @@ function SectionInspector({
               </div>
 
               <div className="grid gap-3 text-sm">
-                <MetaRow label="Page" value={`/${pageSlug}`} />
-                <MetaRow label="Schema" value={section.schemaKey} mono />
-                <MetaRow label="Sort" value={String(section.sortOrder)} />
+                <MetaRow label="페이지" value={`/${pageSlug}`} />
+                <MetaRow label="입력 양식" value={section.schemaKey} mono />
+                <MetaRow label="섹션 순서" value={String(section.sortOrder)} />
                 <MetaRow
-                  label="Entities"
-                  value={`${section.items.length} linked`}
+                  label="연결 데이터"
+                  value={`${section.items.length}개`}
                 />
               </div>
 
@@ -389,82 +389,16 @@ function SectionEntityWorkspace({
           <CardTitle className="font-serif text-2xl italic">연결 데이터</CardTitle>
         </div>
         <CardDescription>
-          이 섹션에 보여줄 영상, 사진, 공연, 기록을 고릅니다.
+          이 섹션에 실제로 노출되는 콘텐츠와 순서를 관리합니다.
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-5 p-5">
-        <form
-          action={addSectionEntityRelationAction}
-          className="space-y-4"
-          data-composer-track-dirty
-        >
-          <input type="hidden" name="redirect_to" value={redirectTo} />
-          <input type="hidden" name="section_id" value={section.id} />
-          <CmsEntityPicker
-            name="entity_id"
-            entities={options.entities}
-            schemaOptions={options.entitySchemas}
-            showSchemaFilter
-          />
-          <div className="grid grid-cols-3 gap-2">
-            <div className="space-y-2">
-              <Label htmlFor="composer-relation-type">관계</Label>
-              <CmsComboboxField
-                id="composer-relation-type"
-                name="relation_type"
-                defaultValue="item"
-                options={relationTypeOptions.map((option) => ({
-                  value: option,
-                  label: option,
-                }))}
-                placeholder="관계 선택"
-                searchPlaceholder="관계 검색 또는 입력"
-                emptyLabel="새 관계 이름을 입력하세요"
-                customLabel="사용"
-                triggerClassName="h-10 bg-background/80"
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="composer-slot">슬롯</Label>
-              <CmsComboboxField
-                id="composer-slot"
-                name="slot"
-                defaultValue={slotOptions[0] ?? "default"}
-                options={slotOptions.map((option) => ({
-                  value: option,
-                  label: option,
-                }))}
-                placeholder="슬롯 선택"
-                searchPlaceholder="슬롯 검색 또는 입력"
-                emptyLabel="새 슬롯 이름을 입력하세요"
-                customLabel="사용"
-                triggerClassName="h-10 bg-background/80"
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="composer-sort-order">순서</Label>
-              <Input
-                id="composer-sort-order"
-                name="sort_order"
-                type="number"
-                defaultValue={nextSortOrder}
-                className="h-10 bg-background/80"
-              />
-            </div>
-          </div>
-          <CmsSubmitButton className="w-full rounded-full">
-            데이터 연결
-          </CmsSubmitButton>
-        </form>
-
-        <Separator />
-
         <div className="space-y-3">
           <div className="flex items-end justify-between gap-3">
             <div>
               <h2 className="font-medium">현재 노출 중인 데이터</h2>
               <p className="text-xs text-muted-foreground">
-                목록에서 항목을 고른 뒤 연결 정보만 펼쳐 수정합니다.
+                항목을 누르면 연결 정보를 Drawer에서 수정합니다.
               </p>
             </div>
             <Badge variant="outline" className="rounded-full">
@@ -482,6 +416,91 @@ function SectionEntityWorkspace({
           />
         </div>
 
+        <Separator />
+
+        <Accordion type="single" collapsible>
+          <AccordionItem
+            value="add-entity"
+            className="overflow-hidden rounded-xl border"
+          >
+            <AccordionTrigger
+              className="bg-muted/20 px-4 py-3 text-left hover:no-underline"
+              data-composer-add-entity-trigger
+            >
+              <div className="min-w-0">
+                <p className="font-medium">데이터 추가</p>
+                <p className="mt-1 text-xs font-normal text-muted-foreground">
+                  새 콘텐츠를 이 섹션에 연결할 때만 펼칩니다.
+                </p>
+              </div>
+            </AccordionTrigger>
+            <AccordionContent className="border-t p-4">
+              <form
+                action={addSectionEntityRelationAction}
+                className="space-y-4"
+                data-composer-track-dirty
+              >
+                <input type="hidden" name="redirect_to" value={redirectTo} />
+                <input type="hidden" name="section_id" value={section.id} />
+                <CmsEntityPicker
+                  name="entity_id"
+                  entities={options.entities}
+                  schemaOptions={options.entitySchemas}
+                  showSchemaFilter
+                />
+                <div className="grid grid-cols-3 gap-2">
+                  <div className="space-y-2">
+                    <Label htmlFor="composer-relation-type">노출 관계</Label>
+                    <CmsComboboxField
+                      id="composer-relation-type"
+                      name="relation_type"
+                      defaultValue="item"
+                      options={relationTypeOptions.map((option) => ({
+                        value: option,
+                        label: option,
+                      }))}
+                      placeholder="관계 선택"
+                      searchPlaceholder="관계 검색 또는 입력"
+                      emptyLabel="새 관계 이름을 입력하세요"
+                      customLabel="사용"
+                      triggerClassName="h-10 bg-background/80"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="composer-slot">슬롯</Label>
+                    <CmsComboboxField
+                      id="composer-slot"
+                      name="slot"
+                      defaultValue={slotOptions[0] ?? "default"}
+                      options={slotOptions.map((option) => ({
+                        value: option,
+                        label: option,
+                      }))}
+                      placeholder="슬롯 선택"
+                      searchPlaceholder="슬롯 검색 또는 입력"
+                      emptyLabel="새 슬롯 이름을 입력하세요"
+                      customLabel="사용"
+                      triggerClassName="h-10 bg-background/80"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="composer-sort-order">순서</Label>
+                    <Input
+                      id="composer-sort-order"
+                      name="sort_order"
+                      type="number"
+                      defaultValue={nextSortOrder}
+                      className="h-10 bg-background/80"
+                    />
+                  </div>
+                </div>
+                <CmsSubmitButton className="w-full rounded-full">
+                  데이터 연결
+                </CmsSubmitButton>
+              </form>
+            </AccordionContent>
+          </AccordionItem>
+        </Accordion>
       </CardContent>
     </Card>
   )
