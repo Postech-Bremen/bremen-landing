@@ -254,6 +254,48 @@ export type Database = {
         }
         Relationships: []
       }
+      member_guestbook_entries: {
+        Row: {
+          author_member_id: string
+          body: string
+          created_at: string
+          id: string
+          profile_member_id: string
+          updated_at: string
+        }
+        Insert: {
+          author_member_id: string
+          body: string
+          created_at?: string
+          id?: string
+          profile_member_id: string
+          updated_at?: string
+        }
+        Update: {
+          author_member_id?: string
+          body?: string
+          created_at?: string
+          id?: string
+          profile_member_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "member_guestbook_entries_author_member_id_fkey"
+            columns: ["author_member_id"]
+            isOneToOne: false
+            referencedRelation: "members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "member_guestbook_entries_profile_member_id_fkey"
+            columns: ["profile_member_id"]
+            isOneToOne: false
+            referencedRelation: "members"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       members: {
         Row: {
           approved_at: string | null

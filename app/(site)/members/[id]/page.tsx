@@ -11,6 +11,11 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card"
+import { MemberGuestbook } from "@/components/member-guestbook"
+import {
+  loadGuestbookViewer,
+  loadMemberGuestbook,
+} from "@/lib/data/member-guestbook"
 import { memberPublicSelect } from "@/lib/data/members"
 import { createClient } from "@/lib/supabase/server"
 import type { Database } from "@/lib/supabase/types"
@@ -24,6 +29,7 @@ export const metadata: Metadata = {
 
 type MemberDetailPageProps = {
   params: Promise<{ id: string }>
+  searchParams?: Promise<Record<string, string | string[] | undefined>>
 }
 
 function statusLabel(status: MemberStatus) {
@@ -33,8 +39,18 @@ function statusLabel(status: MemberStatus) {
   return "미정"
 }
 
-export default async function MemberDetailPage({ params }: MemberDetailPageProps) {
+function firstParam(value: string | string[] | undefined) {
+  return Array.isArray(value) ? value[0] : value
+}
+
+export default async function MemberDetailPage({
+  params,
+  searchParams,
+}: MemberDetailPageProps) {
   const { id } = await params
+  const query = (await searchParams) ?? {}
+  const guestbookMessage = firstParam(query.guestbook_message)
+  const guestbookError = firstParam(query.guestbook_error)
   const supabase = await createClient()
   const {
     data: { user },
@@ -42,11 +58,13 @@ export default async function MemberDetailPage({ params }: MemberDetailPageProps
 
   if (!user) redirect(`/login?next=/members/${id}`)
 
-  const { data: member, error } = await supabase
-    .from("members")
-    .select(memberPublicSelect)
-    .eq("id", id)
-    .maybeSingle()
+  const [memberResult, viewer, guestbookEntries] = await Promise.all([
+    supabase.from("members").select(memberPublicSelect).eq("id", id).maybeSingle(),
+    loadGuestbookViewer(supabase, user.id),
+    loadMemberGuestbook(supabase, id),
+  ])
+
+  const { data: member, error } = memberResult
 
   if (error || !member) notFound()
 
@@ -130,6 +148,17 @@ export default async function MemberDetailPage({ params }: MemberDetailPageProps
               </div>
             </CardContent>
           </Card>
+        </div>
+
+        <div className="mt-6">
+          <MemberGuestbook
+            profileMemberId={member.id}
+            profileName={member.name}
+            entries={guestbookEntries}
+            viewer={viewer}
+            message={guestbookMessage}
+            error={guestbookError}
+          />
         </div>
       </section>
     </main>
