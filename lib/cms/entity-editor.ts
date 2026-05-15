@@ -15,6 +15,7 @@ const editableEntityColumns = new Set([
   "thumbnail_url",
   "sort_at",
   "published",
+  "visibility",
 ])
 
 export type CmsEditableEntityField = CmsFieldDefinition & {

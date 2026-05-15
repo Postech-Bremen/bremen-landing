@@ -361,6 +361,10 @@ async function buildEntityUpdate({
       update.published = Boolean(parsed.value)
     }
 
+    if (field.key === "visibility") {
+      update.visibility = String(parsed.value)
+    }
+
     if (field.key === "slug") {
       update.slug = parsed.value === null ? null : String(parsed.value)
     }
@@ -437,6 +441,10 @@ export async function createCmsEntityAction(formData: FormData) {
 
     if (field.key === "published") {
       insert.published = Boolean(parsed.value)
+    }
+
+    if (field.key === "visibility") {
+      insert.visibility = String(parsed.value)
     }
 
     if (field.key === "slug") {
