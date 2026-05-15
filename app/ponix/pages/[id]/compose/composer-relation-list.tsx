@@ -280,11 +280,11 @@ function SectionEntityRelationEditor({
                       {relation.entity?.title ?? relation.entityId}
                     </p>
                     <p className="font-mono text-xs text-muted-foreground">
-                      {relation.entity?.schemaKey ?? "schema"}
+                      {relation.entity?.schemaKey ?? "입력 양식"}
                     </p>
                   </div>
                   <Badge variant="outline" className="rounded-full">
-                    {relation.entity?.published ? "published" : "draft"}
+                    {relation.entity?.published ? "공개" : "비공개"}
                   </Badge>
                 </div>
                 <div className="flex flex-wrap gap-1.5">
@@ -320,19 +320,19 @@ function SectionEntityRelationEditor({
             <div className="flex items-start justify-between gap-5 pr-8">
               <div className="min-w-0">
                 <p className="caps mb-2 text-muted-foreground">
-                  Section relation
+                  섹션 연결
                 </p>
                 <DrawerTitle className="line-clamp-2 font-serif text-3xl italic">
                   {relation.entity?.title ?? relation.entityId}
                 </DrawerTitle>
                 <DrawerDescription className="mt-2 line-clamp-2">
-                  이 섹션에서 이 데이터가 어떻게 노출되는지 정리합니다.
+                  이 섹션에서 콘텐츠가 어떤 슬롯과 순서로 보일지 정리합니다.
                 </DrawerDescription>
               </div>
               <Badge variant="secondary" className="mt-1 shrink-0 rounded-full">
                 {relation.entity?.schemaLabel ??
                   relation.entity?.schemaKey ??
-                  "schema"}
+                  "입력 양식"}
               </Badge>
             </div>
           </DrawerHeader>
@@ -360,7 +360,7 @@ function SectionEntityRelationEditor({
                   variant="secondary"
                   className="rounded-full font-mono text-[10px]"
                 >
-                  {relation.entity?.entityType ?? "entity"}
+                  {relation.entity?.entityType ?? "콘텐츠"}
                 </Badge>
               </div>
               <div className="mt-3 flex flex-wrap gap-2">
@@ -375,7 +375,7 @@ function SectionEntityRelationEditor({
                   className="h-8 rounded-full"
                 >
                   <Link href={`/ponix/entities/${relation.entityId}`}>
-                    상세 화면
+                    상세 보기
                     <ExternalLink className="size-3.5" />
                   </Link>
                 </Button>
@@ -405,7 +405,7 @@ function SectionEntityRelationEditor({
                       htmlFor={`relation-type-${relation.id}`}
                       className="text-xs"
                     >
-                      Type
+                      관계
                     </Label>
                     <CmsComboboxField
                       id={`relation-type-${relation.id}`}
@@ -415,10 +415,10 @@ function SectionEntityRelationEditor({
                         value: option,
                         label: option,
                       }))}
-                      placeholder="Select type"
-                      searchPlaceholder="Search or type a relation type"
-                      emptyLabel="Type a relation type to add it"
-                      customLabel="Use"
+                      placeholder="관계 선택"
+                      searchPlaceholder="관계 검색 또는 입력"
+                      emptyLabel="새 관계 이름을 입력하세요"
+                      customLabel="사용"
                       triggerClassName="h-10 bg-card"
                     />
                   </div>
@@ -427,7 +427,7 @@ function SectionEntityRelationEditor({
                       htmlFor={`relation-slot-${relation.id}`}
                       className="text-xs"
                     >
-                      Slot
+                      슬롯
                     </Label>
                     <CmsComboboxField
                       id={`relation-slot-${relation.id}`}
@@ -437,10 +437,10 @@ function SectionEntityRelationEditor({
                         value: option,
                         label: option,
                       }))}
-                      placeholder="Select slot"
-                      searchPlaceholder="Search or type a slot"
-                      emptyLabel="Type a slot to add it"
-                      customLabel="Use"
+                      placeholder="슬롯 선택"
+                      searchPlaceholder="슬롯 검색 또는 입력"
+                      emptyLabel="새 슬롯 이름을 입력하세요"
+                      customLabel="사용"
                       triggerClassName="h-10 bg-card"
                     />
                   </div>
@@ -449,7 +449,7 @@ function SectionEntityRelationEditor({
                       htmlFor={`relation-order-${relation.id}`}
                       className="text-xs"
                     >
-                      Order
+                      순서
                     </Label>
                     <Input
                       id={`relation-order-${relation.id}`}
@@ -544,7 +544,7 @@ function EntityEditDrawer({
           data-composer-entity-drawer-trigger={relation.entityId}
         >
           <PencilLine className="size-3.5" />
-          데이터 수정
+          콘텐츠 수정
         </button>
       </DrawerTrigger>
       <DrawerContent
@@ -554,7 +554,7 @@ function EntityEditDrawer({
         <DrawerHeader className="border-b px-5 py-5">
           <div className="flex items-start justify-between gap-8 pr-8">
             <div className="min-w-0">
-              <p className="caps mb-2 text-muted-foreground">Entity editor</p>
+              <p className="caps mb-2 text-muted-foreground">콘텐츠 편집</p>
               <DrawerTitle className="line-clamp-2 font-serif text-3xl italic">
                 {entity?.title ?? relation.entityId}
               </DrawerTitle>
@@ -563,15 +563,14 @@ function EntityEditDrawer({
               </DrawerDescription>
             </div>
             <Badge variant="secondary" className="mt-1 shrink-0 rounded-full">
-              {entity?.schemaLabel ?? entity?.schemaKey ?? "schema"}
+              {entity?.schemaLabel ?? entity?.schemaKey ?? "입력 양식"}
             </Badge>
           </div>
         </DrawerHeader>
         <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
           <div className="flex flex-wrap items-center justify-between gap-3 border-b bg-muted/20 px-5 py-3 text-xs text-muted-foreground">
             <span>
-              현재 composer를 떠나지 않고 연결된 데이터의 주요 필드를 바로
-              수정합니다.
+              Composer를 떠나지 않고 연결된 콘텐츠의 주요 필드를 수정합니다.
             </span>
             <Button asChild variant="outline" size="sm" className="rounded-full">
               <Link href={`/ponix/entities/${relation.entityId}/edit`}>
@@ -785,7 +784,7 @@ function InlineEntityField({
         <Label htmlFor={id}>{field.label}</Label>
         {field.required && (
           <Badge variant="outline" className="rounded-full">
-            Required
+            필수
           </Badge>
         )}
       </div>
@@ -824,7 +823,7 @@ function renderInlineFieldInput({
           defaultChecked={Boolean(value)}
         />
         <Label htmlFor={id} className="text-sm font-normal">
-          Enabled
+          사용
         </Label>
       </div>
     )
@@ -853,7 +852,7 @@ function renderInlineFieldInput({
         name={name}
         defaultValue={inlineFieldDefaultText(field, value)}
         options={field.options ?? []}
-        placeholder={`Select ${field.label}`}
+        placeholder={`${field.label} 선택`}
         required={field.required}
       />
     )
