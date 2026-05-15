@@ -184,6 +184,24 @@ export function PublishBadge({ published }: { published: boolean }) {
   )
 }
 
+export function VisibilityBadge({ visibility }: { visibility: string }) {
+  const label =
+    visibility === "members"
+      ? "멤버 공개"
+      : visibility === "private"
+        ? "비공개"
+        : "전체 공개"
+
+  return (
+    <Badge
+      variant={visibility === "public" ? "secondary" : "outline"}
+      className={cn("rounded-full", visibility !== "public" && "text-muted-foreground")}
+    >
+      {label}
+    </Badge>
+  )
+}
+
 export function SchemaBadge({
   label,
   registered,

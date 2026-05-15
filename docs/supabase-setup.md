@@ -187,6 +187,36 @@ Avoid:
 - Moving `members` into generic entities; member auth/profile data remains
   domain-specific.
 
+## Storage and Member UGC
+
+Public buckets are only appropriate for assets that may be downloaded by anyone
+with the URL. For member-uploaded photos or videos, use the private
+`member-media` bucket and enforce access through `storage.objects` RLS.
+
+Current convention:
+
+- Path: `member-media/{auth.uid()}/photos/...` or
+  `member-media/{auth.uid()}/videos/...`
+- Entity link: `entities.data.storage_bucket = "member-media"` and
+  `entities.data.storage_path = <object path>`
+- Approval: `entities.published`
+- Visibility: `entities.visibility` (`public`, `members`, `private`)
+
+Do not make a private/member-only asset public by storing its full public object
+URL. Use Storage RLS and signed URL/download flows for protected media.
+
+Public Storage buckets still exist for assets that are meant to be public:
+
+- `images`: CMS thumbnails and imported public display assets.
+- `photos` / `posters`: legacy public gallery and poster assets.
+- `avatars`: member profile images; members can write only under their own
+  `{auth.uid()}/...` folder.
+
+These public buckets must stay image-only. Bucket configuration and
+`storage.objects` policies enforce image MIME types, image extensions, and size
+limits. Do not use them for member-only uploads, arbitrary attachments, or video
+files.
+
 ## CMS Audit Trail
 
 PONIX CMS write auditing is documented in `docs/cms-audit.md`.

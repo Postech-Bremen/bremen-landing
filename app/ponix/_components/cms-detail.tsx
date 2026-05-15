@@ -28,7 +28,12 @@ import {
 import { loadCmsSchema } from "@/lib/cms/schema-registry.server"
 
 import { CmsAuditTrailCard } from "./cms-audit-card"
-import { formatCmsDate, PublishBadge, SchemaBadge } from "./cms-list"
+import {
+  formatCmsDate,
+  PublishBadge,
+  SchemaBadge,
+  VisibilityBadge,
+} from "./cms-list"
 
 const sourceLabels: Record<CmsFieldSource, string> = {
   column: "기본 정보",
@@ -75,6 +80,9 @@ export async function CmsDetailPage({
             )}
             <div className="mt-5 flex flex-wrap items-center gap-2">
               <PublishBadge published={detail.published} />
+              {detail.kind === "entity" && (
+                <VisibilityBadge visibility={detail.row.visibility} />
+              )}
               <SchemaBadge
                 label={detail.schemaLabel}
                 registered={detail.schemaRegistered}

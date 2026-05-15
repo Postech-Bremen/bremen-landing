@@ -215,6 +215,7 @@ Use `entities` columns for shared display identity:
 - `thumbnail_url`
 - `sort_at`
 - `published`
+- `visibility`
 
 Use `entities.data` for entity-specific structured data:
 
@@ -240,6 +241,25 @@ Expected flow:
 4. Render from the stored URL.
 
 Avoid adding `image_url`, `thumbnail_url`, `cover_url`, and `preview_url` for the same concept unless a renderer truly needs multiple image roles.
+
+For member-uploaded UGC, do not use the public `images` bucket by default.
+Store photos and direct video uploads in the private `member-media` bucket and
+link them from `entities.data.storage_bucket = "member-media"` plus
+`entities.data.storage_path`. `entities.published` means the submission has
+been approved; `entities.visibility` controls who can read it:
+
+- `public`: approved content can be shown to everyone.
+- `members`: approved content is available only to active members and admins.
+- `private`: visible only to the owner and admins.
+
+If a public card needs a stable thumbnail, keep `thumbnail_url` public only for
+assets that are intended to be public. Member-only/private media should be
+served through Storage RLS/signed URL flows, not full public URLs.
+
+Public image buckets (`images`, `photos`, `posters`, `avatars`) are only for
+assets intended to be public and are constrained to image MIME types/extensions
+with bucket-level size limits. Do not store private UGC or direct video uploads
+there.
 
 ## Members Are Not Generic Entities
 

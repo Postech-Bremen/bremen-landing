@@ -10,6 +10,7 @@ import {
   formatCmsDate,
   PublishBadge,
   SchemaBadge,
+  VisibilityBadge,
 } from "@/app/ponix/_components/cms-list"
 import { Button } from "@/components/ui/button"
 import { requireCmsAdmin } from "@/lib/cms/auth"
@@ -63,6 +64,7 @@ export default async function PonixEntitiesPage() {
             badges={
               <>
                 <PublishBadge published={entity.published} />
+                <VisibilityBadge visibility={entity.visibility} />
                 <SchemaBadge
                   label={entity.schemaLabel}
                   registered={entity.schemaRegistered}

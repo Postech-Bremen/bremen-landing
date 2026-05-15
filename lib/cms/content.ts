@@ -30,8 +30,8 @@ const ENTITY_RELATION_SELECT = `
   sort_order,
   props,
   updated_at,
-  fromEntity:entities!entity_relations_from_entity_id_fkey(id, slug, title, subtitle, summary, thumbnail_url, schema_id, data, published, sort_at),
-  toEntity:entities!entity_relations_to_entity_id_fkey(id, slug, title, subtitle, summary, thumbnail_url, schema_id, data, published, sort_at)
+  fromEntity:entities!entity_relations_from_entity_id_fkey(id, slug, title, subtitle, summary, thumbnail_url, schema_id, data, published, visibility, sort_at),
+  toEntity:entities!entity_relations_to_entity_id_fkey(id, slug, title, subtitle, summary, thumbnail_url, schema_id, data, published, visibility, sort_at)
 `
 const CMS_PAGE_ENTITY_SELECT =
   "id, schema_id, slug, title, subtitle, summary, owner_member_id, published, data, created_at, updated_at"
@@ -100,6 +100,7 @@ export type CmsEntitySummary = SchemaSummary & {
   subtitle: string | null
   thumbnailUrl: string | null
   published: boolean
+  visibility: string
   sortAt: string
   updatedAt: string
 }
@@ -141,6 +142,7 @@ export type CmsLinkedEntity = SchemaSummary & {
   thumbnailUrl: string | null
   data: Json
   published: boolean
+  visibility: string
   sortAt: string
 }
 
@@ -458,6 +460,7 @@ function mapEntitySummary(entity: Pick<
   | "subtitle"
   | "thumbnail_url"
   | "published"
+  | "visibility"
   | "sort_at"
   | "updated_at"
 >,
@@ -472,6 +475,7 @@ function mapEntitySummary(entity: Pick<
     subtitle: entity.subtitle,
     thumbnailUrl: entity.thumbnail_url,
     published: entity.published,
+    visibility: entity.visibility,
     sortAt: entity.sort_at,
     updatedAt: entity.updated_at,
   }
@@ -539,6 +543,7 @@ function linkedEntity(
     thumbnailUrl: entity.thumbnail_url,
     data: entity.data,
     published: entity.published,
+    visibility: entity.visibility,
     sortAt: entity.sort_at,
   }
 }
@@ -571,6 +576,7 @@ type RawEntityLink = Pick<
   | "thumbnail_url"
   | "data"
   | "published"
+  | "visibility"
   | "sort_at"
 >
 
@@ -777,7 +783,7 @@ export async function loadCmsEntities(): Promise<CmsEntityList> {
   const entitiesQuery = supabase
     .from("entities")
     .select(
-      "id, schema_id, slug, title, subtitle, thumbnail_url, published, sort_at, updated_at",
+      "id, schema_id, slug, title, subtitle, thumbnail_url, published, visibility, sort_at, updated_at",
       { count: "exact" },
     )
     .order("sort_at", { ascending: false })
@@ -812,7 +818,7 @@ export async function loadCmsEntityOptions({
   let entityQuery = supabase
     .from("entities")
     .select(
-      "id, schema_id, slug, title, subtitle, thumbnail_url, published, sort_at, updated_at",
+      "id, schema_id, slug, title, subtitle, thumbnail_url, published, visibility, sort_at, updated_at",
     )
 
   if (normalizedSchema && normalizedSchema !== "all") {
@@ -853,7 +859,7 @@ export async function loadCmsRelationEditorOptions({
 }: LoadCmsRelationEditorOptionsOptions = {}): Promise<CmsRelationEditorOptions> {
   const supabase = await createClient()
   const entitySelect =
-    "id, schema_id, slug, title, subtitle, thumbnail_url, published, sort_at, updated_at"
+    "id, schema_id, slug, title, subtitle, thumbnail_url, published, visibility, sort_at, updated_at"
   const entityQuery = countEntities
     ? supabase.from("entities").select(entitySelect, { count: "exact" })
     : supabase.from("entities").select(entitySelect)

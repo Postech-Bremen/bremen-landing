@@ -63,6 +63,12 @@ const field = (
 
 const textOption = (value: string, label = value): CmsFieldOption => ({ label, value })
 
+const visibilityOptions = [
+  textOption("public", "전체 공개"),
+  textOption("members", "멤버 공개"),
+  textOption("private", "비공개"),
+]
+
 const sectionBaseFields = [
   field("column", "key", "Section key", "text", { readOnly: true, required: true }),
   field("column", "section_type", "Renderer type", "text", {
@@ -83,6 +89,10 @@ const entityBaseFields = [
   field("column", "thumbnail_url", "Thumbnail URL", "image"),
   field("column", "sort_at", "Sort date", "datetime", { required: true }),
   field("column", "published", "Published", "boolean", { required: true }),
+  field("column", "visibility", "공개 범위", "select", {
+    required: true,
+    options: visibilityOptions,
+  }),
 ]
 
 const sectionSchema = (
@@ -168,10 +178,12 @@ const semanticGroupOverrides: Record<string, string> = {
   "activity/home-card/v1": "home",
   "contact/site-footer/v1": "site",
   "navigation/item/v1": "site",
+  "photo/member-upload/v1": "ugc",
   "playlist/youtube/v1": "video",
   "post/instagram/v1": "instagram",
   "social/site-footer/v1": "site",
   "stat/home-number/v1": "home",
+  "video/member-upload/v1": "ugc",
 }
 
 function defaultSemanticKind(schema: Pick<CmsSchemaDraft, "schemaKey" | "kind">) {
@@ -453,6 +465,26 @@ const rawCmsSchemaRegistry: CmsSchemaDraft[] = [
     ],
   ),
   entitySchema(
+    "video/member-upload/v1",
+    "Member video",
+    "A video link or upload submitted by an approved Bremen member.",
+    [
+      field("data", "video_url", "Video URL", "url"),
+      field("data", "artist", "Artist", "text"),
+      field("data", "song", "Song", "text"),
+      field("data", "team", "Team", "text"),
+      field("data", "event_slug", "Event slug", "text"),
+      field("data", "event_title", "Event title", "text"),
+      field("data", "duration", "Duration", "text"),
+      field("data", "storage_bucket", "Storage bucket", "text", { readOnly: true }),
+      field("data", "storage_path", "Storage path", "text", { readOnly: true }),
+      field("data", "media_type", "Media type", "text", { readOnly: true }),
+      field("data", "original_filename", "Original filename", "text", {
+        readOnly: true,
+      }),
+    ],
+  ),
+  entitySchema(
     "playlist/youtube/v1",
     "YouTube playlist",
     "YouTube playlist or performance collection imported from the Bremen channel.",
@@ -477,6 +509,23 @@ const rawCmsSchemaRegistry: CmsSchemaDraft[] = [
       field("data", "aspect", "Aspect", "select", { options: photoAspectOptions }),
       field("data", "gallery_include", "Show in gallery", "boolean"),
       field("data", "taken_at", "Taken at", "date"),
+    ],
+  ),
+  entitySchema(
+    "photo/member-upload/v1",
+    "Member photo",
+    "A photo uploaded by an approved Bremen member.",
+    [
+      field("data", "category", "Category", "select", { options: photoCategoryOptions }),
+      field("data", "aspect", "Aspect", "select", { options: photoAspectOptions }),
+      field("data", "gallery_include", "Show in gallery", "boolean"),
+      field("data", "taken_at", "Taken at", "date"),
+      field("data", "storage_bucket", "Storage bucket", "text", { readOnly: true }),
+      field("data", "storage_path", "Storage path", "text", { readOnly: true }),
+      field("data", "media_type", "Media type", "text", { readOnly: true }),
+      field("data", "original_filename", "Original filename", "text", {
+        readOnly: true,
+      }),
     ],
   ),
   entitySchema(

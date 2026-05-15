@@ -219,6 +219,10 @@ function createDefaultValue(field: CmsEditableEntityField) {
     return new Date().toISOString().slice(0, 16)
   }
 
+  if (field.source === "column" && field.key === "visibility") {
+    return "public"
+  }
+
   if (field.type === "boolean") {
     return false
   }
