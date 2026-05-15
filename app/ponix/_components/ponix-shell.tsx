@@ -11,6 +11,7 @@ import {
   FileText,
   GitBranch,
   LayoutDashboard,
+  MessageSquareText,
   Music2,
   Users,
 } from "lucide-react"
@@ -77,6 +78,12 @@ const navGroups = [
         label: "멤버 운영",
         description: "가입 승인, 권한, 활동 상태를 관리",
         icon: Users,
+      },
+      {
+        href: "/ponix/guestbook",
+        label: "방명록 관리",
+        description: "멤버 프로필에 남겨진 글을 확인하고 정리",
+        icon: MessageSquareText,
       },
     ],
   },
