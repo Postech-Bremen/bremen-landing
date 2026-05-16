@@ -5,6 +5,10 @@ import {
   PUBLIC_CONTENT_REVALIDATE_SECONDS,
 } from "@/lib/data/public-cache"
 import {
+  MEMBER_MEDIA_BUCKET,
+  MEMBER_PHOTO_SCHEMA_KEY,
+} from "@/lib/data/member-media"
+import {
   buildHomeOverview,
   loadMemberStats,
 } from "@/lib/data/home-overview"
@@ -1177,6 +1181,72 @@ function photoFromEntity(entity: ContentEntityRow): PhotoArchiveItem | null {
   }
 }
 
+async function signedMemberPhotoThumbnailUrl(
+  supabase: PublicSupabaseClient,
+  entity: ContentEntityRow,
+) {
+  const data = jsonObject(entity.data)
+  const bucket = stringValue(data, "storage_bucket")
+  const path = stringValue(data, "storage_path")
+
+  if (bucket !== MEMBER_MEDIA_BUCKET || !path) return entity.thumbnail_url
+
+  const { data: signed, error } = await supabase.storage
+    .from(MEMBER_MEDIA_BUCKET)
+    .createSignedUrl(path, 60 * 60)
+
+  if (error) return entity.thumbnail_url
+  return signed.signedUrl
+}
+
+async function loadPublishedMemberUploadPhotos() {
+  if (!hasSupabaseEnv()) return []
+
+  const supabase = createPublicClient()
+  const { data: schema, error: schemaError } = await supabase
+    .from("entity_schemas")
+    .select("id")
+    .eq("schema_key", MEMBER_PHOTO_SCHEMA_KEY)
+    .eq("active", true)
+    .maybeSingle()
+
+  if (schemaError || !schema) return []
+
+  const { data: entities, error: entitiesError } = await supabase
+    .from("entities")
+    .select(CONTENT_ENTITY_SELECT)
+    .eq("schema_id", schema.id)
+    .eq("published", true)
+    .eq("visibility", "public")
+    .order("sort_at", { ascending: false })
+    .limit(80)
+
+  if (entitiesError || !entities?.length) return []
+
+  const photos = await Promise.all(
+    (entities as ContentEntityRow[]).map(async (entity) => {
+      const thumbnailUrl = await signedMemberPhotoThumbnailUrl(supabase, entity)
+      return photoFromEntity({
+        ...entity,
+        thumbnail_url: thumbnailUrl,
+      })
+    }),
+  )
+
+  return photos.filter((photo): photo is PhotoArchiveItem => Boolean(photo))
+}
+
+function mergePhotoGalleryItems(
+  curatedPhotos: PhotoArchiveItem[],
+  memberPhotos: PhotoArchiveItem[],
+) {
+  const memberPhotoIds = new Set(memberPhotos.map((photo) => photo.id))
+  return [
+    ...memberPhotos,
+    ...curatedPhotos.filter((photo) => !memberPhotoIds.has(photo.id)),
+  ]
+}
+
 function homeStatType(value: string | null): HomeCurationStatItem["type"] {
   if (value === "image" || value === "color") return value
   return "text"
@@ -1670,14 +1740,15 @@ async function loadPhotoPageUncached(): Promise<PhotoPageContent | null> {
   const page = await loadGraphPage("photos")
   if (!page) return null
 
-  const photos = sectionItems(page, "photos-gallery")
+  const curatedPhotos = sectionItems(page, "photos-gallery")
     .map((item) => photoFromEntity(item.entity))
     .filter((photo): photo is PhotoArchiveItem => Boolean(photo))
+  const memberPhotos = await loadPublishedMemberUploadPhotos()
 
   return {
     page: contentPageFromGraph(page.page),
     sections: page.sections.map((section) => contentSectionFromGraph(section)),
-    photos,
+    photos: mergePhotoGalleryItems(curatedPhotos, memberPhotos),
   }
 }
 
