@@ -2,7 +2,7 @@
 
 import { useDeferredValue, useState } from "react"
 import Link from "next/link"
-import { Eye, EyeOff, ImageIcon, Search, Trash2, X } from "lucide-react"
+import { Globe2, ImageIcon, Lock, Search, Trash2, Users, X } from "lucide-react"
 
 import {
   deleteMemberPhotoAction,
@@ -24,6 +24,13 @@ import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
+import {
   Table,
   TableBody,
   TableCell,
@@ -34,11 +41,19 @@ import {
 import type { CmsMemberPhoto } from "@/lib/cms/member-photos"
 import { cn } from "@/lib/utils"
 
-type Filter = "all" | "public" | "hidden"
+type Filter = "all" | "public" | "members" | "hidden"
+type PublicationState = "public" | "members" | "hidden"
 
 const filterLabels: Record<Filter, string> = {
   all: "전체",
   public: "공개",
+  members: "멤버 공개",
+  hidden: "숨김",
+}
+
+const stateLabels: Record<PublicationState, string> = {
+  public: "전체 공개",
+  members: "멤버 공개",
   hidden: "숨김",
 }
 
@@ -49,8 +64,9 @@ export function PhotoOperationsList({ photos }: { photos: CmsMemberPhoto[] }) {
   const filteredPhotos = photos.filter((photo) => {
     const visible =
       filter === "all" ||
-      (filter === "public" && isPublicPhoto(photo)) ||
-      (filter === "hidden" && !isPublicPhoto(photo))
+      (filter === "public" && publicationState(photo) === "public") ||
+      (filter === "members" && publicationState(photo) === "members") ||
+      (filter === "hidden" && publicationState(photo) === "hidden")
 
     return visible && photoSearchText(photo).includes(deferredQuery)
   })
@@ -246,15 +262,15 @@ export function PhotoOperationsList({ photos }: { photos: CmsMemberPhoto[] }) {
 }
 
 function PhotoStatusBadges({ photo }: { photo: CmsMemberPhoto }) {
-  const publicPhoto = isPublicPhoto(photo)
+  const state = publicationState(photo)
 
   return (
     <div className="flex flex-col items-start gap-2">
       <Badge
-        variant={publicPhoto ? "default" : "outline"}
-        className={cn("rounded-full", !publicPhoto && "text-muted-foreground")}
+        variant={state === "public" ? "default" : "outline"}
+        className={cn("rounded-full", state !== "public" && "text-muted-foreground")}
       >
-        {publicPhoto ? "사진 탭 공개" : "숨김"}
+        {state === "public" ? "사진 탭 공개" : stateLabels[state]}
       </Badge>
       <Badge variant="outline" className="rounded-full text-muted-foreground">
         {photo.visibility === "public"
@@ -268,29 +284,46 @@ function PhotoStatusBadges({ photo }: { photo: CmsMemberPhoto }) {
 }
 
 function VisibilityForm({ photo }: { photo: CmsMemberPhoto }) {
-  const publicPhoto = isPublicPhoto(photo)
+  const [state, setState] = useState<PublicationState>(publicationState(photo))
 
   return (
-    <form action={updateMemberPhotoVisibilityAction}>
+    <form
+      action={updateMemberPhotoVisibilityAction}
+      className="flex flex-wrap items-center gap-2"
+    >
       <input type="hidden" name="entity_id" value={photo.id} />
-      <input type="hidden" name="mode" value={publicPhoto ? "hidden" : "public"} />
+      <input type="hidden" name="state" value={state} />
+      <Select
+        value={state}
+        onValueChange={(value) => setState(value as PublicationState)}
+      >
+        <SelectTrigger
+          size="sm"
+          className="h-9 min-w-36 rounded-full bg-background"
+        >
+          <SelectValue />
+        </SelectTrigger>
+        <SelectContent>
+          <SelectItem value="public">
+            <Globe2 className="size-4" />
+            전체 공개
+          </SelectItem>
+          <SelectItem value="members">
+            <Users className="size-4" />
+            멤버 공개
+          </SelectItem>
+          <SelectItem value="hidden">
+            <Lock className="size-4" />
+            숨김
+          </SelectItem>
+        </SelectContent>
+      </Select>
       <FormSubmitButton
-        variant={publicPhoto ? "outline" : "default"}
         size="sm"
-        pendingLabel={publicPhoto ? "숨기는 중..." : "공개 중..."}
+        pendingLabel="저장 중..."
         className="rounded-full"
       >
-        {publicPhoto ? (
-          <>
-            <EyeOff className="size-4" />
-            숨기기
-          </>
-        ) : (
-          <>
-            <Eye className="size-4" />
-            공개하기
-          </>
-        )}
+        상태 저장
       </FormSubmitButton>
     </form>
   )
@@ -353,8 +386,10 @@ function DeletePhotoDialog({ photo }: { photo: CmsMemberPhoto }) {
   )
 }
 
-function isPublicPhoto(photo: CmsMemberPhoto) {
-  return photo.published && photo.visibility === "public"
+function publicationState(photo: CmsMemberPhoto): PublicationState {
+  if (photo.published && photo.visibility === "public") return "public"
+  if (photo.published && photo.visibility === "members") return "members"
+  return "hidden"
 }
 
 function memberMeta(owner: CmsMemberPhoto["owner"]) {

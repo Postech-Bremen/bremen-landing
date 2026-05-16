@@ -379,6 +379,9 @@ export function MemberVideoSubmitDialog() {
                   </span>
                   제출한 영상은 바로 공개되지 않습니다. 확인이 끝나면 선택한 공개
                   범위에 맞춰 아카이브에 반영됩니다.
+                  <Button asChild className="mt-4 w-full" variant="outline">
+                    <Link href="/members/media">멤버 공개 기록 보기</Link>
+                  </Button>
                 </>
               )}
             </div>

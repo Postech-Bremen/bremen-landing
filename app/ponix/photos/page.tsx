@@ -44,6 +44,13 @@ function savedCopy(value?: string) {
     }
   }
 
+  if (value === "members") {
+    return {
+      title: "사진을 멤버 공개로 저장했습니다",
+      description: "사진 탭에서는 제외하고, 멤버 공개 기록에 보이도록 정리했습니다.",
+    }
+  }
+
   if (value === "deleted") {
     return {
       title: "사진을 삭제했습니다",
@@ -102,7 +109,7 @@ export default async function PonixPhotosPage({
       <CmsStatGrid>
         <CmsStatTile label="업로드" value={stats.total} detail="멤버가 올린 사진" accent />
         <CmsStatTile label="공개" value={stats.publicCount} detail="사진 탭에 보이는 사진" />
-        <CmsStatTile label="숨김" value={stats.hiddenCount} detail="공개 화면에서 제외" />
+        <CmsStatTile label="멤버 공개" value={stats.membersCount} detail="활동 멤버에게 보이는 사진" />
         <CmsStatTile
           label="최근"
           value={stats.latestAt ? "New" : "-"}

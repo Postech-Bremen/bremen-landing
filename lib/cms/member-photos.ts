@@ -36,6 +36,7 @@ export type CmsMemberPhoto = {
 export type CmsMemberPhotoStats = {
   total: number
   publicCount: number
+  membersCount: number
   hiddenCount: number
   latestAt: string | null
 }
@@ -107,6 +108,7 @@ export async function loadCmsMemberPhotos(): Promise<{
       stats: {
         total: 0,
         publicCount: 0,
+        membersCount: 0,
         hiddenCount: 0,
         latestAt: null,
       },
@@ -129,6 +131,7 @@ export async function loadCmsMemberPhotos(): Promise<{
       stats: {
         total: 0,
         publicCount: 0,
+        membersCount: 0,
         hiddenCount: 0,
         latestAt: null,
       },
@@ -195,8 +198,11 @@ export async function loadCmsMemberPhotos(): Promise<{
       publicCount: photos.filter(
         (photo) => photo.published && photo.visibility === "public",
       ).length,
+      membersCount: photos.filter(
+        (photo) => photo.published && photo.visibility === "members",
+      ).length,
       hiddenCount: photos.filter(
-        (photo) => !photo.published || photo.visibility !== "public",
+        (photo) => !photo.published || photo.visibility === "private",
       ).length,
       latestAt: photos[0]?.sortAt ?? null,
     },

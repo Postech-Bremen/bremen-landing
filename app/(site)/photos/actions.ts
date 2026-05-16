@@ -11,12 +11,14 @@ import { createClient } from "@/lib/supabase/server"
 import type { Database, Json } from "@/lib/supabase/types"
 
 type EntityInsert = Database["public"]["Tables"]["entities"]["Insert"]
+type PhotoVisibility = "public" | "members"
 
 type CreateMemberPhotoSubmissionInput = {
   title: string
   caption: string
   category?: string
   aspect?: string
+  visibility?: string
   storagePath: string
   mediaType: string
   originalFilename: string
@@ -40,6 +42,7 @@ const photoMimeTypes = new Set([
   "image/gif",
 ])
 const photoExtensions = new Set(["jpg", "jpeg", "png", "webp", "gif"])
+const visibilityValues = new Set<PhotoVisibility>(["public", "members"])
 
 function cleanText(value: string, maxLength: number) {
   return value.trim().replace(/\s+/g, " ").slice(0, maxLength)
@@ -83,6 +86,12 @@ function validatePhoto(input: CreateMemberPhotoSubmissionInput) {
   return null
 }
 
+function validVisibility(value: string | undefined) {
+  return visibilityValues.has(value as PhotoVisibility)
+    ? (value as PhotoVisibility)
+    : "public"
+}
+
 function jsonData(data: Record<string, Json>): Json {
   return data
 }
@@ -101,6 +110,7 @@ export async function createMemberPhotoSubmissionAction(
 
   const title = cleanText(input.title, 120)
   const caption = input.caption.trim().slice(0, 1000)
+  const visibility = validVisibility(input.visibility)
   const photoError = validatePhoto(input)
 
   if (!title) return { ok: false, error: "제목을 적어 주세요." }
@@ -173,7 +183,7 @@ export async function createMemberPhotoSubmissionAction(
     thumbnail_url: null,
     owner_member_id: member.id,
     published: true,
-    visibility: "public",
+    visibility,
     sort_at: now,
     data: jsonData(data),
   }
@@ -190,6 +200,7 @@ export async function createMemberPhotoSubmissionAction(
   }
 
   revalidatePath("/photos")
+  revalidatePath("/members/media")
   revalidatePath("/ponix/entities")
   revalidatePath(`/ponix/entities/${entity.id}`)
   updateTag(PUBLIC_CONTENT_CACHE_TAG)
