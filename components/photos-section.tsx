@@ -7,6 +7,7 @@ import {
   type AdminSectionControl,
 } from "@/components/admin-section-frame"
 import { ContentImage } from "@/components/content-image"
+import { MemberPhotoUploadDialog } from "@/components/member-photo-upload-dialog"
 import { Button } from "@/components/ui/button"
 import {
   Dialog,
@@ -283,6 +284,7 @@ export function PhotosSection({
         titleEn={page.subtitle ?? ""}
         titleKr={page.title}
         description={page.description}
+        actions={<MemberPhotoUploadDialog />}
       />
 
       {gallerySection ? (

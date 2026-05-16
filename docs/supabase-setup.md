@@ -207,7 +207,9 @@ URL. Use Storage RLS and signed URL/download flows for protected media.
 Member-facing uploads should use the browser Supabase client for the Storage
 upload, then call a server action to create the entity row. Do not proxy direct
 photo/video file bodies through a Server Action unless the file size is known to
-stay below the configured body limit.
+stay below the configured body limit. Photos submitted from `/photos` are
+published immediately for active approved members; moderation happens afterward
+through the entity's `published` and `visibility` fields.
 
 Public Storage buckets still exist for assets that are meant to be public:
 

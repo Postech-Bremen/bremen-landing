@@ -3,7 +3,6 @@ import { redirect } from "next/navigation"
 
 import { signOutAction, updateProfileAction } from "@/app/auth/actions"
 import { FormSubmitButton } from "@/components/form-submit-button"
-import { MemberMediaPanel } from "@/components/member-media-panel"
 import { ProfileImageInput } from "@/components/profile-image-input"
 import { Badge } from "@/components/ui/badge"
 import {
@@ -23,7 +22,6 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import { Textarea } from "@/components/ui/textarea"
-import { loadMemberMediaSubmissions } from "@/lib/data/member-media"
 import { createClient } from "@/lib/supabase/server"
 import type { Database } from "@/lib/supabase/types"
 
@@ -68,20 +66,6 @@ export default async function MyPage({ searchParams }: MyPageProps) {
     )
     .eq("auth_user_id", user.id)
     .maybeSingle()
-
-  const mediaSubmissions = member
-    ? await loadMemberMediaSubmissions({
-        supabase,
-        memberId: member.id,
-      })
-    : []
-  const mediaDisabledReason = member
-    ? !member.approved_at
-      ? "멤버 확인이 끝난 뒤 사진과 영상을 올릴 수 있습니다."
-      : member.status !== "active"
-        ? "활동 상태 멤버만 사진과 영상을 올릴 수 있습니다. 상태를 활동으로 저장한 뒤 다시 시도해 주세요."
-        : undefined
-    : undefined
 
   return (
     <main className="relative min-h-[calc(100vh-4rem)] overflow-hidden">
@@ -293,11 +277,6 @@ export default async function MyPage({ searchParams }: MyPageProps) {
                 </CardContent>
               </Card>
 
-              <MemberMediaPanel
-                authUserId={user.id}
-                disabledReason={mediaDisabledReason}
-                submissions={mediaSubmissions}
-              />
             </div>
           )}
         </div>
