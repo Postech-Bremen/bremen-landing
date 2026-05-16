@@ -204,6 +204,10 @@ Current convention:
 
 Do not make a private/member-only asset public by storing its full public object
 URL. Use Storage RLS and signed URL/download flows for protected media.
+Member-facing uploads should use the browser Supabase client for the Storage
+upload, then call a server action to create the entity row. Do not proxy direct
+photo/video file bodies through a Server Action unless the file size is known to
+stay below the configured body limit.
 
 Public Storage buckets still exist for assets that are meant to be public:
 
