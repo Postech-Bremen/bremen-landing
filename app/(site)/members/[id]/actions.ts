@@ -75,6 +75,7 @@ export async function createGuestbookEntryAction(formData: FormData) {
   }
 
   revalidatePath(`/members/${memberId}`)
+  revalidatePath("/ponix/guestbook")
   redirect(
     memberPath(memberId, {
       guestbook_message: "방명록에 남겼습니다.",
@@ -111,6 +112,7 @@ export async function deleteGuestbookEntryAction(formData: FormData) {
   }
 
   revalidatePath(`/members/${memberId}`)
+  revalidatePath("/ponix/guestbook")
   redirect(
     memberPath(memberId, {
       guestbook_message: "방명록 글을 지웠습니다.",

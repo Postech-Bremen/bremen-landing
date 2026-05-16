@@ -1,11 +1,10 @@
-import { MessageCircle, Trash2 } from "lucide-react"
+import { MessageCircle } from "lucide-react"
 
 import {
-  createGuestbookEntryAction,
-  deleteGuestbookEntryAction,
-} from "@/app/(site)/members/[id]/actions"
-import { FormSubmitButton } from "@/components/form-submit-button"
-import { Alert, AlertDescription } from "@/components/ui/alert"
+  DeleteGuestbookEntryDialog,
+  MemberGuestbookComposer,
+} from "@/components/member-guestbook-controls"
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { Badge } from "@/components/ui/badge"
 import {
   Card,
@@ -14,7 +13,6 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card"
-import { Textarea } from "@/components/ui/textarea"
 import type {
   GuestbookViewer,
   MemberGuestbookEntry,
@@ -57,6 +55,9 @@ export function MemberGuestbook({
 }: MemberGuestbookProps) {
   const canWrite = Boolean(viewer?.approved_at)
   const isAdmin = viewer?.role === "admin"
+  const guestbookGateCopy = viewer
+    ? "멤버 확인이 끝나면 방명록을 남길 수 있습니다."
+    : "멤버 프로필 연결이 끝나면 방명록을 남길 수 있습니다."
 
   return (
     <Card className="gap-0 overflow-hidden rounded-md border bg-card/95 py-0 shadow-xl">
@@ -83,33 +84,18 @@ export function MemberGuestbook({
             variant={error ? "destructive" : "default"}
             className={cn(!error && "bg-muted/40")}
           >
+            <AlertTitle>
+              {error ? "처리하지 못했습니다" : "방명록이 업데이트되었습니다"}
+            </AlertTitle>
             <AlertDescription>{error ?? message}</AlertDescription>
           </Alert>
         )}
 
         {canWrite ? (
-          <form action={createGuestbookEntryAction} className="rounded-md border bg-muted/25 p-4">
-            <input type="hidden" name="member_id" value={profileMemberId} />
-            <Textarea
-              name="body"
-              maxLength={500}
-              required
-              rows={4}
-              placeholder="함께 남기고 싶은 짧은 안부를 적어주세요."
-              className="resize-none bg-background/80"
-            />
-            <div className="mt-3 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-              <p className="text-xs leading-relaxed text-muted-foreground">
-                멤버에게 보이는 공간입니다. 500자 안에서 남길 수 있습니다.
-              </p>
-              <FormSubmitButton className="rounded-full" pendingLabel="남기는 중...">
-                Leave a note
-              </FormSubmitButton>
-            </div>
-          </form>
+          <MemberGuestbookComposer profileMemberId={profileMemberId} />
         ) : (
           <div className="rounded-md border border-dashed bg-muted/25 px-4 py-5 text-sm text-muted-foreground">
-            멤버 확인이 끝난 뒤 방명록을 남길 수 있습니다.
+            {guestbookGateCopy}
           </div>
         )}
 
@@ -118,6 +104,9 @@ export function MemberGuestbook({
             {entries.map((entry) => {
               const canDelete =
                 isAdmin || Boolean(viewer && viewer.id === entry.author_member_id)
+              const isOwnEntry = Boolean(
+                viewer && viewer.id === entry.author_member_id,
+              )
 
               return (
                 <li
@@ -126,28 +115,27 @@ export function MemberGuestbook({
                 >
                   <div className="flex items-start justify-between gap-4">
                     <div className="min-w-0">
-                      <p className="font-serif-kr text-lg leading-tight">
-                        {entry.author?.name ?? "브레멘 멤버"}
-                      </p>
+                      <div className="flex flex-wrap items-center gap-2">
+                        <p className="font-serif-kr text-lg leading-tight">
+                          {entry.author?.name ?? "브레멘 멤버"}
+                        </p>
+                        {isOwnEntry && (
+                          <Badge variant="secondary" className="rounded-full">
+                            내가 남긴 글
+                          </Badge>
+                        )}
+                      </div>
                       <p className="mt-1 text-xs text-muted-foreground">
                         {authorLine(entry)} · {formatEntryDate(entry.created_at)}
                       </p>
                     </div>
                     {canDelete && (
-                      <form action={deleteGuestbookEntryAction}>
-                        <input type="hidden" name="member_id" value={profileMemberId} />
-                        <input type="hidden" name="entry_id" value={entry.id} />
-                        <FormSubmitButton
-                          type="submit"
-                          size="icon"
-                          variant="ghost"
-                          className="size-8 rounded-full text-muted-foreground hover:text-destructive"
-                          pendingLabel=""
-                          aria-label="방명록 글 삭제"
-                        >
-                          <Trash2 className="size-4" />
-                        </FormSubmitButton>
-                      </form>
+                      <DeleteGuestbookEntryDialog
+                        profileMemberId={profileMemberId}
+                        entryId={entry.id}
+                        entryBody={entry.body}
+                        authorName={entry.author?.name ?? "브레멘 멤버"}
+                      />
                     )}
                   </div>
                   <p className="mt-4 whitespace-pre-wrap text-sm leading-relaxed text-muted-foreground">
