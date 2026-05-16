@@ -1,6 +1,5 @@
 "use client"
 
-import Link from "next/link"
 import { useSearchParams } from "next/navigation"
 import { Suspense, useDeferredValue, useState, type CSSProperties } from "react"
 import {
@@ -17,7 +16,6 @@ import {
   type AdminSectionControl,
 } from "@/components/admin-section-frame"
 import { ContentImage } from "@/components/content-image"
-import { MemberVideoSubmitDialog } from "@/components/member-video-submit-dialog"
 import {
   Command,
   CommandEmpty,
@@ -771,10 +769,6 @@ export function VideosSection({
         description={pageConfig.description}
         actions={
           <div className="flex flex-wrap items-center gap-3">
-            <MemberVideoSubmitDialog />
-            <Button asChild variant="outline" size="lg" className="rounded-full px-6">
-              <Link href="/members/media">멤버 공개 기록</Link>
-            </Button>
             <a
               href="https://www.youtube.com/@postech_bremen"
               target="_blank"

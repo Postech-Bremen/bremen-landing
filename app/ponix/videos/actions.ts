@@ -61,7 +61,7 @@ async function memberVideoSchemaId() {
 }
 
 function revalidateMemberVideoSurfaces(entityId?: string) {
-  revalidatePath("/videos")
+  revalidatePath("/photos")
   revalidatePath("/members/media")
   revalidatePath("/ponix/videos")
   revalidatePath("/ponix/entities")

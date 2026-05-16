@@ -2,13 +2,14 @@
 
 import Link from "next/link"
 import { useEffect, useState } from "react"
-import { CaretLeft, CaretRight } from "@phosphor-icons/react/dist/ssr"
+import { CaretLeft, CaretRight, Play } from "@phosphor-icons/react/dist/ssr"
 import {
   AdminSectionFrame,
   type AdminSectionControl,
 } from "@/components/admin-section-frame"
 import { ContentImage } from "@/components/content-image"
 import { MemberPhotoUploadDialog } from "@/components/member-photo-upload-dialog"
+import { MemberVideoSubmitDialog } from "@/components/member-video-submit-dialog"
 import { Button } from "@/components/ui/button"
 import {
   Dialog,
@@ -83,9 +84,12 @@ export function PhotoGallerySurface({
     selectedCategory === "전체"
       ? sourcePhotos
       : sourcePhotos.filter((photo) => photo.category === selectedCategory)
+  const lightboxPhotos = filteredPhotos.filter(
+    (photo) => (photo.kind ?? "photo") === "photo",
+  )
 
   const open = lightboxIndex !== null
-  const current = open ? filteredPhotos[lightboxIndex] : null
+  const current = open ? lightboxPhotos[lightboxIndex] : null
 
   useEffect(() => {
     if (!highlightedPhotoId) return
@@ -112,12 +116,14 @@ export function PhotoGallerySurface({
 
   const next = () =>
     setLightboxIndex((prev) =>
-      prev !== null ? (prev + 1) % filteredPhotos.length : null,
+      prev !== null && lightboxPhotos.length
+        ? (prev + 1) % lightboxPhotos.length
+        : null,
     )
   const prev = () =>
     setLightboxIndex((prev) =>
-      prev !== null
-        ? (prev - 1 + filteredPhotos.length) % filteredPhotos.length
+      prev !== null && lightboxPhotos.length
+        ? (prev - 1 + lightboxPhotos.length) % lightboxPhotos.length
         : null,
     )
 
@@ -176,6 +182,67 @@ export function PhotoGallerySurface({
         <ul className="columns-1 gap-5 sm:columns-2 xl:columns-3">
           {filteredPhotos.map((photo, index) => {
             const numberLabel = String(index + 1).padStart(2, "0")
+            const isVideo = photo.kind === "video"
+            const lightboxPhotoIndex = lightboxPhotos.findIndex(
+              (item) => item.id === photo.id,
+            )
+            const cardClassName = cn(
+              "lift-card group relative block w-full overflow-hidden rounded-md border text-left shadow-sm hover:shadow-xl",
+              "bg-gradient-to-br",
+              pinHeight(photo, index),
+              photoTone[photo.category] ?? "from-stone-100 via-stone-50 to-white",
+              highlightedPhotoId === photo.id &&
+                "ring-4 ring-accent/55 ring-offset-4 ring-offset-background",
+            )
+            const cardBody = (
+              <>
+                {highlightedPhotoId === photo.id && (
+                  <div className="absolute left-4 top-4 z-10 rounded-full border border-accent/25 bg-background/90 px-3 py-1 text-xs font-medium text-foreground shadow-sm backdrop-blur">
+                    방금 올라온 사진
+                  </div>
+                )}
+                {photo.thumbnailUrl && (
+                  <ContentImage
+                    src={photo.thumbnailUrl}
+                    alt={photo.title}
+                    fill
+                    sizes="(max-width: 640px) 100vw, (max-width: 1280px) 50vw, 33vw"
+                    className="object-cover transition-transform duration-700 group-hover:scale-[1.04]"
+                  />
+                )}
+                {photo.thumbnailUrl && (
+                  <div className="absolute inset-0 bg-gradient-to-t from-background/88 via-background/8 to-transparent" />
+                )}
+                <div className="absolute -right-8 -top-8 h-28 w-28 rounded-full bg-background/50 blur-2xl transition-transform duration-700 group-hover:scale-125" />
+                {isVideo && (
+                  <div className="absolute left-4 top-4 z-10 inline-flex items-center gap-2 rounded-full border border-background/60 bg-foreground px-3 py-1 text-xs font-medium text-background shadow-sm">
+                    <Play weight="fill" className="size-3" />
+                    {photo.duration ?? "Video"}
+                  </div>
+                )}
+                <div className="absolute right-4 top-4 rounded-full bg-background/80 px-2.5 py-1 backdrop-blur-sm">
+                  <p className="caps text-[0.62rem] text-foreground/70">
+                    {isVideo ? "영상" : photo.category}
+                  </p>
+                </div>
+                <div className="absolute bottom-8 left-5 font-serif italic text-6xl text-foreground/14 transition-transform duration-700 group-hover:scale-[1.06] md:text-8xl">
+                  №{numberLabel}
+                </div>
+                <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-background via-background/78 to-transparent px-4 pb-4 pt-16">
+                  <p className="caps text-foreground/55">
+                    {isVideo ? "Video" : photo.category}
+                  </p>
+                  <p className="mt-1 font-serif-kr text-base leading-snug md:text-lg">
+                    {photo.title}
+                  </p>
+                  {isVideo && photo.caption && (
+                    <p className="mt-2 line-clamp-2 text-sm leading-relaxed text-muted-foreground">
+                      {photo.caption}
+                    </p>
+                  )}
+                </div>
+              </>
+            )
 
             return (
               <Reveal
@@ -184,49 +251,25 @@ export function PhotoGallerySurface({
                 delay={index * 55}
                 className="mb-5 break-inside-avoid"
               >
-                <button
-                  data-photo-card={photo.id}
-                  onClick={() => setLightboxIndex(index)}
-                  className={cn(
-                    "lift-card group relative w-full overflow-hidden rounded-md border text-left shadow-sm hover:shadow-xl",
-                    "bg-gradient-to-br",
-                    pinHeight(photo, index),
-                    photoTone[photo.category] ?? "from-stone-100 via-stone-50 to-white",
-                    highlightedPhotoId === photo.id &&
-                      "ring-4 ring-accent/55 ring-offset-4 ring-offset-background",
-                  )}
-                >
-                  {highlightedPhotoId === photo.id && (
-                    <div className="absolute left-4 top-4 z-10 rounded-full border border-accent/25 bg-background/90 px-3 py-1 text-xs font-medium text-foreground shadow-sm backdrop-blur">
-                      방금 올라온 사진
-                    </div>
-                  )}
-                  {photo.thumbnailUrl && (
-                    <ContentImage
-                      src={photo.thumbnailUrl}
-                      alt={photo.title}
-                      fill
-                      sizes="(max-width: 640px) 100vw, (max-width: 1280px) 50vw, 33vw"
-                      className="object-cover transition-transform duration-700 group-hover:scale-[1.04]"
-                    />
-                  )}
-                  {photo.thumbnailUrl && (
-                    <div className="absolute inset-0 bg-gradient-to-t from-background/88 via-background/8 to-transparent" />
-                  )}
-                  <div className="absolute -right-8 -top-8 h-28 w-28 rounded-full bg-background/50 blur-2xl transition-transform duration-700 group-hover:scale-125" />
-                  <div className="absolute right-4 top-4 rounded-full bg-background/80 px-2.5 py-1 backdrop-blur-sm">
-                    <p className="caps text-[0.62rem] text-foreground/70">{photo.category}</p>
-                  </div>
-                  <div className="absolute bottom-8 left-5 font-serif italic text-6xl text-foreground/14 transition-transform duration-700 group-hover:scale-[1.06] md:text-8xl">
-                    №{numberLabel}
-                  </div>
-                  <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-background via-background/78 to-transparent px-4 pb-4 pt-16">
-                    <p className="caps text-foreground/55">{photo.category}</p>
-                    <p className="mt-1 font-serif-kr text-base leading-snug md:text-lg">
-                      {photo.title}
-                    </p>
-                  </div>
-                </button>
+                {isVideo ? (
+                  <a
+                    data-photo-card={photo.id}
+                    href={photo.href ?? undefined}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className={cardClassName}
+                  >
+                    {cardBody}
+                  </a>
+                ) : (
+                  <button
+                    data-photo-card={photo.id}
+                    onClick={() => setLightboxIndex(lightboxPhotoIndex)}
+                    className={cardClassName}
+                  >
+                    {cardBody}
+                  </button>
+                )}
               </Reveal>
             )
           })}
@@ -292,7 +335,7 @@ export function PhotoGallerySurface({
                 </div>
                 <p className="caps tabular-nums">
                   {String(lightboxIndex! + 1).padStart(2, "0")} /{" "}
-                  {String(filteredPhotos.length).padStart(2, "0")}
+                  {String(lightboxPhotos.length).padStart(2, "0")}
                 </p>
               </div>
             </div>
@@ -327,6 +370,7 @@ export function PhotosSection({
                 setHighlightedPhotoId(entityId)
               }}
             />
+            <MemberVideoSubmitDialog />
             <Button asChild variant="outline" size="lg" className="rounded-full px-6">
               <Link href="/members/media">멤버 공개 기록</Link>
             </Button>

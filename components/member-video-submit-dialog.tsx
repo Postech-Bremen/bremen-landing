@@ -335,7 +335,7 @@ export function MemberVideoSubmitDialog() {
     setSubmitState({
       kind: "success",
       message: result.published
-        ? "영상이 아카이브에 반영되었습니다."
+        ? "영상이 갤러리에 반영되었습니다."
         : "영상이 제출되었습니다. 확인이 끝나면 선택한 공개 범위로 보입니다.",
     })
     router.refresh()
@@ -346,7 +346,7 @@ export function MemberVideoSubmitDialog() {
       <DialogTrigger asChild>
         <Button size="lg" variant="outline" className="rounded-full px-6">
           <FilmSlate weight="light" className="size-4" />
-          영상 제출
+          영상 올리기
         </Button>
       </DialogTrigger>
       <DialogContent className="max-h-[min(92vh,54rem)] max-w-4xl overflow-y-auto p-0">
@@ -355,10 +355,10 @@ export function MemberVideoSubmitDialog() {
             <DialogHeader>
               <p className="caps text-muted-foreground">Video Submission</p>
               <DialogTitle className="font-serif italic text-4xl">
-                Add a recording
+                Add a clip
               </DialogTitle>
               <DialogDescription className="text-base leading-relaxed">
-                브레멘의 영상 기록을 아카이브에 남깁니다.
+                공연 뒤풀이, 연습실, 무대의 짧은 순간을 갤러리에 남깁니다.
               </DialogDescription>
             </DialogHeader>
             <div className="mt-8 rounded-md border bg-background/70 p-4 text-sm leading-relaxed text-muted-foreground">
@@ -367,7 +367,7 @@ export function MemberVideoSubmitDialog() {
                 <>
                   로그인한 활동 멤버만 영상을 제출할 수 있습니다.
                   <Button asChild className="mt-4 w-full" variant="outline">
-                    <Link href="/login?next=/videos">Sign In</Link>
+                    <Link href="/login?next=/photos">Sign In</Link>
                   </Button>
                 </>
               )}
@@ -378,7 +378,7 @@ export function MemberVideoSubmitDialog() {
                     {access.memberLabel}
                   </span>
                   제출한 영상은 바로 공개되지 않습니다. 확인이 끝나면 선택한 공개
-                  범위에 맞춰 아카이브에 반영됩니다.
+                  범위에 맞춰 갤러리에 반영됩니다.
                   <Button asChild className="mt-4 w-full" variant="outline">
                     <Link href="/members/media">멤버 공개 기록 보기</Link>
                   </Button>
@@ -605,7 +605,7 @@ export function MemberVideoSubmitDialog() {
               className="w-full"
               disabled={formDisabled}
             >
-              {isUploading ? "Submitting..." : "Submit recording"}
+              {isUploading ? "Submitting..." : "Submit clip"}
             </Button>
           </form>
         </div>
