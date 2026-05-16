@@ -7,6 +7,7 @@ import {
 import {
   MEMBER_MEDIA_BUCKET,
   MEMBER_PHOTO_SCHEMA_KEY,
+  MEMBER_VIDEO_SCHEMA_KEY,
 } from "@/lib/data/member-media"
 import {
   buildHomeOverview,
@@ -1247,6 +1248,100 @@ function mergePhotoGalleryItems(
   ]
 }
 
+async function signedMemberMediaObjectUrl(
+  supabase: PublicSupabaseClient,
+  entity: ContentEntityRow,
+) {
+  const data = jsonObject(entity.data)
+  const bucket = stringValue(data, "storage_bucket")
+  const path = stringValue(data, "storage_path")
+
+  if (bucket !== MEMBER_MEDIA_BUCKET || !path) return null
+
+  const { data: signed, error } = await supabase.storage
+    .from(MEMBER_MEDIA_BUCKET)
+    .createSignedUrl(path, 60 * 60)
+
+  if (error) return null
+  return signed.signedUrl
+}
+
+function memberUploadVideoFromEntity(
+  entity: ContentEntityRow,
+  resolvedWatchUrl: string | null,
+): Video | null {
+  const data = jsonObject(entity.data)
+  const youtubeId = stringValue(data, "youtube_id")
+  const videoUrl = stringValue(data, "video_url")
+  const watchHref = resolvedWatchUrl ?? videoUrl
+
+  if (!youtubeId && !watchHref) return null
+
+  const parsedTitle = parseVideoTitle(entity.title)
+
+  return {
+    id: youtubeId ?? entity.id,
+    thumbnailUrl: entity.thumbnail_url ?? undefined,
+    watchUrl: youtubeId
+      ? stringValue(data, "youtube_url") ?? videoUrl ?? undefined
+      : (watchHref ?? undefined),
+    artist: stringValue(data, "artist") ?? parsedTitle.artist,
+    song: stringValue(data, "song") ?? parsedTitle.song,
+    raw_title: entity.title,
+    team: stringValue(data, "team") ?? parsedTitle.team,
+    event: stringValue(data, "event_slug") ?? "member-upload",
+    eventLabel: stringValue(data, "event_title") ?? "멤버 제출",
+    duration: stringValue(data, "duration") ?? "video",
+    views: numberValue(data, "views") ?? 0,
+    highlight: false,
+  }
+}
+
+async function loadPublishedMemberUploadVideos() {
+  if (!hasSupabaseEnv()) return []
+
+  const supabase = createPublicClient()
+  const { data: schema, error: schemaError } = await supabase
+    .from("entity_schemas")
+    .select("id")
+    .eq("schema_key", MEMBER_VIDEO_SCHEMA_KEY)
+    .eq("active", true)
+    .maybeSingle()
+
+  if (schemaError || !schema) return []
+
+  const { data: entities, error: entitiesError } = await supabase
+    .from("entities")
+    .select(CONTENT_ENTITY_SELECT)
+    .eq("schema_id", schema.id)
+    .eq("published", true)
+    .eq("visibility", "public")
+    .order("sort_at", { ascending: false })
+    .limit(80)
+
+  if (entitiesError || !entities?.length) return []
+
+  const videos = await Promise.all(
+    (entities as ContentEntityRow[]).map(async (entity) => {
+      const signedUrl = await signedMemberMediaObjectUrl(supabase, entity)
+      return memberUploadVideoFromEntity(entity, signedUrl)
+    }),
+  )
+
+  return videos.filter((video): video is Video => Boolean(video))
+}
+
+function mergeVideoArchiveItems(
+  curatedVideos: Video[],
+  memberVideos: Video[],
+) {
+  const videoIds = new Set(curatedVideos.map((video) => video.id))
+  return [
+    ...curatedVideos,
+    ...memberVideos.filter((video) => !videoIds.has(video.id)),
+  ]
+}
+
 function homeStatType(value: string | null): HomeCurationStatItem["type"] {
   if (value === "image" || value === "color") return value
   return "text"
@@ -1575,8 +1670,12 @@ async function loadVideoPageUncached(): Promise<VideoPageContent | null> {
     sectionItems(page, "videos-popular"),
     performanceSlugById,
   )
+  const memberVideos = await loadPublishedMemberUploadVideos()
   const libraryVideos = sortVideoArchive(
-    videosFromSectionItems(sectionItems(page, "videos-library"), performanceSlugById),
+    mergeVideoArchiveItems(
+      videosFromSectionItems(sectionItems(page, "videos-library"), performanceSlugById),
+      memberVideos,
+    ),
   )
 
   return {
