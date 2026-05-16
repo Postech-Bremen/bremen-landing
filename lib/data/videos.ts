@@ -1,6 +1,7 @@
 export type EventKey = string
 
 export type Video = {
+  /** YouTube id for channel imports, entity id for direct member uploads. */
   id: string
   /** Display thumbnail. Prefer Supabase Storage when available. */
   thumbnailUrl?: string

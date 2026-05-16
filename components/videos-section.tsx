@@ -16,6 +16,7 @@ import {
   type AdminSectionControl,
 } from "@/components/admin-section-frame"
 import { ContentImage } from "@/components/content-image"
+import { MemberVideoSubmitDialog } from "@/components/member-video-submit-dialog"
 import {
   Command,
   CommandEmpty,
@@ -63,6 +64,7 @@ import {
 
 const ALL_EVENTS = "all"
 const PAGE_SIZE = 24
+const YOUTUBE_ID_PATTERN = /^[a-zA-Z0-9_-]{11}$/
 
 type SortOption = "recent" | "popular" | "title"
 
@@ -74,11 +76,13 @@ type EventOption = {
 }
 
 function videoThumbnailUrl(video: Video, quality: "max" | "mq") {
-  return video.thumbnailUrl ?? youtubeThumbnailUrl(video.id, quality)
+  if (video.thumbnailUrl) return video.thumbnailUrl
+  return YOUTUBE_ID_PATTERN.test(video.id) ? youtubeThumbnailUrl(video.id, quality) : null
 }
 
 function videoWatchUrl(video: Video) {
-  return video.watchUrl ?? watchUrl(video.id)
+  if (video.watchUrl) return video.watchUrl
+  return YOUTUBE_ID_PATTERN.test(video.id) ? watchUrl(video.id) : "#"
 }
 
 function videoEventLabel(video: Video) {
@@ -148,6 +152,8 @@ function VideoCard({
   video: Video
   index: number
 }) {
+  const thumbnail = videoThumbnailUrl(video, "mq")
+
   return (
     <Reveal as="li" delay={(index % PAGE_SIZE) * 35} className="h-full">
       <a
@@ -157,13 +163,22 @@ function VideoCard({
         className="lift-card group flex h-full flex-col overflow-hidden rounded-md border bg-card shadow-sm hover:shadow-xl"
       >
         <div className="relative aspect-video overflow-hidden bg-muted">
-          <ContentImage
-            src={videoThumbnailUrl(video, "mq")}
-            alt={video.raw_title}
-            fill
-            sizes="(max-width: 768px) 100vw, 33vw"
-            className="object-cover transition-transform duration-700 group-hover:scale-[1.04]"
-          />
+          {thumbnail ? (
+            <ContentImage
+              src={thumbnail}
+              alt={video.raw_title}
+              fill
+              sizes="(max-width: 768px) 100vw, 33vw"
+              className="object-cover transition-transform duration-700 group-hover:scale-[1.04]"
+            />
+          ) : (
+            <div className="absolute inset-0 grid place-items-center bg-gradient-to-br from-stone-100 via-stone-50 to-amber-50">
+              <Play
+                weight="fill"
+                className="size-10 text-foreground/25 transition-transform duration-700 group-hover:scale-110"
+              />
+            </div>
+          )}
           <span className="absolute bottom-2 right-2 caps tabular-nums rounded-sm bg-background/90 px-2 py-0.5 backdrop-blur-sm">
             {video.duration}
           </span>
@@ -206,6 +221,8 @@ function VideoCard({
 }
 
 function FeaturedVideoCard({ video }: { video: Video }) {
+  const thumbnail = videoThumbnailUrl(video, "max")
+
   return (
     <Reveal className="h-full">
       <a
@@ -216,13 +233,22 @@ function FeaturedVideoCard({ video }: { video: Video }) {
         className="tilt-card group flex h-full flex-col overflow-hidden rounded-md border bg-card shadow-sm hover:shadow-xl"
       >
         <div className="relative aspect-[16/10] overflow-hidden bg-muted">
-          <ContentImage
-            src={videoThumbnailUrl(video, "max")}
-            alt={video.raw_title}
-            fill
-            sizes="(max-width: 1024px) 100vw, 60vw"
-            className="object-cover transition-transform duration-700 group-hover:scale-[1.04]"
-          />
+          {thumbnail ? (
+            <ContentImage
+              src={thumbnail}
+              alt={video.raw_title}
+              fill
+              sizes="(max-width: 1024px) 100vw, 60vw"
+              className="object-cover transition-transform duration-700 group-hover:scale-[1.04]"
+            />
+          ) : (
+            <div className="absolute inset-0 grid place-items-center bg-gradient-to-br from-stone-100 via-stone-50 to-amber-50">
+              <Play
+                weight="fill"
+                className="size-12 text-foreground/25 transition-transform duration-700 group-hover:scale-110"
+              />
+            </div>
+          )}
           <div className="absolute inset-0 bg-gradient-to-t from-background/90 via-background/20 to-transparent" />
           <span className="absolute bottom-4 right-4 caps tabular-nums rounded-sm bg-background/90 px-2 py-0.5 backdrop-blur-sm">
             {video.duration}
@@ -257,6 +283,8 @@ function FeaturedVideoCard({ video }: { video: Video }) {
 }
 
 function PickRow({ video, index }: { video: Video; index: number }) {
+  const thumbnail = videoThumbnailUrl(video, "mq")
+
   return (
     <Reveal delay={index * 80}>
       <a
@@ -266,13 +294,19 @@ function PickRow({ video, index }: { video: Video; index: number }) {
         className="group flex items-start gap-4 border-b py-4 transition-colors hover:border-foreground"
       >
         <div className="relative h-20 w-32 shrink-0 overflow-hidden rounded-sm bg-muted">
-          <ContentImage
-            src={videoThumbnailUrl(video, "mq")}
-            alt={video.raw_title}
-            fill
-            sizes="128px"
-            className="object-cover"
-          />
+          {thumbnail ? (
+            <ContentImage
+              src={thumbnail}
+              alt={video.raw_title}
+              fill
+              sizes="128px"
+              className="object-cover"
+            />
+          ) : (
+            <div className="absolute inset-0 grid place-items-center bg-gradient-to-br from-stone-100 to-amber-50">
+              <Play weight="fill" className="size-6 text-foreground/25" />
+            </div>
+          )}
         </div>
         <div className="min-w-0">
           <p className="caps mb-2">
@@ -735,15 +769,18 @@ export function VideosSection({
         titleKr={pageConfig.title}
         description={pageConfig.description}
         actions={
-          <a
-            href="https://www.youtube.com/@postech_bremen"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="group inline-flex items-baseline gap-3 border-b pb-2 transition-colors hover:border-foreground"
-          >
-            <span className="font-serif italic text-xl">Visit the channel</span>
-            <ArrowUpRight weight="light" className="h-4 w-4 transition-transform group-hover:translate-x-1 group-hover:-translate-y-1" />
-          </a>
+          <div className="flex flex-wrap items-center gap-3">
+            <MemberVideoSubmitDialog />
+            <a
+              href="https://www.youtube.com/@postech_bremen"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="group inline-flex items-baseline gap-3 border-b pb-2 transition-colors hover:border-foreground"
+            >
+              <span className="font-serif italic text-xl">Visit the channel</span>
+              <ArrowUpRight weight="light" className="h-4 w-4 transition-transform group-hover:translate-x-1 group-hover:-translate-y-1" />
+            </a>
+          </div>
         }
       />
 
