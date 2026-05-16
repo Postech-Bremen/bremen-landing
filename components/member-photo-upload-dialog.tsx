@@ -1,6 +1,6 @@
 "use client"
 
-import { ImageSquare, UploadSimple, X } from "@phosphor-icons/react"
+import { CheckCircle, ImageSquare, UploadSimple, X } from "@phosphor-icons/react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import {
@@ -113,7 +113,13 @@ function validateFile(file: File) {
   return null
 }
 
-export function MemberPhotoUploadDialog() {
+type MemberPhotoUploadDialogProps = {
+  onPublished?: (photo: { entityId: string; title: string }) => void
+}
+
+export function MemberPhotoUploadDialog({
+  onPublished,
+}: MemberPhotoUploadDialogProps) {
   const router = useRouter()
   const fileInputRef = useRef<HTMLInputElement>(null)
   const [open, setOpen] = useState(false)
@@ -124,6 +130,10 @@ export function MemberPhotoUploadDialog() {
   const [caption, setCaption] = useState("")
   const [file, setFile] = useState<File | null>(null)
   const [uploadState, setUploadState] = useState<UploadState>({ kind: "idle" })
+  const [publishedPhoto, setPublishedPhoto] = useState<{
+    entityId: string
+    title: string
+  } | null>(null)
 
   const isUploading = uploadState.kind === "uploading"
   const formDisabled = isUploading || access.state !== "ready"
@@ -212,6 +222,7 @@ export function MemberPhotoUploadDialog() {
     setTitle("")
     setCaption("")
     setFile(null)
+    setPublishedPhoto(null)
     setUploadState({ kind: "idle" })
     if (fileInputRef.current) fileInputRef.current.value = ""
   }
@@ -294,11 +305,18 @@ export function MemberPhotoUploadDialog() {
       return
     }
 
+    const published = {
+      entityId: result.entityId,
+      title: cleanTitle,
+    }
+
     resetForm()
+    setPublishedPhoto(published)
     setUploadState({
       kind: "success",
-      message: "사진 탭에 올라갔습니다.",
+      message: `"${cleanTitle}"이 사진 탭에 올라갔습니다.`,
     })
+    onPublished?.(published)
     router.refresh()
   }
 
@@ -466,9 +484,34 @@ export function MemberPhotoUploadDialog() {
             )}
 
             {uploadState.kind === "success" && (
-              <p className="rounded-md border bg-muted/50 px-4 py-3 text-sm text-muted-foreground">
-                {uploadState.message}
-              </p>
+              <div className="rounded-md border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-950">
+                <div className="flex items-start gap-2">
+                  <CheckCircle
+                    weight="fill"
+                    className="mt-0.5 size-4 shrink-0 text-emerald-700"
+                  />
+                  <div className="min-w-0">
+                    <p className="font-medium">{uploadState.message}</p>
+                    <p className="mt-1 text-xs leading-relaxed text-emerald-900/75">
+                      갤러리 맨 위에서 방금 올린 사진을 확인할 수 있습니다.
+                    </p>
+                    {publishedPhoto && (
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        className="mt-3 rounded-full border-emerald-300 bg-white/70 text-emerald-950 hover:bg-white"
+                        onClick={() => {
+                          onPublished?.(publishedPhoto)
+                          setOpen(false)
+                        }}
+                      >
+                        갤러리에서 보기
+                      </Button>
+                    )}
+                  </div>
+                </div>
+              </div>
             )}
 
             {uploadState.kind === "error" && (
