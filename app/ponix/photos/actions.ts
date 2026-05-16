@@ -41,6 +41,11 @@ function safeMemberMediaPhotoPath(path: string | null) {
   )
 }
 
+function publicationState(value: string) {
+  if (value === "public" || value === "members") return value
+  return "hidden"
+}
+
 async function memberPhotoSchemaId() {
   const supabase = await createClient()
   const { data: schema, error } = await supabase
@@ -56,6 +61,7 @@ async function memberPhotoSchemaId() {
 
 function revalidateMemberPhotoSurfaces(entityId?: string) {
   revalidatePath("/photos")
+  revalidatePath("/members/media")
   revalidatePath("/ponix/photos")
   revalidatePath("/ponix/entities")
   updateTag(PUBLIC_CONTENT_CACHE_TAG)
@@ -68,7 +74,7 @@ function revalidateMemberPhotoSurfaces(entityId?: string) {
 
 export async function updateMemberPhotoVisibilityAction(formData: FormData) {
   const entityId = stringField(formData, "entity_id")
-  const mode = stringField(formData, "mode")
+  const state = publicationState(stringField(formData, "state"))
 
   if (!entityId) {
     redirectWithParams({ error: "관리할 사진을 찾지 못했습니다." })
@@ -82,9 +88,9 @@ export async function updateMemberPhotoVisibilityAction(formData: FormData) {
   }
 
   const update =
-    mode === "public"
-      ? { published: true, visibility: "public" }
-      : { published: false, visibility: "private" }
+    state === "hidden"
+      ? { published: false, visibility: "private" }
+      : { published: true, visibility: state }
 
   const supabase = await createClient()
   const { error } = await supabase
@@ -99,7 +105,7 @@ export async function updateMemberPhotoVisibilityAction(formData: FormData) {
 
   revalidateMemberPhotoSurfaces(entityId)
   redirectWithParams({
-    saved: mode === "public" ? "published" : "hidden",
+    saved: state === "public" ? "published" : state,
   })
 }
 

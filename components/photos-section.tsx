@@ -1,5 +1,6 @@
 "use client"
 
+import Link from "next/link"
 import { useEffect, useState } from "react"
 import { CaretLeft, CaretRight } from "@phosphor-icons/react/dist/ssr"
 import {
@@ -319,12 +320,17 @@ export function PhotosSection({
         titleKr={page.title}
         description={page.description}
         actions={
-          <MemberPhotoUploadDialog
-            onPublished={({ entityId }) => {
-              setSelectedCategoryForNewPhoto()
-              setHighlightedPhotoId(entityId)
-            }}
-          />
+          <div className="flex flex-wrap gap-3">
+            <MemberPhotoUploadDialog
+              onPublished={({ entityId }) => {
+                setSelectedCategoryForNewPhoto()
+                setHighlightedPhotoId(entityId)
+              }}
+            />
+            <Button asChild variant="outline" size="lg" className="rounded-full px-6">
+              <Link href="/members/media">멤버 공개 기록</Link>
+            </Button>
+          </div>
         }
       />
 

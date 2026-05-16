@@ -126,6 +126,7 @@ export function MemberPhotoUploadDialog({
   const [access, setAccess] = useState<AccessState>({ state: "idle" })
   const [category, setCategory] = useState("daily")
   const [aspect, setAspect] = useState("portrait")
+  const [visibility, setVisibility] = useState("public")
   const [title, setTitle] = useState("")
   const [caption, setCaption] = useState("")
   const [file, setFile] = useState<File | null>(null)
@@ -133,6 +134,7 @@ export function MemberPhotoUploadDialog({
   const [publishedPhoto, setPublishedPhoto] = useState<{
     entityId: string
     title: string
+    visibility: string
   } | null>(null)
 
   const isUploading = uploadState.kind === "uploading"
@@ -219,6 +221,7 @@ export function MemberPhotoUploadDialog({
   function resetForm() {
     setCategory("daily")
     setAspect("portrait")
+    setVisibility("public")
     setTitle("")
     setCaption("")
     setFile(null)
@@ -293,6 +296,7 @@ export function MemberPhotoUploadDialog({
       caption,
       category,
       aspect,
+      visibility,
       storagePath,
       mediaType: file.type,
       originalFilename: file.name,
@@ -308,13 +312,17 @@ export function MemberPhotoUploadDialog({
     const published = {
       entityId: result.entityId,
       title: cleanTitle,
+      visibility,
     }
 
     resetForm()
     setPublishedPhoto(published)
     setUploadState({
       kind: "success",
-      message: `"${cleanTitle}"이 사진 탭에 올라갔습니다.`,
+      message:
+        visibility === "members"
+          ? `"${cleanTitle}"이 멤버 공개 기록에 올라갔습니다.`
+          : `"${cleanTitle}"이 사진 탭에 올라갔습니다.`,
     })
     onPublished?.(published)
     router.refresh()
@@ -356,8 +364,11 @@ export function MemberPhotoUploadDialog({
                   <span className="caps mb-2 block text-foreground">
                     {access.memberLabel}
                   </span>
-                  올린 사진은 공개 갤러리에 바로 표시됩니다. 나중에 숨기거나
-                  정리할 필요가 생기면 PONIX에서 조정합니다.
+                  전체 공개는 사진 탭에 바로 보이고, 멤버 공개는 활동 멤버만
+                  볼 수 있는 기록으로 남습니다.
+                  <Button asChild className="mt-4 w-full" variant="outline">
+                    <Link href="/members/media">멤버 공개 기록 보기</Link>
+                  </Button>
                 </>
               )}
             </div>
@@ -427,6 +438,29 @@ export function MemberPhotoUploadDialog({
             </div>
 
             <div className="space-y-2">
+              <Label htmlFor="member-photo-visibility">Visibility</Label>
+              <Select
+                value={visibility}
+                onValueChange={setVisibility}
+                disabled={formDisabled}
+              >
+                <SelectTrigger
+                  id="member-photo-visibility"
+                  className="h-11 bg-background/70"
+                >
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="public">전체 공개</SelectItem>
+                  <SelectItem value="members">멤버 공개</SelectItem>
+                </SelectContent>
+              </Select>
+              <p className="text-xs leading-relaxed text-muted-foreground">
+                멤버 공개는 로그인한 활동 멤버에게만 보입니다.
+              </p>
+            </div>
+
+            <div className="space-y-2">
               <Label htmlFor="member-photo-file">Photo</Label>
               <div className="rounded-md border bg-background/70 p-3">
                 <input
@@ -493,9 +527,20 @@ export function MemberPhotoUploadDialog({
                   <div className="min-w-0">
                     <p className="font-medium">{uploadState.message}</p>
                     <p className="mt-1 text-xs leading-relaxed text-emerald-900/75">
-                      갤러리 맨 위에서 방금 올린 사진을 확인할 수 있습니다.
+                      {publishedPhoto?.visibility === "members"
+                        ? "멤버 공개 기록에서 방금 올린 사진을 확인할 수 있습니다."
+                        : "갤러리 맨 위에서 방금 올린 사진을 확인할 수 있습니다."}
                     </p>
-                    {publishedPhoto && (
+                    {publishedPhoto?.visibility === "members" ? (
+                      <Button
+                        asChild
+                        variant="outline"
+                        size="sm"
+                        className="mt-3 rounded-full border-emerald-300 bg-white/70 text-emerald-950 hover:bg-white"
+                      >
+                        <Link href="/members/media">멤버 공개 기록 열기</Link>
+                      </Button>
+                    ) : publishedPhoto ? (
                       <Button
                         type="button"
                         variant="outline"
@@ -508,7 +553,7 @@ export function MemberPhotoUploadDialog({
                       >
                         갤러리에서 보기
                       </Button>
-                    )}
+                    ) : null}
                   </div>
                 </div>
               </div>

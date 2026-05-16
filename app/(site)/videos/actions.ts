@@ -285,6 +285,7 @@ export async function createMemberVideoSubmissionAction(
   }
 
   revalidatePath("/videos")
+  revalidatePath("/members/media")
   revalidatePath("/ponix/entities")
   revalidatePath(`/ponix/entities/${entity.id}`)
   updateTag(PUBLIC_CONTENT_CACHE_TAG)
