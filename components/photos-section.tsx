@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { CaretLeft, CaretRight } from "@phosphor-icons/react/dist/ssr"
 import {
   AdminSectionFrame,
@@ -59,9 +59,11 @@ function pinHeight(photo: Photo, index: number) {
 export function PhotoGallerySurface({
   gallerySection,
   photos,
+  highlightedPhotoId,
 }: {
   gallerySection?: ContentSectionConfig
   photos: Photo[]
+  highlightedPhotoId?: string | null
 }) {
   const [selectedCategory, setSelectedCategory] = useState("전체")
   const [lightboxIndex, setLightboxIndex] = useState<number | null>(null)
@@ -83,6 +85,29 @@ export function PhotoGallerySurface({
 
   const open = lightboxIndex !== null
   const current = open ? filteredPhotos[lightboxIndex] : null
+
+  useEffect(() => {
+    if (!highlightedPhotoId) return
+    if (!photos.some((photo) => photo.id === highlightedPhotoId)) return
+
+    window.requestAnimationFrame(() => {
+      document
+        .querySelector(`[data-photo-card="${highlightedPhotoId}"]`)
+        ?.scrollIntoView({ behavior: "smooth", block: "center" })
+    })
+  }, [highlightedPhotoId, photos])
+
+  useEffect(() => {
+    const showAllPhotos = () => {
+      setSelectedCategory("전체")
+      setLightboxIndex(null)
+    }
+
+    window.addEventListener("bremen:photo-uploaded", showAllPhotos)
+    return () => {
+      window.removeEventListener("bremen:photo-uploaded", showAllPhotos)
+    }
+  }, [])
 
   const next = () =>
     setLightboxIndex((prev) =>
@@ -159,14 +184,22 @@ export function PhotoGallerySurface({
                 className="mb-5 break-inside-avoid"
               >
                 <button
+                  data-photo-card={photo.id}
                   onClick={() => setLightboxIndex(index)}
                   className={cn(
                     "lift-card group relative w-full overflow-hidden rounded-md border text-left shadow-sm hover:shadow-xl",
                     "bg-gradient-to-br",
                     pinHeight(photo, index),
                     photoTone[photo.category] ?? "from-stone-100 via-stone-50 to-white",
+                    highlightedPhotoId === photo.id &&
+                      "ring-4 ring-accent/55 ring-offset-4 ring-offset-background",
                   )}
                 >
+                  {highlightedPhotoId === photo.id && (
+                    <div className="absolute left-4 top-4 z-10 rounded-full border border-accent/25 bg-background/90 px-3 py-1 text-xs font-medium text-foreground shadow-sm backdrop-blur">
+                      방금 올라온 사진
+                    </div>
+                  )}
                   {photo.thumbnailUrl && (
                     <ContentImage
                       src={photo.thumbnailUrl}
@@ -276,6 +309,7 @@ export function PhotosSection({
   adminSectionControl,
 }: PhotosSectionProps) {
   const gallerySection = sections.find((section) => section.key === "photos-gallery")
+  const [highlightedPhotoId, setHighlightedPhotoId] = useState<string | null>(null)
 
   return (
     <div className="mx-auto max-w-6xl px-6 py-16 md:px-8 md:py-24">
@@ -284,7 +318,14 @@ export function PhotosSection({
         titleEn={page.subtitle ?? ""}
         titleKr={page.title}
         description={page.description}
-        actions={<MemberPhotoUploadDialog />}
+        actions={
+          <MemberPhotoUploadDialog
+            onPublished={({ entityId }) => {
+              setSelectedCategoryForNewPhoto()
+              setHighlightedPhotoId(entityId)
+            }}
+          />
+        }
       />
 
       {gallerySection ? (
@@ -293,11 +334,23 @@ export function PhotosSection({
           sectionTitle={gallerySection.title}
           control={adminSectionControl}
         >
-          <PhotoGallerySurface gallerySection={gallerySection} photos={photos} />
+          <PhotoGallerySurface
+            gallerySection={gallerySection}
+            photos={photos}
+            highlightedPhotoId={highlightedPhotoId}
+          />
         </AdminSectionFrame>
       ) : (
-        <PhotoGallerySurface gallerySection={gallerySection} photos={photos} />
+        <PhotoGallerySurface
+          gallerySection={gallerySection}
+          photos={photos}
+          highlightedPhotoId={highlightedPhotoId}
+        />
       )}
     </div>
   )
+}
+
+function setSelectedCategoryForNewPhoto() {
+  window.dispatchEvent(new CustomEvent("bremen:photo-uploaded"))
 }
