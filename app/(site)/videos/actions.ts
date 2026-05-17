@@ -284,7 +284,7 @@ export async function createMemberVideoSubmissionAction(
     return { ok: false, error: "영상 기록을 저장하지 못했습니다." }
   }
 
-  revalidatePath("/videos")
+  revalidatePath("/photos")
   revalidatePath("/members/media")
   revalidatePath("/ponix/entities")
   revalidatePath(`/ponix/entities/${entity.id}`)

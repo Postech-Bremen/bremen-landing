@@ -18,6 +18,7 @@ import type { Database, Json } from "@/lib/supabase/types"
 import { createPublicClient } from "@/lib/supabase/public"
 import {
   eventByKey,
+  thumbnailUrl as youtubeThumbnailUrl,
   type EventKey,
   type Video,
 } from "@/lib/data/videos"
@@ -155,11 +156,15 @@ export type PerformanceUpdateItem = {
 
 export type PhotoArchiveItem = {
   id: string
+  kind?: "photo" | "video"
   title: string
   caption: string | null
   category: "공연" | "일상"
   aspect: "portrait" | "landscape"
   thumbnailUrl: string | null
+  href?: string | null
+  duration?: string | null
+  sortAt?: string | null
 }
 
 export type HistoryMilestoneItem = {
@@ -1174,11 +1179,13 @@ function photoFromEntity(entity: ContentEntityRow): PhotoArchiveItem | null {
 
   return {
     id: entity.id,
+    kind: "photo",
     title: entity.title,
     caption: entity.summary,
     category: photoCategoryLabel(stringValue(data, "category")),
     aspect: photoAspect(stringValue(data, "aspect")),
     thumbnailUrl: entity.thumbnail_url,
+    sortAt: entity.sort_at,
   }
 }
 
@@ -1240,11 +1247,16 @@ async function loadPublishedMemberUploadPhotos() {
 function mergePhotoGalleryItems(
   curatedPhotos: PhotoArchiveItem[],
   memberPhotos: PhotoArchiveItem[],
+  memberVideos: PhotoArchiveItem[],
 ) {
-  const memberPhotoIds = new Set(memberPhotos.map((photo) => photo.id))
+  const memberMedia = [...memberPhotos, ...memberVideos].sort((left, right) =>
+    String(right.sortAt ?? "").localeCompare(String(left.sortAt ?? "")),
+  )
+  const memberMediaIds = new Set(memberMedia.map((photo) => photo.id))
+
   return [
-    ...memberPhotos,
-    ...curatedPhotos.filter((photo) => !memberPhotoIds.has(photo.id)),
+    ...memberMedia,
+    ...curatedPhotos.filter((photo) => !memberMediaIds.has(photo.id)),
   ]
 }
 
@@ -1266,38 +1278,50 @@ async function signedMemberMediaObjectUrl(
   return signed.signedUrl
 }
 
-function memberUploadVideoFromEntity(
+function memberUploadVideoGalleryItemFromEntity(
   entity: ContentEntityRow,
   resolvedWatchUrl: string | null,
-): Video | null {
+): PhotoArchiveItem | null {
   const data = jsonObject(entity.data)
   const youtubeId = stringValue(data, "youtube_id")
   const videoUrl = stringValue(data, "video_url")
-  const watchHref = resolvedWatchUrl ?? videoUrl
+  const watchHref =
+    resolvedWatchUrl ??
+    stringValue(data, "youtube_url") ??
+    videoUrl ??
+    (youtubeId ? `https://www.youtube.com/watch?v=${youtubeId}` : null)
 
   if (!youtubeId && !watchHref) return null
 
-  const parsedTitle = parseVideoTitle(entity.title)
+  const hasPerformanceContext = Boolean(
+    stringValue(data, "artist") ||
+      stringValue(data, "song") ||
+      stringValue(data, "team") ||
+      stringValue(data, "event_title"),
+  )
 
   return {
-    id: youtubeId ?? entity.id,
-    thumbnailUrl: entity.thumbnail_url ?? undefined,
-    watchUrl: youtubeId
-      ? stringValue(data, "youtube_url") ?? videoUrl ?? undefined
-      : (watchHref ?? undefined),
-    artist: stringValue(data, "artist") ?? parsedTitle.artist,
-    song: stringValue(data, "song") ?? parsedTitle.song,
-    raw_title: entity.title,
-    team: stringValue(data, "team") ?? parsedTitle.team,
-    event: stringValue(data, "event_slug") ?? "member-upload",
-    eventLabel: stringValue(data, "event_title") ?? "멤버 제출",
-    duration: stringValue(data, "duration") ?? "video",
-    views: numberValue(data, "views") ?? 0,
-    highlight: false,
+    id: entity.id,
+    kind: "video",
+    title: entity.title,
+    caption:
+      entity.summary ??
+      stringValue(data, "event_title") ??
+      stringValue(data, "team"),
+    category: photoCategoryLabel(
+      stringValue(data, "category") ??
+        (hasPerformanceContext ? "performance" : "daily"),
+    ),
+    aspect: "landscape",
+    thumbnailUrl:
+      entity.thumbnail_url ?? (youtubeId ? youtubeThumbnailUrl(youtubeId, "hq") : null),
+    href: watchHref,
+    duration: stringValue(data, "duration"),
+    sortAt: entity.sort_at,
   }
 }
 
-async function loadPublishedMemberUploadVideos() {
+async function loadPublishedMemberUploadGalleryVideos() {
   if (!hasSupabaseEnv()) return []
 
   const supabase = createPublicClient()
@@ -1324,22 +1348,11 @@ async function loadPublishedMemberUploadVideos() {
   const videos = await Promise.all(
     (entities as ContentEntityRow[]).map(async (entity) => {
       const signedUrl = await signedMemberMediaObjectUrl(supabase, entity)
-      return memberUploadVideoFromEntity(entity, signedUrl)
+      return memberUploadVideoGalleryItemFromEntity(entity, signedUrl)
     }),
   )
 
-  return videos.filter((video): video is Video => Boolean(video))
-}
-
-function mergeVideoArchiveItems(
-  curatedVideos: Video[],
-  memberVideos: Video[],
-) {
-  const videoIds = new Set(curatedVideos.map((video) => video.id))
-  return [
-    ...curatedVideos,
-    ...memberVideos.filter((video) => !videoIds.has(video.id)),
-  ]
+  return videos.filter((video): video is PhotoArchiveItem => Boolean(video))
 }
 
 function homeStatType(value: string | null): HomeCurationStatItem["type"] {
@@ -1670,12 +1683,8 @@ async function loadVideoPageUncached(): Promise<VideoPageContent | null> {
     sectionItems(page, "videos-popular"),
     performanceSlugById,
   )
-  const memberVideos = await loadPublishedMemberUploadVideos()
   const libraryVideos = sortVideoArchive(
-    mergeVideoArchiveItems(
-      videosFromSectionItems(sectionItems(page, "videos-library"), performanceSlugById),
-      memberVideos,
-    ),
+    videosFromSectionItems(sectionItems(page, "videos-library"), performanceSlugById),
   )
 
   return {
@@ -1766,14 +1775,20 @@ export async function loadDraftPreviewPage(
   }
 
   if (page.page.slug === "photos") {
+    const curatedPhotos = sectionItems(page, "photos-gallery")
+      .map((item) => photoFromEntity(item.entity))
+      .filter((photo): photo is PhotoArchiveItem => Boolean(photo))
+    const [memberPhotos, memberVideos] = await Promise.all([
+      loadPublishedMemberUploadPhotos(),
+      loadPublishedMemberUploadGalleryVideos(),
+    ])
+
     return {
       kind: "photos",
       graph: page,
       page: contentPage,
       sections,
-      photos: sectionItems(page, "photos-gallery")
-        .map((item) => photoFromEntity(item.entity))
-        .filter((photo): photo is PhotoArchiveItem => Boolean(photo)),
+      photos: mergePhotoGalleryItems(curatedPhotos, memberPhotos, memberVideos),
     }
   }
 
@@ -1842,18 +1857,22 @@ async function loadPhotoPageUncached(): Promise<PhotoPageContent | null> {
   const curatedPhotos = sectionItems(page, "photos-gallery")
     .map((item) => photoFromEntity(item.entity))
     .filter((photo): photo is PhotoArchiveItem => Boolean(photo))
-  const memberPhotos = await loadPublishedMemberUploadPhotos()
+  const [memberPhotos, memberVideos] = await Promise.all([
+    loadPublishedMemberUploadPhotos(),
+    loadPublishedMemberUploadGalleryVideos(),
+  ])
 
   return {
     page: contentPageFromGraph(page.page),
     sections: page.sections.map((section) => contentSectionFromGraph(section)),
-    photos: mergePhotoGalleryItems(curatedPhotos, memberPhotos),
+    photos: mergePhotoGalleryItems(curatedPhotos, memberPhotos, memberVideos),
   }
 }
 
 async function loadPhotoArchiveUncached() {
   const page = await loadPhotoPage()
-  return page?.photos.length ? page.photos : null
+  const photos = page?.photos.filter((photo) => (photo.kind ?? "photo") === "photo") ?? []
+  return photos.length ? photos : null
 }
 
 async function loadHistoryPageUncached(): Promise<HistoryPageContent | null> {
