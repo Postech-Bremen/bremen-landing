@@ -16,6 +16,7 @@
     "qa:legacy-media-table-readiness": "node scripts/qa-legacy-media-table-readiness.mjs",
     "qa:legacy-mirror-readiness": "node scripts/qa-legacy-mirror-readiness.mjs",
     "qa:legacy-mirror-stage5-preflight": "node scripts/qa-legacy-mirror-readiness.mjs --fail-before-stage 5",
+    "qa:member-media-compose-ui": "node scripts/qa-member-media-compose-ui.mjs",
     "qa:schema-mirror-removal-readiness": "node scripts/qa-schema-mirror-removal-readiness.mjs",
     "qa:schema-semantic-identity": "node scripts/qa-schema-semantic-identity.mjs"
   },
