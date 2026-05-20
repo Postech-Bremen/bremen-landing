@@ -265,10 +265,10 @@ Photo tab uploads use the browser Supabase client for the file transfer and a
 server action only for the entity row. This avoids sending large files through
 Next.js Server Actions while still letting Storage RLS verify the logged-in
 member. Active approved members create `photo/member-upload/v1` entities with
-`published = true`, `visibility = public`, and `gallery_include = true`, so
-their photos enter the public gallery without a manual section relation.
-Post-moderation remains possible in PONIX by hiding, editing, or deleting the
-entity.
+`published = true`, `gallery_include = true`, and either `visibility = public`
+or `visibility = members`. Public photos enter `/photos`; member-only photos
+enter `/members/media`. Post-moderation remains possible in PONIX by hiding,
+editing, or deleting the entity.
 
 ## Members Are Not Generic Entities
 

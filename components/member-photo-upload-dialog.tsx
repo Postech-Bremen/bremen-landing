@@ -138,6 +138,7 @@ export function MemberPhotoUploadDialog({
     entityId: string
     title: string
     visibility: string
+    published: boolean
   } | null>(null)
 
   const isUploading = uploadState.kind === "uploading"
@@ -322,7 +323,8 @@ export function MemberPhotoUploadDialog({
     const published = {
       entityId: result.entityId,
       title: cleanTitle,
-      visibility,
+      visibility: result.visibility,
+      published: result.published,
     }
 
     resetForm()
@@ -330,7 +332,9 @@ export function MemberPhotoUploadDialog({
     setUploadState({
       kind: "success",
       message:
-        visibility === "members"
+        !result.published
+          ? `"${cleanTitle}"이 제출되었습니다. 확인이 끝나면 선택한 공개 범위로 보입니다.`
+          : result.visibility === "members"
           ? `"${cleanTitle}"이 멤버 공개 기록에 올라갔습니다.`
           : `"${cleanTitle}"이 사진 탭에 올라갔습니다.`,
     })
@@ -586,11 +590,14 @@ export function MemberPhotoUploadDialog({
                       <div className="min-w-0">
                         <p className="font-medium">{uploadState.message}</p>
                         <p className="mt-1 text-xs leading-relaxed text-emerald-900/75">
-                          {publishedPhoto?.visibility === "members"
+                          {!publishedPhoto?.published
+                            ? "관리자가 확인한 뒤 선택한 공개 범위에 맞춰 보입니다."
+                            : publishedPhoto.visibility === "members"
                             ? "멤버 공개 기록에서 방금 올린 사진을 확인할 수 있습니다."
                             : "갤러리 맨 위에서 방금 올린 사진을 확인할 수 있습니다."}
                         </p>
-                        {publishedPhoto?.visibility === "members" ? (
+                        {publishedPhoto?.published &&
+                        publishedPhoto.visibility === "members" ? (
                           <Button
                             asChild
                             variant="outline"
@@ -599,7 +606,7 @@ export function MemberPhotoUploadDialog({
                           >
                             <Link href="/members/media">멤버 공개 기록 열기</Link>
                           </Button>
-                        ) : publishedPhoto ? (
+                        ) : publishedPhoto?.published ? (
                           <Button
                             type="button"
                             variant="outline"
