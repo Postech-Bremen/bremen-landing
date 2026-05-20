@@ -29,6 +29,8 @@ type CreateMemberPhotoSubmissionResult =
   | {
       ok: true
       entityId: string
+      published: boolean
+      visibility: PhotoVisibility
     }
   | {
       ok: false
@@ -191,7 +193,7 @@ export async function createMemberPhotoSubmissionAction(
   const { data: entity, error: entityError } = await supabase
     .from("entities")
     .insert(insert)
-    .select("id")
+    .select("id, published, visibility")
     .single()
 
   if (entityError || !entity) {
@@ -208,5 +210,7 @@ export async function createMemberPhotoSubmissionAction(
   return {
     ok: true,
     entityId: entity.id,
+    published: entity.published,
+    visibility: entity.visibility as PhotoVisibility,
   }
 }

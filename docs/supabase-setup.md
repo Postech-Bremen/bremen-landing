@@ -208,12 +208,12 @@ Member-facing uploads should use the browser Supabase client for the Storage
 upload, then call a server action to create the entity row. Do not proxy direct
 photo/video file bodies through a Server Action unless the file size is known to
 stay below the configured body limit. Photos submitted from `/photos` are
-published immediately for active approved members; moderation happens afterward
-through the entity's `published` and `visibility` fields. The
-`capture_owned_content()` trigger allows that immediate publish path only for
-`photo/member-upload/v1` inserts with `visibility = 'public'` and
-`gallery_include = true`; other member-owned entities still cannot be
-self-published.
+published immediately for active approved members when they target `public` or
+`members` visibility; moderation happens afterward through the entity's
+`published` and `visibility` fields. The `capture_owned_content()` trigger
+allows that immediate publish path only for `photo/member-upload/v1` inserts
+with `visibility in ('public', 'members')` and `gallery_include = true`; other
+member-owned entities still cannot be self-published.
 
 Public Storage buckets still exist for assets that are meant to be public:
 
