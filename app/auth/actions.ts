@@ -163,6 +163,13 @@ function safeNextPath(raw: string) {
   return raw
 }
 
+function revalidateAuthShell(targetPath: string) {
+  revalidatePath("/", "layout")
+  revalidatePath("/login")
+  revalidatePath("/mypage")
+  revalidatePath(targetPath)
+}
+
 export async function signInAction(formData: FormData) {
   const email = stringField(formData, "email")
   const password = stringField(formData, "password")
@@ -185,6 +192,7 @@ export async function signInAction(formData: FormData) {
     })
   }
 
+  revalidateAuthShell(next)
   redirect(next)
 }
 
@@ -319,6 +327,7 @@ export async function signUpAction(formData: FormData) {
     })
   }
 
+  revalidateAuthShell("/mypage")
   redirectWithParams("/mypage", {
     message: "Member Room이 열렸습니다. Profile을 확인해 주세요.",
   })
@@ -370,5 +379,6 @@ export async function updateProfileAction(formData: FormData) {
 export async function signOutAction() {
   const supabase = await createClient()
   await supabase.auth.signOut()
+  revalidateAuthShell("/")
   redirect("/")
 }

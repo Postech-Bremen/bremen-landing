@@ -41,21 +41,30 @@ export function Navigation({ isSignedIn = false, config }: NavigationProps) {
   const [hasSession, setHasSession] = useState(isSignedIn)
 
   useEffect(() => {
-    let mounted = true
+    let cancelled = false
     const supabase = createClient()
 
     supabase.auth.getUser().then(({ data }) => {
-      if (mounted) setHasSession(Boolean(data.user))
+      if (!cancelled) setHasSession(Boolean(data.user))
     })
+
+    return () => {
+      cancelled = true
+    }
+  }, [pathname])
+
+  useEffect(() => {
+    let cancelled = false
+    const supabase = createClient()
 
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((_event, session) => {
-      if (mounted) setHasSession(Boolean(session?.user))
+      if (!cancelled) setHasSession(Boolean(session?.user))
     })
 
     return () => {
-      mounted = false
+      cancelled = true
       subscription.unsubscribe()
     }
   }, [])

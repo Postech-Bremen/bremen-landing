@@ -7,6 +7,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint .",
+    "qa:auth-navigation-sync": "node scripts/qa-auth-navigation-sync.mjs",
     "qa:content-graph": "node scripts/qa-content-graph-integrity.mjs",
     "qa:cms-db-first-loaders": "node scripts/qa-cms-db-first-loaders.mjs",
     "qa:cms-schema-registry": "node scripts/qa-cms-schema-registry.mjs",
