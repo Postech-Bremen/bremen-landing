@@ -67,8 +67,12 @@ runSelfTest()
 const { navigation, authActions } = sources
 
 includes("navigation", navigation, "usePathname", "reads current route")
+includes("navigation", navigation, "authenticatedAccountPaths", "defines authenticated route hint list")
+includes("navigation", navigation, "isAuthenticatedAccountRoute", "uses authenticated route hint helper")
+includes("navigation", navigation, "hasAuthenticatedRouteHint", "derives optimistic signed-in state from route")
+includes("navigation", navigation, "displayHasSession = hasSession || hasAuthenticatedRouteHint", "shows signed-in account state on authenticated routes while checking")
 includes("navigation", navigation, "supabase.auth.getUser()", "rechecks browser session")
-includes("navigation", navigation, "}, [pathname])", "rechecks session on route changes")
+includes("navigation", navigation, "pathname])", "rechecks session on route changes")
 includes("navigation", navigation, "supabase.auth.onAuthStateChange", "keeps direct auth event listener")
 includes("navigation", navigation, "subscription.unsubscribe()", "cleans auth listener")
 

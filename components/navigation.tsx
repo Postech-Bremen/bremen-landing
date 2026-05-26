@@ -30,6 +30,18 @@ export type NavigationConfig = {
 }
 
 const accountPaths = ["/mypage", "/login", "/signup"]
+const authenticatedAccountPaths = ["/members/media"]
+
+function matchesPathPrefix(pathname: string, href: string) {
+  if (!href.startsWith("/")) return false
+  return pathname === href || pathname.startsWith(`${href}/`)
+}
+
+function isAuthenticatedAccountRoute(pathname: string, signedInHref: string) {
+  return [signedInHref, ...authenticatedAccountPaths].some((href) =>
+    matchesPathPrefix(pathname, href),
+  )
+}
 
 type NavigationProps = {
   isSignedIn?: boolean
@@ -38,7 +50,12 @@ type NavigationProps = {
 
 export function Navigation({ isSignedIn = false, config }: NavigationProps) {
   const pathname = usePathname()
+  const hasAuthenticatedRouteHint = isAuthenticatedAccountRoute(
+    pathname,
+    config.accountSignedInHref,
+  )
   const [hasSession, setHasSession] = useState(isSignedIn)
+  const displayHasSession = hasSession || hasAuthenticatedRouteHint
 
   useEffect(() => {
     let cancelled = false
@@ -51,7 +68,7 @@ export function Navigation({ isSignedIn = false, config }: NavigationProps) {
     return () => {
       cancelled = true
     }
-  }, [pathname])
+  }, [hasAuthenticatedRouteHint, pathname])
 
   useEffect(() => {
     let cancelled = false
@@ -70,10 +87,10 @@ export function Navigation({ isSignedIn = false, config }: NavigationProps) {
   }, [])
 
   const isAccountActive = accountPaths.some((path) => pathname.startsWith(path))
-  const accountHref = hasSession
+  const accountHref = displayHasSession
     ? config.accountSignedInHref
     : config.accountSignedOutHref
-  const accountLabel = hasSession
+  const accountLabel = displayHasSession
     ? config.accountSignedInLabel
     : config.accountSignedOutLabel
 
