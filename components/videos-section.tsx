@@ -159,9 +159,9 @@ function VideoCard({
         href={videoWatchUrl(video)}
         target="_blank"
         rel="noopener noreferrer"
-        className="lift-card group flex h-full flex-col overflow-hidden rounded-md border bg-card shadow-sm hover:shadow-xl"
+        className="stage-card lift-card group flex h-full flex-col overflow-hidden rounded-md border bg-card shadow-sm hover:shadow-xl"
       >
-        <div className="relative aspect-video overflow-hidden bg-muted">
+        <div className="media-frame relative aspect-video overflow-hidden bg-muted">
           {thumbnail ? (
             <ContentImage
               src={thumbnail}
@@ -229,9 +229,9 @@ function FeaturedVideoCard({ video }: { video: Video }) {
         target="_blank"
         rel="noopener noreferrer"
         style={{ "--card-tilt": "-1deg" } as CSSProperties}
-        className="tilt-card group flex h-full flex-col overflow-hidden rounded-md border bg-card shadow-sm hover:shadow-xl"
+        className="stage-card tilt-card group flex h-full flex-col overflow-hidden rounded-md border bg-card shadow-sm hover:shadow-xl"
       >
-        <div className="relative aspect-[16/10] overflow-hidden bg-muted">
+        <div className="media-frame relative aspect-[16/10] overflow-hidden bg-muted">
           {thumbnail ? (
             <ContentImage
               src={thumbnail}
@@ -248,7 +248,7 @@ function FeaturedVideoCard({ video }: { video: Video }) {
               />
             </div>
           )}
-          <div className="absolute inset-0 bg-gradient-to-t from-background/90 via-background/20 to-transparent" />
+          <div className="absolute inset-0 bg-gradient-to-t from-primary/80 via-background/20 to-transparent" />
           <span className="absolute bottom-4 right-4 caps tabular-nums rounded-sm bg-background/90 px-2 py-0.5 backdrop-blur-sm">
             {video.duration}
           </span>
@@ -535,7 +535,7 @@ export function FeaturedVideosSurface({
         </div>
         <div className="col-span-12 lg:col-span-5">
           <Reveal offset={18} blur={8}>
-            <div className="mb-4 flex items-center justify-between">
+          <div className="mb-4 flex items-center justify-between border-b pb-3">
               <p className="caps">
                 {popularSection?.title}
               </p>
@@ -628,7 +628,7 @@ export function VideoLibrarySurface({
       </Reveal>
 
       <Reveal offset={18} blur={8}>
-        <div className="mb-8 rounded-md border bg-card/80 p-4 shadow-sm md:p-5">
+        <div className="setlist-panel mb-8 rounded-md border p-4 shadow-sm md:p-5">
           <div className="grid grid-cols-1 gap-3 md:grid-cols-[1fr_16rem_12rem]">
             <label className="relative">
               <span className="sr-only">영상 검색</span>

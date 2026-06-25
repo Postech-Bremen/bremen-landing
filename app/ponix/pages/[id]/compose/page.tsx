@@ -214,7 +214,7 @@ function SectionInspector({
         relationMessage={relationMessage}
         relationError={relationError}
       />
-      <Card className="overflow-hidden rounded-2xl bg-card/95 shadow-sm">
+      <Card className="stage-card overflow-hidden rounded-md bg-card/95 shadow-sm">
         <CardHeader className="border-b bg-muted/20">
           <p className="caps text-muted-foreground">선택한 섹션</p>
           <CardTitle className="font-serif text-3xl italic">
@@ -300,7 +300,7 @@ function SectionQuickEditCard({
   redirectTo: string
 }) {
   return (
-    <Card className="overflow-hidden rounded-2xl bg-card/95 shadow-sm">
+    <Card className="stage-card overflow-hidden rounded-md bg-card/95 shadow-sm">
       <Accordion type="single" collapsible>
         <AccordionItem value="copy" className="border-0">
           <CardHeader className="border-b bg-muted/20 p-0">
@@ -382,7 +382,7 @@ function SectionEntityWorkspace({
   ])
 
   return (
-    <Card className="overflow-hidden rounded-2xl bg-card/95 shadow-sm">
+    <Card className="stage-card overflow-hidden rounded-md bg-card/95 shadow-sm">
       <CardHeader className="border-b bg-muted/20">
         <div className="flex items-center gap-2">
           <Database className="size-4 text-muted-foreground" />
@@ -421,7 +421,7 @@ function SectionEntityWorkspace({
         <Accordion type="single" collapsible>
           <AccordionItem
             value="add-entity"
-            className="overflow-hidden rounded-xl border"
+            className="overflow-hidden rounded-md border"
           >
             <AccordionTrigger
               className="bg-muted/20 px-4 py-3 text-left hover:no-underline"
@@ -508,7 +508,7 @@ function SectionEntityWorkspace({
 
 function SectionAdvancedSettingsCard({ section }: { section: GraphSection }) {
   return (
-    <Card className="overflow-hidden rounded-2xl bg-card/95 shadow-sm">
+    <Card className="stage-card overflow-hidden rounded-md bg-card/95 shadow-sm">
       <Accordion type="single" collapsible>
         <AccordionItem value="advanced" className="border-0">
           <CardHeader className="border-b bg-muted/20 p-0">

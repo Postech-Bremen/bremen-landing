@@ -82,7 +82,7 @@ export function PonixPagePreviewRenderer({
     <section className="mx-auto max-w-6xl px-6 py-16 md:px-8 md:py-24">
       <div className="mb-10">
         <p className="caps mb-5 text-muted-foreground">Generic page preview</p>
-        <h1 className="font-serif text-[clamp(3.25rem,8vw,6.5rem)] italic leading-[0.84] tracking-tight">
+        <h1 className="font-serif text-[clamp(3.25rem,8vw,6.5rem)] italic leading-[0.84]">
           {preview.page.title}
         </h1>
         {preview.page.description && (

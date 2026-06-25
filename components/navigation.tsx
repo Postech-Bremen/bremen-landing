@@ -78,7 +78,7 @@ export function Navigation({ isSignedIn = false, config }: NavigationProps) {
     : config.accountSignedOutLabel
 
   return (
-    <header className="fixed top-0 left-0 right-0 z-50 bg-background/85 backdrop-blur-md border-b">
+    <header className="fixed left-0 right-0 top-0 z-50 border-b bg-background/80 shadow-[0_1px_0_color-mix(in_oklch,var(--stage-brass)_20%,transparent)] backdrop-blur-xl">
       <div className="max-w-6xl mx-auto px-6 md:px-8">
         <div className="flex items-center justify-between h-16 gap-6">
           <Link href={config.brandHref} aria-label={config.brandAriaLabel} className="flex items-center gap-3 shrink-0">
@@ -116,7 +116,7 @@ export function Navigation({ isSignedIn = false, config }: NavigationProps) {
                       className={
                         isActive
                           ? "text-foreground"
-                          : "text-muted-foreground group-hover:text-foreground transition-colors"
+                          : "text-muted-foreground transition-colors group-hover:text-foreground"
                       }
                     >
                       {tab.label}
@@ -124,7 +124,7 @@ export function Navigation({ isSignedIn = false, config }: NavigationProps) {
                     {isActive && (
                       <span
                         aria-hidden
-                        className="absolute left-3 right-3 md:left-4 md:right-4 -bottom-px h-px bg-foreground"
+                        className="accent-rule absolute -bottom-px left-3 right-3 h-[2px] md:left-4 md:right-4"
                       />
                     )}
                   </Link>

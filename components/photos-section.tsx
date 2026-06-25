@@ -129,7 +129,7 @@ export function PhotoGallerySurface({
 
   const filterControls = (
     <Reveal offset={18} blur={8}>
-      <section className="sticky top-20 z-20 mb-8 border-y bg-background/88 py-4 backdrop-blur-md">
+      <section className="sticky top-20 z-20 mb-8 rounded-md border bg-background/88 px-4 py-4 shadow-sm backdrop-blur-xl">
         <div className="flex flex-wrap items-center gap-2">
           <span className="caps mr-2">분류</span>
           {categories.map((category) => {
@@ -187,7 +187,7 @@ export function PhotoGallerySurface({
               (item) => item.id === photo.id,
             )
             const cardClassName = cn(
-              "lift-card group relative block w-full overflow-hidden rounded-md border text-left shadow-sm hover:shadow-xl",
+              "stage-card lift-card group relative block w-full overflow-hidden rounded-md border text-left shadow-sm hover:shadow-xl",
               "bg-gradient-to-br",
               pinHeight(photo, index),
               photoTone[photo.category] ?? "from-stone-100 via-stone-50 to-white",
@@ -211,9 +211,9 @@ export function PhotoGallerySurface({
                   />
                 )}
                 {photo.thumbnailUrl && (
-                  <div className="absolute inset-0 bg-gradient-to-t from-background/88 via-background/8 to-transparent" />
+                  <div className="absolute inset-0 bg-gradient-to-t from-primary/75 via-background/10 to-transparent" />
                 )}
-                <div className="absolute -right-8 -top-8 h-28 w-28 rounded-full bg-background/50 blur-2xl transition-transform duration-700 group-hover:scale-125" />
+                <div className="absolute inset-x-0 top-0 h-1 accent-rule opacity-70" />
                 {isVideo && (
                   <div className="absolute left-4 top-4 z-10 inline-flex items-center gap-2 rounded-full border border-background/60 bg-foreground px-3 py-1 text-xs font-medium text-background shadow-sm">
                     <Play weight="fill" className="size-3" />

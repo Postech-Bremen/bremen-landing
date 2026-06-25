@@ -62,15 +62,14 @@ export async function CmsDetailPage({
 
   return (
     <section className="mx-auto flex w-full max-w-[92rem] flex-col gap-6">
-      <div className="relative overflow-hidden rounded-[1.75rem] border bg-card/95 p-5 shadow-sm md:p-7">
-        <div className="pointer-events-none absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-primary via-accent to-transparent" />
-        <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(135deg,color-mix(in_oklch,var(--muted)_72%,transparent),transparent_48%)]" />
+      <div className="hero-score rounded-md p-5 shadow-sm md:p-7">
+        <div className="pointer-events-none absolute inset-x-0 top-0 h-1 accent-rule" />
         <div className="relative flex flex-col gap-5 md:flex-row md:items-start md:justify-between">
           <div className="min-w-0">
             <p className="caps mb-3 text-muted-foreground">
               관리자 / {detail.kind}
             </p>
-            <h1 className="font-serif text-[clamp(2.5rem,4vw,4.75rem)] italic leading-[0.9] tracking-tight">
+            <h1 className="font-serif text-[clamp(2.5rem,4vw,4.75rem)] italic leading-[0.9]">
               {detail.title}
             </h1>
             {detail.subtitle && (
@@ -102,7 +101,7 @@ export async function CmsDetailPage({
       </div>
 
       {!schema && (
-        <Alert variant="destructive" className="rounded-2xl">
+        <Alert variant="destructive" className="rounded-md">
           <AlertTitle>수정 화면을 만들 스키마가 없습니다</AlertTitle>
           <AlertDescription>
             이 항목은 저장되어 있지만 아직 관리자 화면에서 안전하게 수정할
@@ -112,7 +111,7 @@ export async function CmsDetailPage({
       )}
 
       <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_22rem]">
-        <Card className="overflow-hidden rounded-[1.5rem] bg-card/95 shadow-sm">
+        <Card className="setlist-panel overflow-hidden rounded-md bg-card/95 shadow-sm">
           <CardHeader className="border-b bg-muted/20">
             <div className="flex flex-col gap-2 md:flex-row md:items-end md:justify-between">
               <div>
@@ -138,7 +137,7 @@ export async function CmsDetailPage({
         </Card>
 
         <div className="space-y-6">
-          <Card className="rounded-[1.5rem] bg-card/95 shadow-sm">
+          <Card className="stage-card rounded-md bg-card/95 shadow-sm">
             <CardHeader>
               <CardTitle className="font-serif text-2xl italic md:text-3xl">
                 기본 정보
@@ -173,7 +172,7 @@ export async function CmsDetailPage({
             />
           )}
 
-          <Card className="rounded-[1.5rem] bg-card/95 shadow-sm">
+          <Card className="stage-card rounded-md bg-card/95 shadow-sm">
             <CardHeader>
               <CardTitle className="font-serif text-2xl italic md:text-3xl">
                 원본 데이터

@@ -206,7 +206,7 @@ function DeleteEntryDialog({ entry }: { entry: CmsGuestbookEntry }) {
             삭제하면 멤버 프로필에서 바로 사라집니다. 복구 기능은 아직 없습니다.
           </AlertDialogDescription>
         </AlertDialogHeader>
-        <div className="rounded-xl border bg-muted/30 p-4 text-sm leading-relaxed text-muted-foreground">
+        <div className="setlist-panel rounded-md border bg-muted/30 p-4 text-sm leading-relaxed text-muted-foreground">
           {entry.body}
         </div>
         <AlertDialogFooter>

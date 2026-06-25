@@ -47,7 +47,7 @@ export function CmsSaveNotice({
     return (
       <Alert
         variant="destructive"
-        className="rounded-xl shadow-sm"
+        className="rounded-md shadow-sm"
         data-cms-save-feedback="error"
       >
         <AlertTitle>{errorTitle}</AlertTitle>
@@ -62,7 +62,7 @@ export function CmsSaveNotice({
 
   return (
     <Alert
-      className="rounded-xl border-emerald-200 bg-emerald-50 text-emerald-950 shadow-sm"
+      className="rounded-md border-emerald-200 bg-emerald-50 text-emerald-950 shadow-sm"
       data-cms-save-feedback="saved"
     >
       <CheckCircle2 className="size-4 text-emerald-700" />

@@ -77,8 +77,8 @@ function PlaylistCard({
 }) {
   const hasRecordings = playlist.recordingCount > 0
   const body = (
-    <article className="lift-card group flex h-full flex-col overflow-hidden rounded-md border bg-card shadow-sm hover:shadow-xl">
-      <div className="relative aspect-video bg-muted">
+    <article className="stage-card lift-card group flex h-full flex-col overflow-hidden rounded-md border bg-card shadow-sm hover:shadow-xl">
+      <div className="media-frame relative aspect-video bg-muted">
         {playlist.coverUrl ? (
           <ContentImage
             src={playlist.coverUrl}
@@ -92,7 +92,7 @@ function PlaylistCard({
             {playlist.year}
           </div>
         )}
-        <div className="absolute inset-0 bg-gradient-to-t from-background/82 via-background/5 to-transparent" />
+        <div className="absolute inset-0 bg-gradient-to-t from-primary/75 via-background/10 to-transparent" />
         <Badge className="absolute left-4 top-4 border border-background/70 bg-background/90 text-foreground shadow-sm backdrop-blur-sm hover:bg-background/90">
           {playlist.type}
         </Badge>
@@ -205,7 +205,7 @@ export function SeasonIndex({
           <Reveal key={year} delay={yearIndex * 60}>
             <details
               open={yearIndex < 2}
-              className="group rounded-md border bg-card px-5 py-4"
+              className="setlist-panel group rounded-md border px-5 py-4"
             >
               <summary className="flex cursor-pointer list-none items-center justify-between gap-4">
                 <span className="font-serif italic text-4xl leading-none">{year}</span>
@@ -293,9 +293,9 @@ export function StageMoments({
           <Reveal key={photo.id} as="li" delay={index * 50}>
             <Link
               href="/photos"
-              className="group block overflow-hidden rounded-md border bg-card"
+              className="stage-card group block overflow-hidden rounded-md border bg-card"
             >
-              <div className="relative aspect-[3/4] bg-muted">
+              <div className="media-frame relative aspect-[3/4] bg-muted">
                 {photo.thumbnailUrl && (
                   <ContentImage
                     src={photo.thumbnailUrl}
@@ -328,8 +328,8 @@ export function PerformanceUpdateCard({
 }) {
   const meta = updateKindMeta[update.kind]
   const body = (
-    <article className="lift-card group grid h-full grid-cols-1 overflow-hidden rounded-md border bg-card shadow-sm hover:shadow-xl sm:grid-cols-[10rem_1fr]">
-      <div className="relative min-h-52 bg-muted sm:min-h-full">
+    <article className="stage-card lift-card group grid h-full grid-cols-1 overflow-hidden rounded-md border bg-card shadow-sm hover:shadow-xl sm:grid-cols-[10rem_1fr]">
+      <div className="media-frame relative min-h-52 bg-muted sm:min-h-full">
         {update.thumbnailUrl ? (
           <ContentImage
             src={update.thumbnailUrl}

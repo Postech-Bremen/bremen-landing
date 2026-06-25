@@ -34,14 +34,14 @@ export type FooterConfig = {
 
 function ContactIcon({ kind }: { kind: FooterContactItem["kind"] }) {
   if (kind === "location") {
-    return <MapPin weight="light" className="w-4 h-4 mt-0.5 shrink-0 text-muted-foreground" />
+    return <MapPin weight="light" className="w-4 h-4 mt-0.5 shrink-0 text-primary-foreground/60" />
   }
 
   if (kind === "time") {
-    return <Clock weight="light" className="w-4 h-4 mt-0.5 shrink-0 text-muted-foreground" />
+    return <Clock weight="light" className="w-4 h-4 mt-0.5 shrink-0 text-primary-foreground/60" />
   }
 
-  return <LinkIcon weight="light" className="w-4 h-4 mt-0.5 shrink-0 text-muted-foreground" />
+  return <LinkIcon weight="light" className="w-4 h-4 mt-0.5 shrink-0 text-primary-foreground/60" />
 }
 
 function SocialIcon({ kind }: { kind: FooterSocialItem["kind"] }) {
@@ -60,7 +60,7 @@ export function Footer({ config }: { config: FooterConfig }) {
   const currentYear = new Date().getFullYear()
 
   return (
-    <footer className="border-t mt-32">
+    <footer className="mt-32 border-t bg-primary text-primary-foreground">
       <div className="max-w-6xl mx-auto px-6 md:px-8 py-16">
         <div className="grid grid-cols-1 md:grid-cols-12 gap-12">
           <div className="md:col-span-5">
@@ -70,14 +70,14 @@ export function Footer({ config }: { config: FooterConfig }) {
                 {config.titleEn}
               </span>
             </h3>
-            <p className="caps mt-3">{config.eyebrow}</p>
-            <p className="mt-6 text-sm text-muted-foreground max-w-md leading-relaxed">
+            <p className="caps mt-3 text-primary-foreground/60">{config.eyebrow}</p>
+            <p className="mt-6 max-w-md text-sm leading-relaxed text-primary-foreground/70">
               {config.description}
             </p>
           </div>
 
           <div className="md:col-span-3">
-            <p className="caps mb-4">{config.contactTitle}</p>
+            <p className="caps mb-4 text-primary-foreground/60">{config.contactTitle}</p>
             <ul className="space-y-3 text-sm">
               {config.contacts.map((contact) => (
                 <li key={`${contact.kind}:${contact.value}`} className="flex items-start gap-2">
@@ -89,7 +89,7 @@ export function Footer({ config }: { config: FooterConfig }) {
           </div>
 
           <div className="md:col-span-4">
-            <p className="caps mb-4">{config.socialTitle}</p>
+            <p className="caps mb-4 text-primary-foreground/60">{config.socialTitle}</p>
             <ul className="space-y-3 text-sm">
               {config.socials.map((social) => (
                 <li key={`${social.kind}:${social.href}`}>
@@ -97,7 +97,7 @@ export function Footer({ config }: { config: FooterConfig }) {
                   href={social.href}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="inline-flex items-center gap-3 hover:text-accent transition-colors"
+                  className="inline-flex items-center gap-3 text-primary-foreground/80 transition-colors hover:text-accent"
                 >
                   <SocialIcon kind={social.kind} />
                   <span>{social.label}</span>
@@ -110,11 +110,11 @@ export function Footer({ config }: { config: FooterConfig }) {
 
         <Separator className="my-10" />
 
-        <div className="flex flex-wrap items-center justify-between gap-4 text-sm text-muted-foreground">
+        <div className="flex flex-wrap items-center justify-between gap-4 text-sm text-primary-foreground/60">
           <span className="tabular-nums">
             © {config.foundingYear} — {currentYear} {config.copyrightName}
           </span>
-          <span className="caps">{config.sinceLabel}</span>
+          <span className="caps text-primary-foreground/60">{config.sinceLabel}</span>
         </div>
       </div>
     </footer>

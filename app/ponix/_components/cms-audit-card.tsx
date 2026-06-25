@@ -22,7 +22,7 @@ export function CmsAuditTrailCard({
   emptyMessage?: string
 }) {
   return (
-    <Card className="rounded-[1.5rem] border bg-card/95 shadow-sm">
+    <Card className="stage-card rounded-md border bg-card/95 shadow-sm">
       <CardHeader>
         <div className="flex flex-col gap-2 md:flex-row md:items-end md:justify-between">
           <div>

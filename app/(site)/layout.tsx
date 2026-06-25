@@ -14,7 +14,7 @@ export default async function SiteLayout({
   }
 
   return (
-    <div className="flex min-h-screen flex-col bg-background">
+    <div className="site-shell flex min-h-screen flex-col">
       <Navigation config={siteChrome.navigation} />
       <main className="flex-1 pt-20">{children}</main>
       <Footer config={siteChrome.footer} />

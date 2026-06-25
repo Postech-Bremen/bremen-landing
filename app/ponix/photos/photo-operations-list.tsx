@@ -150,7 +150,7 @@ export function PhotoOperationsList({ photos }: { photos: CmsMemberPhoto[] }) {
                 <TableRow key={photo.id}>
                   <TableCell className="min-w-[22rem]">
                     <div className="flex items-center gap-4">
-                      <div className="relative h-20 w-24 shrink-0 overflow-hidden rounded-xl border bg-muted">
+                      <div className="media-frame relative h-20 w-24 shrink-0 overflow-hidden rounded-md border bg-muted">
                         {photo.thumbnailUrl ? (
                           // eslint-disable-next-line @next/next/no-img-element
                           <img
@@ -350,7 +350,7 @@ function DeletePhotoDialog({ photo }: { photo: CmsMemberPhoto }) {
             사진 탭의 기록과 연결된 업로드 파일을 함께 정리합니다. 복구 기능은 아직 없습니다.
           </AlertDialogDescription>
         </AlertDialogHeader>
-        <div className="flex gap-4 rounded-xl border bg-muted/30 p-4">
+        <div className="setlist-panel flex gap-4 rounded-md border bg-muted/30 p-4">
           <div className="relative h-24 w-28 shrink-0 overflow-hidden rounded-lg border bg-muted">
             {photo.thumbnailUrl ? (
               // eslint-disable-next-line @next/next/no-img-element

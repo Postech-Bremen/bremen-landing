@@ -21,11 +21,14 @@ export function PageHero({
   className,
 }: PageHeroProps) {
   return (
-    <header className={cn("mb-24 md:mb-28 xl:mb-32", className)}>
-      <p className="caps mb-6">{eyebrow}</p>
+    <header className={cn("hero-score -mx-6 mb-24 px-6 py-10 md:-mx-8 md:mb-28 md:px-8 md:py-12 xl:mb-32", className)}>
+      <div className="mb-8 flex items-center gap-4">
+        <p className="caps shrink-0">{eyebrow}</p>
+        <span aria-hidden className="accent-rule h-px min-w-12 flex-1 opacity-70" />
+      </div>
       <div className="grid grid-cols-12 gap-8 items-end">
         <div className="col-span-12 lg:col-span-8">
-          <h1 className="font-serif italic text-[clamp(2.4rem,13vw,6.5rem)] leading-[0.92] tracking-tight">
+          <h1 className="font-serif italic text-[clamp(2.4rem,13vw,6.5rem)] leading-[0.92]">
             {titleEn}
           </h1>
           <p className="mt-3 font-serif-kr text-[clamp(1.9rem,9vw,3rem)] text-muted-foreground">
@@ -69,8 +72,11 @@ export function EditorialSectionHead({
   return (
     <div className={cn("mb-12 md:mb-14 grid grid-cols-12 gap-8 items-end", className)}>
       <div className="col-span-12 md:col-span-8">
-        <p className="caps mb-3">{eyebrow}</p>
-        <h2 className="font-serif italic text-4xl md:text-5xl tracking-tight leading-none">
+        <div className="mb-3 flex items-center gap-3">
+          <p className="caps shrink-0">{eyebrow}</p>
+          <span aria-hidden className="accent-rule h-px w-12 opacity-70" />
+        </div>
+        <h2 className="font-serif italic text-4xl leading-none md:text-5xl">
           {en}
         </h2>
         <p className="mt-2 font-serif-kr text-lg md:text-xl text-muted-foreground">
@@ -130,7 +136,7 @@ export function EditorialMetricCard({
     <article
       style={tilt === "0deg" ? undefined : style}
       className={cn(
-        "rounded-md border p-6 md:p-7 shadow-sm hover:shadow-xl",
+        "stage-card rounded-md border p-6 shadow-sm hover:shadow-xl md:p-7",
         motionClass,
         isAccent
           ? "border-transparent bg-accent text-accent-foreground shadow-md"
@@ -204,7 +210,7 @@ export function EditorialFeatureCard({
     <article
       style={tilt === "0deg" ? undefined : style}
       className={cn(
-        "rounded-md border p-6 md:p-7 shadow-sm hover:shadow-xl",
+        "stage-card rounded-md border p-6 shadow-sm hover:shadow-xl md:p-7",
         motionClass,
         toneClass,
         className,
@@ -215,7 +221,7 @@ export function EditorialFeatureCard({
           {eyebrow}
         </p>
       )}
-      <h3 className="font-serif italic text-3xl md:text-4xl tracking-tight leading-tight">
+      <h3 className="font-serif italic text-3xl leading-tight md:text-4xl">
         {title}
       </h3>
       {subtitle && (
