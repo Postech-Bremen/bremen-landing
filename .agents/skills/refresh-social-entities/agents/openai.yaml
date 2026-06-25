@@ -1,0 +1,4 @@
+interface:
+  display_name: "Refresh Social Entities"
+  short_description: "Refresh Bremen social content graph"
+  default_prompt: "Use $refresh-social-entities to fetch the latest Bremen Instagram and YouTube posts, update graph entities, and verify the deployment-ready diff."
