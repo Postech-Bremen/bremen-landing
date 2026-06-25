@@ -192,7 +192,7 @@ export function PonixComposerWorkspace({
       />
 
       <div className="grid min-h-[calc(100svh-13rem)] gap-5 xl:grid-cols-[minmax(0,1fr)_25rem]">
-        <Card className="overflow-hidden rounded-2xl bg-card/95 shadow-sm">
+        <Card className="setlist-panel overflow-hidden rounded-md bg-card/95 shadow-sm">
           <CardHeader className="border-b bg-muted/20 px-5 py-5 md:px-6">
             <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
               <div>
@@ -218,7 +218,7 @@ export function PonixComposerWorkspace({
               onSelect={selectSection}
             />
           </CardHeader>
-          <CardContent className="bg-[#f7f1e8] p-0">
+          <CardContent className="bg-background p-0">
             <iframe
               ref={iframeRef}
               title={`${title} live canvas`}
@@ -251,13 +251,12 @@ function ComposerHeader({
   sectionCount: number
 }) {
   return (
-    <div className="relative overflow-hidden rounded-2xl border bg-card/95 p-5 shadow-sm md:p-7">
-      <div className="pointer-events-none absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-primary via-accent to-transparent" />
-      <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(135deg,color-mix(in_oklch,var(--secondary)_78%,transparent),transparent_46%)]" />
+    <div className="hero-score rounded-md p-5 shadow-sm md:p-7">
+      <div className="pointer-events-none absolute inset-x-0 top-0 h-1 accent-rule" />
       <div className="relative flex flex-col gap-5 lg:flex-row lg:items-start lg:justify-between">
         <div>
           <p className="caps mb-3 text-muted-foreground">페이지 구성</p>
-          <h1 className="font-serif text-[clamp(2.5rem,4vw,4.75rem)] italic leading-[0.9] tracking-tight">
+          <h1 className="font-serif text-[clamp(2.5rem,4vw,4.75rem)] italic leading-[0.9]">
             {title}
           </h1>
           <div className="mt-4 flex flex-wrap items-center gap-2">

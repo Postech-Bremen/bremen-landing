@@ -171,7 +171,7 @@ export function VideoOperationsList({ videos }: { videos: CmsMemberVideo[] }) {
                 <TableRow key={video.id}>
                   <TableCell className="min-w-[25rem]">
                     <div className="flex items-center gap-4">
-                      <div className="relative grid h-20 w-28 shrink-0 place-items-center overflow-hidden rounded-xl border bg-muted">
+                      <div className="media-frame relative grid h-20 w-28 shrink-0 place-items-center overflow-hidden rounded-md border bg-muted">
                         {video.thumbnailUrl ? (
                           // eslint-disable-next-line @next/next/no-img-element
                           <img
@@ -396,7 +396,7 @@ function DeleteVideoDialog({ video }: { video: CmsMemberVideo }) {
             영상 기록과 연결된 업로드 파일을 함께 정리합니다. 복구 기능은 아직 없습니다.
           </AlertDialogDescription>
         </AlertDialogHeader>
-        <div className="flex gap-4 rounded-xl border bg-muted/30 p-4">
+        <div className="setlist-panel flex gap-4 rounded-md border bg-muted/30 p-4">
           <div className="grid h-24 w-32 shrink-0 place-items-center overflow-hidden rounded-lg border bg-muted">
             {video.thumbnailUrl ? (
               // eslint-disable-next-line @next/next/no-img-element

@@ -36,17 +36,12 @@ export function CmsSectionCreatePage({
   const sectionType = sectionTypeFromSchemaKey(schema.schemaKey) ?? "unregistered"
 
   return (
-    <main className="relative min-h-screen overflow-hidden">
-      <div className="pointer-events-none absolute inset-0 -z-10">
-        <div className="absolute right-[-10rem] top-10 h-96 w-96 rounded-full bg-accent/10 blur-3xl" />
-        <div className="absolute left-[-8rem] bottom-0 h-80 w-80 rounded-full bg-muted blur-3xl" />
-      </div>
-
+    <main className="min-h-screen">
       <section className="mx-auto max-w-5xl px-1 py-4 md:py-8">
-        <div className="mb-10 flex flex-col gap-6 md:flex-row md:items-start md:justify-between">
+        <div className="hero-score mb-6 flex flex-col gap-6 rounded-md p-5 shadow-sm md:flex-row md:items-start md:justify-between md:p-7">
           <div>
             <p className="caps mb-5">섹션 추가</p>
-            <h1 className="font-serif text-[clamp(2.5rem,5vw,5rem)] italic leading-[0.9] tracking-tight">
+            <h1 className="font-serif text-[clamp(2.5rem,5vw,5rem)] italic leading-[0.9]">
               {schema.label}
             </h1>
             <p className="mt-5 max-w-2xl text-sm leading-relaxed text-muted-foreground md:text-base">
@@ -70,13 +65,13 @@ export function CmsSectionCreatePage({
           <input type="hidden" name="schema_id" value={schema.schemaId ?? ""} />
 
           {error && (
-            <Alert variant="destructive">
+            <Alert variant="destructive" className="rounded-md">
               <AlertTitle>섹션을 만들지 못했습니다</AlertTitle>
               <AlertDescription>{error}</AlertDescription>
             </Alert>
           )}
 
-          <Card className="rounded-[1.5rem] bg-card/95 shadow-sm">
+          <Card className="stage-card rounded-md bg-card/95 shadow-sm">
             <CardHeader className="border-b">
               <CardTitle className="font-serif text-3xl italic">
                 섹션 식별 정보
@@ -121,7 +116,7 @@ export function CmsSectionCreatePage({
             fields={propsFields}
           />
 
-          <div className="flex flex-col gap-3 rounded-[1.25rem] border bg-card/95 p-4 shadow-sm sm:flex-row sm:items-center sm:justify-between">
+          <div className="setlist-panel flex flex-col gap-3 rounded-md border bg-card/95 p-4 shadow-sm sm:flex-row sm:items-center sm:justify-between">
             <p className="text-sm text-muted-foreground">
               섹션을 만든 뒤 페이지에 배치하고 필요한 데이터를 연결합니다.
             </p>
@@ -148,7 +143,7 @@ function CreateEditorCard({
   fields: CmsEditableSectionField[]
 }) {
   return (
-    <Card className="rounded-[1.5rem] bg-card/95 shadow-sm">
+    <Card className="stage-card rounded-md bg-card/95 shadow-sm">
       <CardHeader className="border-b">
         <div className="flex flex-col gap-2 md:flex-row md:items-end md:justify-between">
           <div>

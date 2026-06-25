@@ -144,9 +144,8 @@ export function PonixShell({ memberName, children }: PonixShellProps) {
           "--sidebar-width-icon": "3.25rem",
         } as CSSProperties
       }
-      className="min-h-screen bg-[#f7f1e8]"
+      className="site-shell min-h-screen bg-background"
     >
-      <div className="pointer-events-none fixed inset-0 -z-10 bg-[radial-gradient(circle_at_18%_10%,color-mix(in_oklch,var(--accent)_13%,transparent),transparent_32%),linear-gradient(135deg,color-mix(in_oklch,var(--secondary)_82%,transparent),transparent_46%)]" />
       <Sidebar
         variant="floating"
         collapsible="icon"
@@ -157,7 +156,7 @@ export function PonixShell({ memberName, children }: PonixShellProps) {
             <SidebarMenuItem>
               <SidebarMenuButton asChild size="lg" tooltip="PONIX">
                 <Link href="/ponix">
-                  <div className="flex size-10 items-center justify-center rounded-xl bg-sidebar-primary text-sidebar-primary-foreground shadow-sm">
+                  <div className="flex size-10 items-center justify-center rounded-md bg-sidebar-primary text-sidebar-primary-foreground shadow-sm">
                     <Activity className="size-4" />
                   </div>
                   <div className="min-w-0">
@@ -175,7 +174,7 @@ export function PonixShell({ memberName, children }: PonixShellProps) {
         </SidebarHeader>
 
         <SidebarContent className="px-2 py-2">
-          <div className="mx-1 mb-3 rounded-2xl border bg-sidebar-accent/45 p-3 group-data-[collapsible=icon]:hidden">
+          <div className="setlist-panel mx-1 mb-3 rounded-md border bg-sidebar-accent/45 p-3 group-data-[collapsible=icon]:hidden">
             <div className="mb-3 flex items-center justify-between">
               <p className="caps text-sidebar-foreground/55">Today</p>
               <CheckCircle2 className="size-4 text-emerald-700" />
@@ -184,8 +183,8 @@ export function PonixShell({ memberName, children }: PonixShellProps) {
               공개 사이트에 보이는 화면과 데이터를 이곳에서 관리합니다.
             </p>
             <div className="mt-3 grid grid-cols-2 gap-2 text-xs text-sidebar-foreground/60">
-              <span className="rounded-lg bg-sidebar/70 px-2 py-1">화면 구성</span>
-              <span className="rounded-lg bg-sidebar/70 px-2 py-1">콘텐츠 관리</span>
+              <span className="rounded-sm bg-sidebar/70 px-2 py-1">화면 구성</span>
+              <span className="rounded-sm bg-sidebar/70 px-2 py-1">콘텐츠 관리</span>
             </div>
           </div>
 
@@ -205,7 +204,7 @@ export function PonixShell({ memberName, children }: PonixShellProps) {
                           isActive={active}
                           tooltip={item.label}
                           className={cn(
-                            "h-11 rounded-xl",
+                            "h-11 rounded-md",
                             active && "bg-sidebar-primary text-sidebar-primary-foreground shadow-sm hover:bg-sidebar-primary hover:text-sidebar-primary-foreground",
                           )}
                         >
@@ -228,7 +227,7 @@ export function PonixShell({ memberName, children }: PonixShellProps) {
 
         <SidebarSeparator />
         <SidebarFooter className="p-3">
-          <div className="rounded-2xl border bg-sidebar-accent/50 p-3 group-data-[collapsible=icon]:hidden">
+          <div className="setlist-panel rounded-md border bg-sidebar-accent/50 p-3 group-data-[collapsible=icon]:hidden">
             <p className="caps text-sidebar-foreground/60">Signed in</p>
             <p className="mt-1 truncate text-sm font-medium">{memberName}</p>
           </div>
@@ -237,9 +236,9 @@ export function PonixShell({ memberName, children }: PonixShellProps) {
       </Sidebar>
 
       <div className="flex min-w-0 flex-1 flex-col">
-        <div className="sticky top-0 z-20 flex h-16 items-center gap-3 border-b bg-background/85 px-4 backdrop-blur-xl md:px-6">
+        <div className="sticky top-0 z-20 flex h-16 items-center gap-3 border-b bg-background/85 px-4 shadow-[0_10px_30px_color-mix(in_oklch,var(--stage-ink)_8%,transparent)] backdrop-blur-xl md:px-6">
           <SidebarTrigger className="size-8 md:hidden" />
-          <div className="hidden size-9 items-center justify-center rounded-xl border bg-card shadow-sm md:flex">
+          <div className="hidden size-9 items-center justify-center rounded-md border bg-card shadow-sm md:flex">
             <LayoutDashboard className="size-4" />
           </div>
           <div className="min-w-0 flex-1">

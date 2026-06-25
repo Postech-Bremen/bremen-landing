@@ -253,7 +253,7 @@ function PreviewShell({
 }) {
   return (
     <div className="xl:sticky xl:top-24">
-      <Card className="overflow-hidden rounded-[1.5rem] bg-card/95 shadow-sm">
+      <Card className="stage-card overflow-hidden rounded-md bg-card/95 shadow-sm">
         <CardHeader className="border-b">
           <p className="caps text-muted-foreground">{eyebrow}</p>
           <CardTitle className="font-serif text-3xl italic">{title}</CardTitle>

@@ -77,17 +77,12 @@ function SchemaPickerPage({
   error?: string
 }) {
   return (
-    <main className="relative min-h-screen overflow-hidden">
-      <div className="pointer-events-none absolute inset-0 -z-10">
-        <div className="absolute right-[-10rem] top-10 h-96 w-96 rounded-full bg-accent/10 blur-3xl" />
-        <div className="absolute left-[-8rem] bottom-0 h-80 w-80 rounded-full bg-muted blur-3xl" />
-      </div>
-
+    <main className="min-h-screen">
       <section className="mx-auto max-w-6xl px-1 py-4 md:py-8">
-        <div className="mb-10 flex flex-col gap-6 md:flex-row md:items-start md:justify-between">
+        <div className="hero-score mb-6 flex flex-col gap-6 rounded-md p-5 shadow-sm md:flex-row md:items-start md:justify-between md:p-7">
           <div>
             <p className="caps mb-5">섹션 추가</p>
-            <h1 className="font-serif text-[clamp(2.5rem,5vw,5rem)] italic leading-[0.9] tracking-tight">
+            <h1 className="font-serif text-[clamp(2.5rem,5vw,5rem)] italic leading-[0.9]">
               형식 선택
             </h1>
             <p className="mt-5 max-w-2xl text-sm leading-relaxed text-muted-foreground md:text-base">
@@ -101,7 +96,7 @@ function SchemaPickerPage({
 
         <div className="space-y-6">
           {error && (
-            <Alert variant="destructive">
+            <Alert variant="destructive" className="rounded-md">
               <AlertTitle>선택할 수 없는 형식입니다</AlertTitle>
               <AlertDescription>{error}</AlertDescription>
             </Alert>
@@ -111,7 +106,7 @@ function SchemaPickerPage({
             {schemas.map((schema) => (
               <Card
                 key={schema.schemaKey}
-                className="rounded-[1.5rem] bg-card/95 shadow-sm transition-transform hover:-translate-y-1"
+                className="stage-card rounded-md bg-card/95 shadow-sm transition-transform hover:-translate-y-0.5"
               >
                 <CardHeader className="border-b">
                   <div className="mb-3 flex flex-wrap items-center gap-2">

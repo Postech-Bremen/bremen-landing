@@ -50,17 +50,12 @@ export async function CmsEntityEditorPage({
   const formId = `cms-entity-form-${detail.row.id}`
 
   return (
-    <main className="relative min-h-screen overflow-hidden">
-      <div className="pointer-events-none absolute inset-0 -z-10">
-        <div className="absolute right-[-10rem] top-10 h-96 w-96 rounded-full bg-accent/10 blur-3xl" />
-        <div className="absolute left-[-8rem] bottom-0 h-80 w-80 rounded-full bg-muted blur-3xl" />
-      </div>
-
+    <main className="min-h-screen">
       <section className="mx-auto max-w-6xl px-1 py-4 md:py-8">
-        <div className="mb-10 flex flex-col gap-6 md:flex-row md:items-start md:justify-between">
+        <div className="hero-score mb-6 flex flex-col gap-6 rounded-md p-5 shadow-sm md:flex-row md:items-start md:justify-between md:p-7">
           <div>
             <p className="caps mb-5">콘텐츠 수정</p>
-            <h1 className="font-serif text-[clamp(2.5rem,5vw,5rem)] italic leading-[0.9] tracking-tight">
+            <h1 className="font-serif text-[clamp(2.5rem,5vw,5rem)] italic leading-[0.9]">
               {detail.title}
             </h1>
             <p className="mt-5 max-w-2xl text-sm leading-relaxed text-muted-foreground md:text-base">
@@ -81,7 +76,7 @@ export async function CmsEntityEditorPage({
         </div>
 
         {!schema ? (
-          <Alert variant="destructive">
+          <Alert variant="destructive" className="rounded-md">
             <AlertTitle>수정할 수 없는 콘텐츠입니다</AlertTitle>
             <AlertDescription>
               이 콘텐츠에 맞는 입력 양식이 아직 등록되지 않았습니다.
@@ -107,7 +102,7 @@ export async function CmsEntityEditorPage({
                 savedDescription="데이터 항목이 저장되었습니다."
               />
 
-              <Card className="rounded-[1.5rem] bg-card/95 shadow-sm">
+              <Card className="stage-card rounded-md bg-card/95 shadow-sm">
                 <CardHeader className="border-b">
                   <CardTitle className="font-serif text-3xl italic">
                     고정된 식별 정보
@@ -139,7 +134,7 @@ export async function CmsEntityEditorPage({
                 detail={detail}
               />
 
-              <div className="flex flex-col gap-3 rounded-[1.25rem] border bg-card/95 p-4 shadow-sm sm:flex-row sm:items-center sm:justify-between">
+              <div className="setlist-panel flex flex-col gap-3 rounded-md border bg-card/95 p-4 shadow-sm sm:flex-row sm:items-center sm:justify-between">
                 <p className="text-sm text-muted-foreground">
                   저장하면 이 콘텐츠의 정보만 바뀝니다. 배치된 섹션과 순서는 그대로 둡니다.
                 </p>
@@ -166,7 +161,7 @@ export async function CmsEntityEditorPage({
 
 function ThumbnailCard({ detail }: { detail: CmsEntityDetail }) {
   return (
-    <Card className="rounded-[1.5rem] bg-card/95 shadow-sm">
+    <Card className="stage-card rounded-md bg-card/95 shadow-sm">
       <CardHeader className="border-b">
         <CardTitle className="font-serif text-3xl italic">
           대표 이미지
@@ -214,7 +209,7 @@ function EditorCard({
   detail: CmsEntityDetail
 }) {
   return (
-    <Card className="rounded-[1.5rem] bg-card/95 shadow-sm">
+    <Card className="stage-card rounded-md bg-card/95 shadow-sm">
       <CardHeader className="border-b">
         <div className="flex flex-col gap-2 md:flex-row md:items-end md:justify-between">
           <div>

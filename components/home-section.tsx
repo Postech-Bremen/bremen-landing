@@ -118,14 +118,14 @@ function AccentText({ text, accent }: { text: string; accent?: string | null }) 
 function StatCardView({ card }: { card: HomeStatCard }) {
   const tiltStyle = { "--card-tilt": card.tilt } as CSSProperties
   const base =
-    "group h-full rounded-md border overflow-hidden " +
+    "stage-card group h-full overflow-hidden rounded-md border " +
     "tilt-card hover:shadow-2xl"
 
   if (card.type === "text") {
     return (
       <div
         style={tiltStyle}
-        className={`${base} bg-card flex flex-col p-6 md:p-7 shadow-sm`}
+        className={`${base} bg-card flex flex-col p-6 shadow-sm md:p-7`}
       >
         <p className="caps">{card.label}</p>
         <div className="mt-auto flex items-baseline gap-1.5">
@@ -147,7 +147,7 @@ function StatCardView({ card }: { card: HomeStatCard }) {
     return (
       <div
         style={tiltStyle}
-        className={`${base} bg-accent text-accent-foreground flex flex-col p-6 md:p-7 shadow-md border-transparent`}
+        className={`${base} flex flex-col border-transparent bg-accent p-6 text-accent-foreground shadow-md md:p-7`}
       >
         <p className="caps text-accent-foreground/80">{card.label}</p>
         <div className="mt-auto flex items-baseline gap-1.5">
@@ -169,7 +169,7 @@ function StatCardView({ card }: { card: HomeStatCard }) {
       style={tiltStyle}
       className={`${base} bg-card flex flex-col shadow-md`}
     >
-      <div className="relative basis-[55%] grow-0 shrink-0 bg-muted overflow-hidden">
+      <div className="media-frame relative basis-[55%] grow-0 shrink-0 overflow-hidden bg-muted">
         {imageSrc && (
           <ContentImage
             src={imageSrc}
@@ -250,13 +250,16 @@ export function HomeSection({
     const title = section.title ?? ""
 
     return (
-      <section className="mb-28">
-        <div className="grid grid-cols-12 gap-8 md:gap-12 items-center">
+      <section className="hero-score -mx-6 mb-28 px-6 py-10 md:-mx-8 md:px-8 md:py-12">
+        <div className="grid grid-cols-12 items-center gap-8 md:gap-12">
           <div className="col-span-12 md:col-span-5 animate-in fade-in-0 slide-in-from-bottom-3 duration-700">
-            <p className="caps mb-6">
-              <AccentText text={eyebrow} accent={section.accentEyebrow} />
-            </p>
-            <h1 className="font-serif italic text-7xl md:text-8xl leading-[0.95] tracking-tight">
+            <div className="mb-6 flex items-center gap-4">
+              <p className="caps shrink-0">
+                <AccentText text={eyebrow} accent={section.accentEyebrow} />
+              </p>
+              <span aria-hidden className="accent-rule h-px min-w-12 flex-1 opacity-70" />
+            </div>
+            <h1 className="font-serif italic text-7xl leading-[0.95] md:text-8xl">
               <AccentText text={title} accent={section.accentTitle} />
             </h1>
             {section.subtitle && (
@@ -303,9 +306,9 @@ export function HomeSection({
             rel="noopener noreferrer"
             data-ponix-entity={homeFeaturedVideo.entityId}
             data-ponix-entity-kind="video"
-            className="col-span-12 md:col-span-7 group flex flex-col gap-4 animate-in fade-in-0 slide-in-from-bottom-3 duration-700 delay-100"
+            className="group col-span-12 flex flex-col gap-4 animate-in fade-in-0 slide-in-from-bottom-3 duration-700 delay-100 md:col-span-7"
           >
-            <div className="relative aspect-video overflow-hidden border bg-muted rounded-md">
+            <div className="media-frame relative aspect-video overflow-hidden rounded-md border bg-muted">
               <ContentImage
                 src={homeFeaturedVideo.thumbnailUrl ?? thumbnailUrl(homeFeaturedVideo.id, "max")}
                 alt={homeFeaturedVideo.title}
@@ -314,6 +317,11 @@ export function HomeSection({
                 sizes="(max-width: 768px) 100vw, 60vw"
                 className="object-cover transition-transform duration-700 group-hover:scale-[1.03]"
               />
+              <div className="absolute inset-0 bg-gradient-to-t from-primary/50 via-transparent to-transparent opacity-80" />
+              <span className="absolute left-3 top-3 inline-flex items-center gap-2 rounded-full border border-background/50 bg-background/80 px-3 py-1 text-xs font-medium backdrop-blur-md">
+                <Play weight="fill" className="size-3 text-accent" />
+                Live cut
+              </span>
               <span className="absolute bottom-2 right-2 caps tabular-nums bg-background/90 backdrop-blur-sm px-2 py-0.5 rounded-sm">
                 {homeFeaturedVideo.duration}
               </span>
@@ -347,7 +355,7 @@ export function HomeSection({
           />
         </Reveal>
 
-        <ul className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2.5 md:gap-2.5">
+        <ul className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
           {homeStats.map((s, i) => (
             <Reveal key={s.label} as="li" delay={i * 90} className="aspect-[3/4]">
               <StatCardView card={s} />
@@ -391,7 +399,7 @@ export function HomeSection({
                 data-ponix-entity-kind="video"
                 className="group flex flex-col gap-3"
               >
-                <div className="relative aspect-video overflow-hidden border bg-muted rounded-md">
+                <div className="media-frame relative aspect-video overflow-hidden rounded-md border bg-muted">
                   <ContentImage
                     src={v.thumbnailUrl ?? thumbnailUrl(v.id, "max")}
                     alt={`${v.artist ?? "Bremen"} - ${v.song ?? v.title}`}
@@ -442,17 +450,17 @@ export function HomeSection({
           />
         </Reveal>
 
-        <ul className="border-t">
+        <ul className="setlist-panel rounded-md border border-border/80">
           {homeEvents.map((event, i) => (
             <Reveal
               key={event.title}
               as="li"
               delay={i * 70}
-              className="group border-b relative overflow-hidden"
+              className="group relative overflow-hidden border-b last:border-b-0"
             >
               <div
                 aria-hidden
-                className="absolute inset-0 bg-foreground/[0.02] -translate-x-full group-hover:translate-x-0 transition-transform duration-500"
+                className="absolute inset-0 -translate-x-full bg-foreground/[0.035] transition-transform duration-500 group-hover:translate-x-0"
               />
               <div className="relative grid grid-cols-12 gap-6 py-7 items-center">
                 <div className="col-span-3 md:col-span-2">
@@ -504,7 +512,7 @@ export function HomeSection({
           </>
         </Reveal>
 
-        <ul className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2.5 md:gap-2.5">
+        <ul className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
           {homeActivities.map((area, i) => {
             const isColor = area.variant === "color"
             const tiltStyle = { "--card-tilt": area.tilt } as CSSProperties
@@ -518,7 +526,7 @@ export function HomeSection({
                 <article
                   style={tiltStyle}
                   className={
-                    "group relative h-full rounded-md border overflow-hidden " +
+                    "stage-card group relative h-full overflow-hidden rounded-md border " +
                     "tilt-card hover:shadow-2xl " +
                     (isColor
                       ? "bg-accent text-accent-foreground border-transparent shadow-md"
@@ -578,12 +586,12 @@ export function HomeSection({
     const body = section.body ?? ""
 
     return (
-      <section className="border-t pt-16">
+      <section className="hero-score -mx-6 px-6 py-14 md:-mx-8 md:px-8 md:py-16">
         <Reveal offset={24} blur={10}>
           <div className="grid grid-cols-12 gap-8 items-end">
             <div className="col-span-12 md:col-span-8">
               <p className="caps mb-3">{section.eyebrow}</p>
-              <h2 className="font-serif italic text-4xl md:text-6xl leading-tight tracking-tight">
+              <h2 className="font-serif italic text-4xl leading-tight md:text-6xl">
                 {section.title}
               </h2>
               <p className="mt-2 font-serif-kr text-2xl md:text-3xl text-foreground">
@@ -628,7 +636,7 @@ export function HomeSection({
   }
 
   return (
-    <div className="max-w-6xl mx-auto px-6 md:px-8 py-12 md:py-20">
+    <div className="mx-auto max-w-6xl px-6 py-12 md:px-8 md:py-20">
       {homeSections.map((section) => {
         const renderedSection = renderSection(section)
 

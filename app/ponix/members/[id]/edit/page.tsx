@@ -60,9 +60,9 @@ export default async function PonixMemberEditPage({
 
   return (
     <section className="mx-auto flex w-full max-w-5xl flex-col gap-6">
-      <div className="rounded-xl border bg-card/90 p-5 shadow-sm md:p-6">
+      <div className="hero-score rounded-md p-5 shadow-sm md:p-6">
         <p className="caps mb-3 text-muted-foreground">멤버 관리</p>
-        <h1 className="font-serif-kr text-[clamp(2.25rem,6vw,4.25rem)] leading-tight tracking-tight">
+        <h1 className="font-serif-kr text-[clamp(2.25rem,6vw,4.25rem)] leading-tight">
           {member.name}
         </h1>
         <p className="mt-3 max-w-2xl text-sm leading-relaxed text-muted-foreground md:text-base">
@@ -84,7 +84,7 @@ export default async function PonixMemberEditPage({
           value={`/ponix/members/${member.id}/edit`}
         />
 
-        <Card className="overflow-hidden rounded-xl bg-card/95 shadow-sm">
+        <Card className="stage-card overflow-hidden rounded-md bg-card/95 shadow-sm">
           <CardHeader className="border-b bg-muted/20">
             <CardTitle className="font-serif text-3xl italic">
               멤버 권한
@@ -127,7 +127,7 @@ export default async function PonixMemberEditPage({
           </CardContent>
         </Card>
 
-        <Card className="mt-6 overflow-hidden rounded-xl bg-card/95 shadow-sm">
+        <Card className="stage-card mt-6 overflow-hidden rounded-md bg-card/95 shadow-sm">
           <CardHeader className="border-b bg-muted/20">
             <CardTitle className="font-serif text-3xl italic">
               공개 프로필

@@ -132,7 +132,7 @@ export function ComposerRelationList({
     <div className="space-y-3" data-composer-relation-list>
       <div
         className={cn(
-          "flex items-center justify-between rounded-xl border px-3 py-2 text-xs",
+          "flex items-center justify-between rounded-md border px-3 py-2 text-xs",
           saveState.status === "error"
             ? "border-destructive/40 bg-destructive/10 text-destructive"
             : "bg-muted/30 text-muted-foreground",
@@ -246,7 +246,7 @@ function SectionEntityRelationEditor({
       <Drawer direction="right">
         <div
           className={cn(
-            "group flex items-stretch gap-2 rounded-xl border bg-background/70 p-2 shadow-xs transition",
+            "group flex items-stretch gap-2 rounded-md border bg-background/70 p-2 shadow-xs transition",
             "hover:border-accent/60 hover:bg-muted/30",
             dragging && "scale-[0.99] opacity-60",
             dropTarget && "border-accent bg-accent/10",
@@ -665,7 +665,7 @@ function EntityFieldGroup({
   return (
     <AccordionItem
       value={value}
-      className="overflow-hidden rounded-xl border bg-background/70 px-4"
+      className="overflow-hidden rounded-md border bg-background/70 px-4"
       data-composer-entity-field-group={value}
     >
       <AccordionTrigger className="hover:no-underline">
@@ -730,7 +730,7 @@ function SaveFeedbackBar({
   return (
     <div
       className={cn(
-        "flex flex-col gap-3 rounded-xl border bg-card/70 p-3 sm:flex-row sm:items-center sm:justify-between",
+        "setlist-panel flex flex-col gap-3 rounded-md border bg-card/70 p-3 sm:flex-row sm:items-center sm:justify-between",
         state.status === "saved" && "border-emerald-300 bg-emerald-50",
         state.status === "error" && "border-destructive/40 bg-destructive/10",
       )}
