@@ -232,6 +232,56 @@
       );
   }
 
+  .stage-card.bg-accent {
+    background:
+      repeating-linear-gradient(
+        180deg,
+        transparent 0,
+        transparent 1.1rem,
+        color-mix(in oklch, var(--accent-foreground) 8%, transparent) 1.14rem,
+        transparent 1.2rem
+      ),
+      linear-gradient(
+        180deg,
+        color-mix(in oklch, var(--accent) 90%, var(--stage-brass)),
+        color-mix(in oklch, var(--accent) 96%, var(--primary))
+      );
+  }
+
+  .stage-card.bg-primary {
+    background:
+      repeating-linear-gradient(
+        180deg,
+        transparent 0,
+        transparent 1.1rem,
+        color-mix(in oklch, var(--primary-foreground) 7%, transparent) 1.14rem,
+        transparent 1.2rem
+      ),
+      linear-gradient(
+        180deg,
+        color-mix(in oklch, var(--primary) 94%, var(--stage-oxide)),
+        var(--primary)
+      );
+  }
+
+  .stage-card.bg-accent::after,
+  .stage-card.bg-primary::after {
+    background: linear-gradient(
+      90deg,
+      color-mix(in oklch, var(--accent-foreground) 90%, transparent),
+      var(--stage-brass),
+      color-mix(in oklch, var(--stage-paper) 70%, transparent)
+    );
+  }
+
+  .stage-card.bg-accent .caps {
+    color: color-mix(in oklch, var(--accent-foreground) 78%, transparent);
+  }
+
+  .stage-card.bg-primary .caps {
+    color: color-mix(in oklch, var(--primary-foreground) 72%, transparent);
+  }
+
   .stage-card::after {
     position: absolute;
     inset: auto 0 0;
