@@ -357,7 +357,12 @@ export function HomeSection({
 
         <ul className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
           {homeStats.map((s, i) => (
-            <Reveal key={s.label} as="li" delay={i * 90} className="aspect-[3/4]">
+            <Reveal
+              key={s.label}
+              as="li"
+              delay={i * 90}
+              className="min-h-[16rem] sm:min-h-[18rem] lg:min-h-[20rem]"
+            >
               <StatCardView card={s} />
             </Reveal>
           ))}
@@ -521,7 +526,7 @@ export function HomeSection({
                 key={area.id ?? area.title}
                 as="li"
                 delay={i * 80}
-                className="aspect-[3/4]"
+                className="min-h-[16rem] sm:min-h-[18rem] lg:min-h-[20rem]"
               >
                 <article
                   style={tiltStyle}
