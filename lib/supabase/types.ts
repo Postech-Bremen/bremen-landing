@@ -367,16 +367,610 @@ export type Database = {
           },
         ]
       }
+      ticket_checkins: {
+        Row: {
+          checked_in_at: string
+          checked_in_by_member_id: string
+          event_id: string
+          id: string
+          ticket_id: string
+        }
+        Insert: {
+          checked_in_at?: string
+          checked_in_by_member_id: string
+          event_id: string
+          id?: string
+          ticket_id: string
+        }
+        Update: {
+          checked_in_at?: string
+          checked_in_by_member_id?: string
+          event_id?: string
+          id?: string
+          ticket_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ticket_checkins_checked_in_by_member_id_fkey"
+            columns: ["checked_in_by_member_id"]
+            isOneToOne: false
+            referencedRelation: "members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ticket_checkins_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "ticket_events"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ticket_checkins_ticket_id_fkey"
+            columns: ["ticket_id"]
+            isOneToOne: true
+            referencedRelation: "tickets"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      ticket_customers: {
+        Row: {
+          auth_user_id: string
+          avatar_url: string | null
+          created_at: string
+          display_name: string | null
+          email: string
+          updated_at: string
+        }
+        Insert: {
+          auth_user_id: string
+          avatar_url?: string | null
+          created_at?: string
+          display_name?: string | null
+          email: string
+          updated_at?: string
+        }
+        Update: {
+          auth_user_id?: string
+          avatar_url?: string | null
+          created_at?: string
+          display_name?: string | null
+          email?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      ticket_event_staff: {
+        Row: {
+          created_at: string
+          created_by_member_id: string
+          event_id: string
+          member_id: string
+          role: Database["public"]["Enums"]["ticket_staff_role"]
+        }
+        Insert: {
+          created_at?: string
+          created_by_member_id: string
+          event_id: string
+          member_id: string
+          role: Database["public"]["Enums"]["ticket_staff_role"]
+        }
+        Update: {
+          created_at?: string
+          created_by_member_id?: string
+          event_id?: string
+          member_id?: string
+          role?: Database["public"]["Enums"]["ticket_staff_role"]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ticket_event_staff_created_by_member_id_fkey"
+            columns: ["created_by_member_id"]
+            isOneToOne: false
+            referencedRelation: "members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ticket_event_staff_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "ticket_events"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ticket_event_staff_member_id_fkey"
+            columns: ["member_id"]
+            isOneToOne: false
+            referencedRelation: "members"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      ticket_events: {
+        Row: {
+          capacity: number
+          contact_text: string | null
+          created_at: string
+          created_by_member_id: string
+          ends_at: string | null
+          id: string
+          max_per_order: number
+          payment_due_minutes: number
+          performance_entity_id: string
+          refund_policy: string | null
+          sales_close_at: string | null
+          sales_open_at: string | null
+          slug: string
+          starts_at: string
+          status: Database["public"]["Enums"]["ticket_event_status"]
+          updated_at: string
+          venue_address: string | null
+          venue_name: string
+        }
+        Insert: {
+          capacity: number
+          contact_text?: string | null
+          created_at?: string
+          created_by_member_id: string
+          ends_at?: string | null
+          id?: string
+          max_per_order?: number
+          payment_due_minutes?: number
+          performance_entity_id: string
+          refund_policy?: string | null
+          sales_close_at?: string | null
+          sales_open_at?: string | null
+          slug: string
+          starts_at: string
+          status?: Database["public"]["Enums"]["ticket_event_status"]
+          updated_at?: string
+          venue_address?: string | null
+          venue_name: string
+        }
+        Update: {
+          capacity?: number
+          contact_text?: string | null
+          created_at?: string
+          created_by_member_id?: string
+          ends_at?: string | null
+          id?: string
+          max_per_order?: number
+          payment_due_minutes?: number
+          performance_entity_id?: string
+          refund_policy?: string | null
+          sales_close_at?: string | null
+          sales_open_at?: string | null
+          slug?: string
+          starts_at?: string
+          status?: Database["public"]["Enums"]["ticket_event_status"]
+          updated_at?: string
+          venue_address?: string | null
+          venue_name?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ticket_events_created_by_member_id_fkey"
+            columns: ["created_by_member_id"]
+            isOneToOne: false
+            referencedRelation: "members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ticket_events_performance_entity_id_fkey"
+            columns: ["performance_entity_id"]
+            isOneToOne: true
+            referencedRelation: "entities"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      ticket_order_items: {
+        Row: {
+          created_at: string
+          id: string
+          line_total: number
+          order_id: string
+          quantity: number
+          ticket_type_id: string
+          unit_price: number
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          line_total: number
+          order_id: string
+          quantity: number
+          ticket_type_id: string
+          unit_price: number
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          line_total?: number
+          order_id?: string
+          quantity?: number
+          ticket_type_id?: string
+          unit_price?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ticket_order_items_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "ticket_orders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ticket_order_items_ticket_type_id_fkey"
+            columns: ["ticket_type_id"]
+            isOneToOne: false
+            referencedRelation: "ticket_types"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      ticket_orders: {
+        Row: {
+          buyer_email: string | null
+          buyer_name: string
+          buyer_phone: string | null
+          buyer_user_id: string | null
+          cancelled_at: string | null
+          cancelled_by_member_id: string | null
+          channel: Database["public"]["Enums"]["ticket_order_channel"]
+          confirmed_at: string | null
+          confirmed_by_member_id: string | null
+          created_at: string
+          depositor_name: string | null
+          event_id: string
+          id: string
+          order_number: string
+          paid_reported_at: string | null
+          payment_due_at: string | null
+          quantity: number
+          status: Database["public"]["Enums"]["ticket_order_status"]
+          total_amount: number
+          updated_at: string
+        }
+        Insert: {
+          buyer_email?: string | null
+          buyer_name: string
+          buyer_phone?: string | null
+          buyer_user_id?: string | null
+          cancelled_at?: string | null
+          cancelled_by_member_id?: string | null
+          channel?: Database["public"]["Enums"]["ticket_order_channel"]
+          confirmed_at?: string | null
+          confirmed_by_member_id?: string | null
+          created_at?: string
+          depositor_name?: string | null
+          event_id: string
+          id?: string
+          order_number: string
+          paid_reported_at?: string | null
+          payment_due_at?: string | null
+          quantity: number
+          status?: Database["public"]["Enums"]["ticket_order_status"]
+          total_amount: number
+          updated_at?: string
+        }
+        Update: {
+          buyer_email?: string | null
+          buyer_name?: string
+          buyer_phone?: string | null
+          buyer_user_id?: string | null
+          cancelled_at?: string | null
+          cancelled_by_member_id?: string | null
+          channel?: Database["public"]["Enums"]["ticket_order_channel"]
+          confirmed_at?: string | null
+          confirmed_by_member_id?: string | null
+          created_at?: string
+          depositor_name?: string | null
+          event_id?: string
+          id?: string
+          order_number?: string
+          paid_reported_at?: string | null
+          payment_due_at?: string | null
+          quantity?: number
+          status?: Database["public"]["Enums"]["ticket_order_status"]
+          total_amount?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ticket_orders_cancelled_by_member_id_fkey"
+            columns: ["cancelled_by_member_id"]
+            isOneToOne: false
+            referencedRelation: "members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ticket_orders_confirmed_by_member_id_fkey"
+            columns: ["confirmed_by_member_id"]
+            isOneToOne: false
+            referencedRelation: "members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ticket_orders_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "ticket_events"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      ticket_payment_settings: {
+        Row: {
+          account_holder: string
+          account_number: string
+          bank_name: string
+          created_at: string
+          event_id: string
+          transfer_note: string | null
+          updated_at: string
+        }
+        Insert: {
+          account_holder: string
+          account_number: string
+          bank_name: string
+          created_at?: string
+          event_id: string
+          transfer_note?: string | null
+          updated_at?: string
+        }
+        Update: {
+          account_holder?: string
+          account_number?: string
+          bank_name?: string
+          created_at?: string
+          event_id?: string
+          transfer_note?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ticket_payment_settings_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: true
+            referencedRelation: "ticket_events"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      ticket_types: {
+        Row: {
+          active: boolean
+          created_at: string
+          description: string | null
+          event_id: string
+          id: string
+          inventory_limit: number | null
+          kind: Database["public"]["Enums"]["ticket_kind"]
+          name: string
+          price_won: number
+          public_sale: boolean
+          sort_order: number
+          updated_at: string
+        }
+        Insert: {
+          active?: boolean
+          created_at?: string
+          description?: string | null
+          event_id: string
+          id?: string
+          inventory_limit?: number | null
+          kind?: Database["public"]["Enums"]["ticket_kind"]
+          name: string
+          price_won?: number
+          public_sale?: boolean
+          sort_order?: number
+          updated_at?: string
+        }
+        Update: {
+          active?: boolean
+          created_at?: string
+          description?: string | null
+          event_id?: string
+          id?: string
+          inventory_limit?: number | null
+          kind?: Database["public"]["Enums"]["ticket_kind"]
+          name?: string
+          price_won?: number
+          public_sale?: boolean
+          sort_order?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ticket_types_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "ticket_events"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      tickets: {
+        Row: {
+          checked_in_at: string | null
+          checked_in_by_member_id: string | null
+          created_at: string
+          event_id: string
+          holder_name: string
+          id: string
+          issued_at: string
+          order_id: string
+          qr_token: string
+          serial_code: string
+          status: Database["public"]["Enums"]["ticket_status"]
+          ticket_type_id: string
+          voided_at: string | null
+        }
+        Insert: {
+          checked_in_at?: string | null
+          checked_in_by_member_id?: string | null
+          created_at?: string
+          event_id: string
+          holder_name: string
+          id?: string
+          issued_at?: string
+          order_id: string
+          qr_token?: string
+          serial_code: string
+          status?: Database["public"]["Enums"]["ticket_status"]
+          ticket_type_id: string
+          voided_at?: string | null
+        }
+        Update: {
+          checked_in_at?: string | null
+          checked_in_by_member_id?: string | null
+          created_at?: string
+          event_id?: string
+          holder_name?: string
+          id?: string
+          issued_at?: string
+          order_id?: string
+          qr_token?: string
+          serial_code?: string
+          status?: Database["public"]["Enums"]["ticket_status"]
+          ticket_type_id?: string
+          voided_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tickets_checked_in_by_member_id_fkey"
+            columns: ["checked_in_by_member_id"]
+            isOneToOne: false
+            referencedRelation: "members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tickets_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "ticket_events"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tickets_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "ticket_orders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tickets_ticket_type_id_fkey"
+            columns: ["ticket_type_id"]
+            isOneToOne: false
+            referencedRelation: "ticket_types"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      approve_ticket_order: {
+        Args: { p_order_id: string }
+        Returns: number
+      }
+      cancel_ticket_order: {
+        Args: { p_order_id: string }
+        Returns: undefined
+      }
+      check_in_ticket: {
+        Args: { p_event_id: string; p_qr_token: string }
+        Returns: {
+          checked_in_at: string | null
+          holder_name: string | null
+          order_number: string | null
+          result: string
+          serial_code: string | null
+          ticket_id: string | null
+        }[]
+      }
+      create_ticket_event: {
+        Args: {
+          p_account_holder: string
+          p_account_number: string
+          p_bank_name: string
+          p_capacity: number
+          p_contact_text: string
+          p_ends_at: string | null
+          p_max_per_order: number
+          p_payment_due_minutes: number
+          p_poster_url: string
+          p_refund_policy: string
+          p_sales_close_at: string | null
+          p_sales_open_at: string | null
+          p_slug: string
+          p_starts_at: string
+          p_status: Database["public"]["Enums"]["ticket_event_status"]
+          p_summary: string
+          p_ticket_name: string
+          p_ticket_price_won: number
+          p_title: string
+          p_transfer_note: string
+          p_venue_address: string
+          p_venue_name: string
+        }
+        Returns: string
+      }
+      create_ticket_order: {
+        Args: {
+          p_buyer_name: string
+          p_buyer_phone: string
+          p_depositor_name: string
+          p_event_id: string
+          p_quantity: number
+          p_ticket_type_id: string
+        }
+        Returns: string
+      }
+      get_ticket_event_availability: {
+        Args: { p_event_id: string }
+        Returns: {
+          capacity: number
+          remaining: number
+          reserved: number
+        }[]
+      }
+      report_ticket_order_paid: {
+        Args: { p_order_id: string }
+        Returns: undefined
+      }
+      update_ticket_event_status: {
+        Args: {
+          p_event_id: string
+          p_status: Database["public"]["Enums"]["ticket_event_status"]
+        }
+        Returns: undefined
+      }
     }
     Enums: {
       member_role: "member" | "admin"
       member_status: "inactive" | "active" | "alumni"
+      ticket_event_status:
+        | "draft"
+        | "published"
+        | "sales_open"
+        | "sales_closed"
+        | "ended"
+        | "cancelled"
+      ticket_kind: "paid" | "complimentary"
+      ticket_order_channel: "online" | "onsite" | "performer" | "admin_invite"
+      ticket_order_status:
+        | "pending_payment"
+        | "payment_review"
+        | "confirmed"
+        | "cancelled"
+        | "expired"
+        | "refunded"
+      ticket_staff_role: "manager" | "door" | "viewer"
+      ticket_status: "issued" | "checked_in" | "void"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -506,6 +1100,26 @@ export const Constants = {
     Enums: {
       member_role: ["member", "admin"],
       member_status: ["inactive", "active", "alumni"],
+      ticket_event_status: [
+        "draft",
+        "published",
+        "sales_open",
+        "sales_closed",
+        "ended",
+        "cancelled",
+      ],
+      ticket_kind: ["paid", "complimentary"],
+      ticket_order_channel: ["online", "onsite", "performer", "admin_invite"],
+      ticket_order_status: [
+        "pending_payment",
+        "payment_review",
+        "confirmed",
+        "cancelled",
+        "expired",
+        "refunded",
+      ],
+      ticket_staff_role: ["manager", "door", "viewer"],
+      ticket_status: ["issued", "checked_in", "void"],
     },
   },
 } as const

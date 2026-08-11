@@ -67,6 +67,8 @@ export default async function MyPage({ searchParams }: MyPageProps) {
     .eq("auth_user_id", user.id)
     .maybeSingle()
 
+  if (!member) redirect("/tickets")
+
   return (
     <main className="relative min-h-[calc(100vh-4rem)] overflow-hidden">
       <div className="pointer-events-none absolute inset-0 -z-10">
@@ -100,24 +102,7 @@ export default async function MyPage({ searchParams }: MyPageProps) {
         </div>
 
         <div>
-          {!member ? (
-            <Card className="max-w-2xl rounded-md border bg-card/95 shadow-xl">
-              <CardHeader>
-                <CardTitle className="font-serif-kr text-3xl">
-                  아직 연결된 프로필이 없습니다
-                </CardTitle>
-                <CardDescription>
-                  가입할 때 입력한 이름과 학번으로 찾은 멤버가 없습니다.
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <p className="rounded-md bg-muted/50 px-4 py-3 text-sm text-muted-foreground">
-                  Signed in as {user.email}
-                </p>
-              </CardContent>
-            </Card>
-          ) : (
-            <div className="grid grid-cols-1 gap-6 lg:grid-cols-12">
+          <div className="grid grid-cols-1 gap-6 lg:grid-cols-12">
               <Card className="gap-0 overflow-hidden rounded-md border bg-card/95 py-0 shadow-xl lg:col-span-4">
                 <CardHeader className="border-b px-6 py-6">
                   <CardTitle className="font-serif-kr text-4xl leading-tight">
@@ -276,9 +261,7 @@ export default async function MyPage({ searchParams }: MyPageProps) {
                   </form>
                 </CardContent>
               </Card>
-
-            </div>
-          )}
+          </div>
         </div>
       </section>
     </main>

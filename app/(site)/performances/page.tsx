@@ -2,6 +2,7 @@ import type { Metadata } from "next"
 import { notFound } from "next/navigation"
 import { PerformancesSection } from "@/components/performances-section"
 import { loadPerformancePage } from "@/lib/data/content-graph"
+import { loadPublicTicketEvents } from "@/lib/tickets/data"
 
 export const metadata: Metadata = {
   title: "공연 | 브레멘 Bremen",
@@ -9,7 +10,10 @@ export const metadata: Metadata = {
 }
 
 export default async function PerformancesPage() {
-  const content = await loadPerformancePage()
+  const [content, ticketEvents] = await Promise.all([
+    loadPerformancePage(),
+    loadPublicTicketEvents(),
+  ])
   const sectionKeys = new Set(content?.sections.map((section) => section.key))
   const hasRequiredSections = [
     "performances-archive",
@@ -26,6 +30,7 @@ export default async function PerformancesPage() {
       page={content.page}
       sections={content.sections}
       playlists={content.playlists}
+      ticketEvents={ticketEvents}
     />
   )
 }
