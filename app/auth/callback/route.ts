@@ -14,13 +14,23 @@ function safeNextPath(raw: string | null) {
 }
 
 function errorRedirect(requestUrl: URL, next: string) {
-  const fallbackPath = next === "/reset-password" ? "/forgot-password" : "/login"
+  const isTicketFlow =
+    next === "/tickets" ||
+    next.startsWith("/tickets?") ||
+    (next.startsWith("/performances/") && next.includes("/reserve"))
+  const fallbackPath =
+    next === "/reset-password"
+      ? "/forgot-password"
+      : isTicketFlow
+        ? "/tickets/login"
+        : "/login"
   const message =
     next === "/reset-password"
       ? passwordRecoveryExpiredMessage
       : invalidAuthLinkMessage
   const redirectUrl = new URL(fallbackPath, requestUrl.origin)
   redirectUrl.searchParams.set("error", message)
+  if (isTicketFlow) redirectUrl.searchParams.set("next", next)
   return NextResponse.redirect(redirectUrl)
 }
 
