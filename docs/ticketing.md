@@ -74,7 +74,7 @@ Wallet 패스는 같은 Next.js 프로젝트의 Node Route Handler에서 생성�
 
 ## 배포 순서
 
-1. `20260811000070_ticketing_google_oauth_mvp.sql`을 별도 Preview/로컬 Supabase에서 먼저 적용한다.
+1. `20260811000070_ticketing_google_oauth_mvp.sql`과 `20260812000071_tighten_ticket_rpc_execute_privileges.sql`을 별도 Preview/로컬 Supabase에서 순서대로 먼저 적용한다. 두 번째 마이그레이션은 공개 재고 조회를 제외한 티켓 RPC의 익명 실행 권한을 제거한다.
 2. 관리자 1명으로 작성 중 공연을 만들고 공개 페이지가 숨겨지는지 확인한다.
 3. `sales_open` 전환 후 Google 관객 계정으로 주문과 입금 완료 요청을 확인한다.
 4. 관리자가 입금을 승인하고 주문 수량만큼 QR이 발급되는지 확인한다.
