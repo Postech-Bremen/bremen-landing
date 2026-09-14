@@ -5,6 +5,7 @@ import {
   YoutubeLogo,
   Link as LinkIcon,
 } from "@phosphor-icons/react/dist/ssr"
+import Link from "next/link"
 import { Separator } from "@/components/ui/separator"
 
 export type FooterContactItem = {
@@ -114,7 +115,15 @@ export function Footer({ config }: { config: FooterConfig }) {
           <span className="tabular-nums">
             © {config.foundingYear} — {currentYear} {config.copyrightName}
           </span>
-          <span className="caps text-primary-foreground/60">{config.sinceLabel}</span>
+          <div className="flex flex-wrap items-center gap-x-5 gap-y-2">
+            <Link className="transition-colors hover:text-primary-foreground" href="/privacy">
+              개인정보처리방침
+            </Link>
+            <Link className="transition-colors hover:text-primary-foreground" href="/terms">
+              이용약관
+            </Link>
+            <span className="caps text-primary-foreground/60">{config.sinceLabel}</span>
+          </div>
         </div>
       </div>
     </footer>

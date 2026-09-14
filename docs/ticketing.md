@@ -41,7 +41,10 @@
 2. Google 클라이언트 ID와 secret을 Supabase Auth의 Google provider에 등록한다.
 3. Google 승인된 리디렉션 URI에 Supabase가 안내하는 `/auth/v1/callback` URL을 등록한다.
 4. Supabase Auth URL Configuration의 Site URL과 Redirect URLs에 로컬·Preview·Production의 `/auth/callback`을 허용한다.
-5. Google 로그인, 일반 관객의 `members` 미생성, 기존 멤버 로그인을 각각 확인한다.
+5. Google OAuth 브랜딩에 `https://bremen.postech.ac.kr`, `/privacy`, `/terms` URL을 등록하고 외부 사용자용 Production 상태로 게시한다.
+6. Google 로그인, 일반 관객의 `members` 미생성, 기존 멤버 로그인을 각각 확인한다.
+
+`/privacy`와 `/terms`는 현재 티켓 데이터 흐름을 기준으로 작성한 운영 초안이다. 실제 판매를 열기 전에 개인정보 보호·환불·취소 문구를 운영진이 검토한다.
 
 ## 티켓 이미지 저장과 공유
 
