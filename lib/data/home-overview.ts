@@ -269,13 +269,13 @@ export function buildHomeOverview({
   const upcomingEvents = performances
     .filter((performance) => performance.isoDate >= today)
     .sort((left, right) => left.isoDate.localeCompare(right.isoDate))
-    .slice(0, 2)
+    .slice(0, 3)
     .map((performance) => ({
       date: performance.date,
       year: performance.year,
       title: performance.title,
       location: performance.venue,
-      time: "TBA",
+      time: performance.eventTime ?? "TBA",
     }))
   const featuredVideo = homeCuration.heroVideo
   const stageHighlightSources = homeCuration.stageHighlights

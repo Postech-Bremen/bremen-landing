@@ -120,6 +120,7 @@ export type PerformanceArchiveItem = {
   date: string
   year: string
   isoDate: string
+  eventTime?: string
   venue: string
   type: PerformanceTypeLabel
   thumbnailUrl: string | null
@@ -1096,6 +1097,7 @@ function performanceFromEntity(entity: ContentEntityRow): PerformanceArchiveItem
     date: stringValue(data, "display_date") ?? formatMonthDay(isoDate),
     year,
     isoDate,
+    eventTime: stringValue(data, "event_time") ?? undefined,
     venue: stringValue(data, "venue") ?? "",
     type: performanceTypeLabel(stringValue(data, "type")),
     thumbnailUrl: entity.thumbnail_url,
