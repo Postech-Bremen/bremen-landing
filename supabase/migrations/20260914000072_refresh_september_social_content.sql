@@ -1379,13 +1379,6 @@ on conflict (slug) do update set
   thumbnail_url = excluded.thumbnail_url, sort_at = excluded.sort_at,
   data = public.entities.data || excluded.data;
 
--- Replace only the five home editorial picks; all original video entities remain.
-delete from public.entity_relations relation
-using public.entities section
-where relation.from_entity_id = section.id
-  and section.slug in ('section:home-hero', 'section:home-stage-highlights')
-  and relation.schema_id = (select id from public.entity_schemas where schema_key = 'relation/section-entity/v1' and active);
-
 do $relations$
 declare
   item record;
@@ -2510,7 +2503,8 @@ begin
     "sort_order": 10,
     "props": {
       "caption": "2026 1학기 정기공연 · 성시경 팀"
-    }
+    },
+    "previous_to_slug": "youtube-kvIgeZFp0gQ"
   },
   {
     "from_slug": "section:home-stage-highlights",
@@ -2519,7 +2513,8 @@ begin
     "relation_type": "item",
     "slot": "default",
     "sort_order": 10,
-    "props": {}
+    "props": {},
+    "previous_to_slug": "youtube-tR8bSxa4igQ"
   },
   {
     "from_slug": "section:videos-featured",
@@ -2537,7 +2532,8 @@ begin
     "relation_type": "item",
     "slot": "default",
     "sort_order": 20,
-    "props": {}
+    "props": {},
+    "previous_to_slug": "youtube-4r1PqeuEoyM"
   },
   {
     "from_slug": "section:videos-featured",
@@ -2555,7 +2551,8 @@ begin
     "relation_type": "item",
     "slot": "default",
     "sort_order": 30,
-    "props": {}
+    "props": {},
+    "previous_to_slug": "youtube-8c6Q_bu76m8"
   },
   {
     "from_slug": "section:videos-featured",
@@ -2573,7 +2570,8 @@ begin
     "relation_type": "item",
     "slot": "default",
     "sort_order": 40,
-    "props": {}
+    "props": {},
+    "previous_to_slug": "youtube-ZA0pnBAXX1A"
   },
   {
     "from_slug": "section:videos-featured",
@@ -2585,13 +2583,21 @@ begin
     "props": {}
   }
 ]$links$::jsonb)
-    as x(from_slug text, to_slug text, schema_key text, relation_type text, slot text, sort_order integer, props jsonb)
+    as x(from_slug text, to_slug text, schema_key text, relation_type text, slot text, sort_order integer, props jsonb, previous_to_slug text)
   loop
     select id into from_id from public.entities where slug = item.from_slug;
     select id into to_id from public.entities where slug = item.to_slug;
     select id into relation_schema_id from public.entity_schemas where schema_key = item.schema_key and active;
     if from_id is null or to_id is null or relation_schema_id is null then
       raise exception 'Missing graph reference: % -> %', item.from_slug, item.to_slug;
+    end if;
+    -- Retarget existing homepage picks while preserving their CMS relation ids.
+    if item.previous_to_slug is not null then
+      update public.entity_relations relation set to_entity_id = to_id
+      where relation.from_entity_id = from_id
+        and relation.to_entity_id = (select id from public.entities where slug = item.previous_to_slug)
+        and relation.schema_id = relation_schema_id
+        and relation.relation_type = item.relation_type and relation.slot = item.slot;
     end if;
     insert into public.entity_relations (from_entity_id, to_entity_id, schema_id, relation_type, slot, sort_order, props)
     values (from_id, to_id, relation_schema_id, item.relation_type, item.slot, item.sort_order, item.props)
