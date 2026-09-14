@@ -17,6 +17,13 @@ node scripts/scrape-instagram-feed.mjs postech.bremen /tmp/bremen_instagram_feed
 
 Use enough pages to capture the full feed snapshot. `generate-instagram-feed-migration.mjs` rewires Instagram source relations from the supplied feed, so a partial feed can drop older performance relations.
 
+If Instagram requires login, inspect the public profile and posts through the
+existing browser session. Record the canonical post URL, caption, publication
+date, and observed image URL. Use an additive migration for a partial snapshot;
+do not run the full-feed replacement generator with only the latest posts.
+Collaborative posts can use another account's canonical URL when they appear on
+the official Bremen profile.
+
 4. Upload public thumbnails to the `images` bucket:
 
 ```bash
@@ -37,13 +44,28 @@ curl -fsSL 'https://www.youtube.com/feeds/videos.xml?channel_id=UCmjgtZjgfeQwTXZ
 
 Use `https://www.youtube.com/@postech_bremen/playlists` to confirm new playlist ids and counts. If adding YouTube rows, upload thumbnails with `scripts/upload-seed-assets.mjs` and store `thumbnail_url` as the Supabase Storage public URL.
 
+RSS only contains the latest 15 uploads. Also inspect the channel's recent
+playlists: official Bremen playlists may link authorized concert recordings on
+other channels, such as `001 CLUB`. Preserve uploader attribution and verify
+the event from the original description or Instagram announcement. Treat
+playlist badges as hints; count the actual accessible recordings. Keep the
+upload timestamp separate from the performance's `event_date`.
+
 7. Add missing parent performance entities before inserting relations. Latest Instagram inference may emit new slugs such as `2026-haemaji` or `2026-spring-regular`; relation inserts silently skip rows when the parent entity is absent.
 8. Link new content through graph-native `entity_relations` only:
-   - performance to video/photo/post: `relation/default/v1`
+   - performance to video: `relation/default/v1`, `has_recording`, `default`
+   - playlist to video: `relation/default/v1`, `contains_video`, `default`
+   - performance to photo/post: `relation/default/v1`, `has_photo`/`has_post`
    - section to entity: `relation/section-entity/v1`
    - page to section: `relation/page-section/v1`
 
 Do not write removed `pages`, `sections`, `page_sections`, `section_entities`, `entity_type`, or content-row `schema_key` columns in new scripts or migrations.
+
+9. Refresh the homepage's `home-hero` and `home-stage-highlights` curation when
+   recent recordings should be featured. Store confirmed local performance
+   times as `entities.data.event_time` (`HH:mm`, Asia/Seoul). Check that all
+   upcoming dates and times appear on the home page, and that existing archive
+   entities and relations remain available after the refresh.
 
 ## Production Apply
 
