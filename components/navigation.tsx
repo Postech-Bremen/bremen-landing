@@ -29,7 +29,7 @@ export type NavigationConfig = {
   accountSignedOutHref: string
 }
 
-const accountPaths = ["/mypage", "/login", "/signup"]
+const accountPaths = ["/mypage", "/tickets", "/login", "/signup"]
 
 type NavigationProps = {
   isSignedIn?: boolean

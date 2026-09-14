@@ -15,6 +15,7 @@ import {
   LayoutDashboard,
   MessageSquareText,
   Music2,
+  Ticket,
   Users,
 } from "lucide-react"
 
@@ -75,6 +76,12 @@ const navGroups = [
   {
     label: "동아리 운영",
     items: [
+      {
+        href: "/ponix/tickets",
+        label: "공연 예매",
+        description: "공연 생성, 입금 확인, 티켓 발급과 현장 입장을 관리",
+        icon: Ticket,
+      },
       {
         href: "/ponix/members",
         label: "멤버 운영",

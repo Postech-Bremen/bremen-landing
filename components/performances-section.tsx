@@ -19,6 +19,7 @@ import {
   CarouselPrevious,
 } from "@/components/ui/carousel"
 import { Reveal } from "@/components/reveal"
+import { TicketEventStrip } from "@/components/ticket-event-strip"
 import {
   EditorialSectionHead,
   PageHero,
@@ -33,6 +34,7 @@ import type {
   PerformanceUpdateKind,
   PhotoArchiveItem,
 } from "@/lib/data/content-graph"
+import type { PublicTicketEvent } from "@/lib/tickets/data"
 
 const updateKindMeta: Record<
   PerformanceUpdateKind,
@@ -400,6 +402,7 @@ type PerformancesSectionProps = {
   page: ContentPageConfig
   sections: ContentSectionConfig[]
   playlists: PerformancePlaylistItem[]
+  ticketEvents?: PublicTicketEvent[]
   adminSectionControl?: AdminSectionControl
 }
 
@@ -407,6 +410,7 @@ export function PerformancesSection({
   page,
   sections,
   playlists,
+  ticketEvents = [],
   adminSectionControl,
 }: PerformancesSectionProps) {
   const playlistCount = playlists.length
@@ -452,6 +456,8 @@ export function PerformancesSection({
           </Button>
         }
       />
+
+      <TicketEventStrip events={ticketEvents} />
 
       {pageSections.map((section) => {
         const renderedSection = renderSection(section)

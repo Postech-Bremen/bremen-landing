@@ -36,7 +36,7 @@ function stringField(formData: FormData, key: string) {
   return typeof value === "string" ? value.trim() : ""
 }
 
-function redirectWithParams(path: string, params: Record<string, string>) {
+function redirectWithParams(path: string, params: Record<string, string>): never {
   const search = new URLSearchParams(params)
   redirect(`${path}?${search.toString()}`)
 }
@@ -163,6 +163,20 @@ function safeNextPath(raw: string) {
   return raw
 }
 
+function safeTicketNextPath(raw: string) {
+  const next = safeNextPath(raw || "/tickets")
+
+  if (next === "/tickets" || next.startsWith("/tickets?")) {
+    return next
+  }
+
+  if (next.startsWith("/performances/") && next.includes("/reserve")) {
+    return next
+  }
+
+  return "/tickets"
+}
+
 function revalidateAuthShell(targetPath: string) {
   revalidatePath("/", "layout")
   revalidatePath("/login")
@@ -194,6 +208,28 @@ export async function signInAction(formData: FormData) {
 
   revalidateAuthShell(next)
   redirect(next)
+}
+
+export async function googleTicketSignInAction(formData: FormData) {
+  const next = safeTicketNextPath(stringField(formData, "next"))
+  const headerStore = await headers()
+  const origin = headerStore.get("origin") ?? "http://localhost:3000"
+  const supabase = await createClient()
+  const { data, error } = await supabase.auth.signInWithOAuth({
+    provider: "google",
+    options: {
+      redirectTo: `${origin}/auth/callback?next=${encodeURIComponent(next)}`,
+    },
+  })
+
+  if (error || !data.url) {
+    redirectWithParams("/tickets/login", {
+      error: "Google 로그인을 시작하지 못했습니다. 잠시 후 다시 시도해 주세요.",
+      next,
+    })
+  }
+
+  redirect(data.url)
 }
 
 export async function requestPasswordResetAction(formData: FormData) {
@@ -309,6 +345,7 @@ export async function signUpAction(formData: FormData) {
     options: {
       emailRedirectTo: `${origin}/auth/callback?next=/mypage`,
       data: {
+        account_context: "member",
         name,
         student_year: studentYear,
       },
