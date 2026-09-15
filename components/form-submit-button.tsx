@@ -29,7 +29,9 @@ export function FormSubmitButton({
       {...props}
     >
       {pending && <Loader2 className="size-4 animate-spin" aria-hidden="true" />}
-      <span aria-live="polite">{pending ? pendingLabel : children}</span>
+      <span className="inline-flex items-center justify-center gap-2" aria-live="polite">
+        {pending ? pendingLabel : children}
+      </span>
     </Button>
   )
 }
