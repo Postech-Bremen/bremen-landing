@@ -17,7 +17,7 @@ import type { HomeOverview } from "@/components/home-section"
 import type { Database, Json } from "@/lib/supabase/types"
 import { createPublicClient } from "@/lib/supabase/public"
 import {
-  eventByKey,
+  compareVideosByRecent,
   thumbnailUrl as youtubeThumbnailUrl,
   type EventKey,
   type Video,
@@ -37,6 +37,8 @@ type ContentEntityRow = Pick<
   | "data"
   | "sort_at"
 >
+
+type PerformanceVideoMetadata = Map<string, { slug: string; eventDate: string }>
 
 const PAGE_SECTION_RELATION_SCHEMA_KEY = "relation/page-section/v1"
 const SECTION_ENTITY_RELATION_SCHEMA_KEY = "relation/section-entity/v1"
@@ -1129,16 +1131,20 @@ function performanceUpdateFromEntity(
 
 function videoFromEntity(
   entity: ContentEntityRow,
-  performanceSlugById: Map<string, string>,
+  performanceMetadata: PerformanceVideoMetadata,
 ): Video | null {
   const data = jsonObject(entity.data)
   const youtubeId = stringValue(data, "youtube_id")
   if (!youtubeId) return null
 
   const performanceId = stringValue(data, "performance_id")
+  const eventSlug = stringValue(data, "event_slug")
+  const performance =
+    performanceMetadata.get(eventSlug ?? "") ??
+    performanceMetadata.get(performanceId ?? "")
   const event =
-    stringValue(data, "event_slug") ||
-    (performanceId && performanceSlugById.get(performanceId)) ||
+    eventSlug ||
+    performance?.slug ||
     "recording"
   const parsedTitle = parseVideoTitle(entity.title)
 
@@ -1152,7 +1158,8 @@ function videoFromEntity(
     team: stringValue(data, "team") ?? parsedTitle.team,
     event: event as EventKey,
     eventLabel: stringValue(data, "event_title") ?? undefined,
-    eventOrder: numberValue(data, "source_index") ?? undefined,
+    eventDate: performance?.eventDate ?? stringValue(data, "event_date") ?? undefined,
+    sortAt: entity.sort_at,
     duration: stringValue(data, "duration") ?? "",
     views: numberValue(data, "views") ?? 0,
     highlight: booleanValue(data, "is_highlight") ?? false,
@@ -1364,9 +1371,9 @@ function homeStatType(value: string | null): HomeCurationStatItem["type"] {
 
 function homeVideoFromSectionItem(
   item: GraphSectionItem,
-  performanceSlugById: Map<string, string>,
+  performanceMetadata: PerformanceVideoMetadata,
 ): HomeCurationVideo | null {
-  const video = videoFromEntity(item.entity, performanceSlugById)
+  const video = videoFromEntity(item.entity, performanceMetadata)
   if (!video) return null
 
   const props = jsonObject(item.props)
@@ -1418,7 +1425,20 @@ function homeActivityFromSectionItem(
   }
 }
 
-async function loadPerformanceSlugsById(includeDrafts = false) {
+function performanceMetadataFromEntities(entities: ContentEntityRow[]) {
+  const metadata: PerformanceVideoMetadata = new Map()
+  for (const entity of entities) {
+    const performance = {
+      slug: entity.slug ?? entity.id,
+      eventDate: stringValue(jsonObject(entity.data), "event_date") ?? entity.sort_at.slice(0, 10),
+    }
+    metadata.set(entity.id, performance)
+    metadata.set(performance.slug, performance)
+  }
+  return metadata
+}
+
+async function loadPerformanceVideoMetadata(includeDrafts = false) {
   const page = includeDrafts
     ? await loadGraphPageUncached({ slug: "performances", includeDrafts: true })
     : await loadGraphPage("performances")
@@ -1426,7 +1446,7 @@ async function loadPerformanceSlugsById(includeDrafts = false) {
     .filter((item) => item.semanticKind === "performance")
     .map((item) => item.entity)
 
-  return new Map(entries.map((entity) => [entity.id, entity.slug ?? entity.id]))
+  return performanceMetadataFromEntities(entries)
 }
 
 async function loadHomeCurationUncached(): Promise<HomeCuration | null> {
@@ -1441,16 +1461,16 @@ async function homeCurationFromGraph(
   options: { includeDrafts?: boolean } = {},
 ): Promise<HomeCuration | null> {
   const sections = page.sections.map((section) => contentSectionFromGraph(section))
-  const performanceSlugById = await loadPerformanceSlugsById(
+  const performanceMetadata = await loadPerformanceVideoMetadata(
     Boolean(options.includeDrafts),
   )
   const heroVideo =
     sectionItems(page, "home-hero")
-      .map((item) => homeVideoFromSectionItem(item, performanceSlugById))
+      .map((item) => homeVideoFromSectionItem(item, performanceMetadata))
       .find((item): item is HomeCurationVideo => Boolean(item)) ?? null
 
   const stageHighlights = sectionItems(page, "home-stage-highlights")
-    .map((item) => homeVideoFromSectionItem(item, performanceSlugById))
+    .map((item) => homeVideoFromSectionItem(item, performanceMetadata))
     .filter((item): item is HomeCurationVideo => Boolean(item))
 
   const statItems = sectionItems(page, "home-stats")
@@ -1494,9 +1514,7 @@ async function loadPerformancePlaylistsFromPage(
     .map((entity) => performanceFromEntity(entity))
     .filter((item): item is PerformanceArchiveItem => Boolean(item))
   const performanceById = new Map(performanceItems.map((item) => [item.id, item]))
-  const performanceSlugById = new Map(
-    performanceEntities.map((entity) => [entity.id, entity.slug ?? entity.id]),
-  )
+  const performanceMetadata = performanceMetadataFromEntities(performanceEntities)
 
   try {
     const includeDrafts = Boolean(options.includeDrafts)
@@ -1563,7 +1581,7 @@ async function loadPerformancePlaylistsFromPage(
                   "video",
             ),
           )
-          .map((relatedEntity) => videoFromEntity(relatedEntity, performanceSlugById))
+          .map((relatedEntity) => videoFromEntity(relatedEntity, performanceMetadata))
           .filter((video): video is Video => Boolean(video))
 
         const photos = related
@@ -1657,36 +1675,32 @@ async function loadPerformanceUpdatesUncached() {
 
 function videosFromSectionItems(
   items: GraphSectionItem[],
-  performanceSlugById: Map<string, string>,
+  performanceMetadata: PerformanceVideoMetadata,
 ) {
   return items
-    .map((item) => videoFromEntity(item.entity, performanceSlugById))
+    .map((item) => videoFromEntity(item.entity, performanceMetadata))
     .filter((video): video is Video => Boolean(video))
 }
 
 function sortVideoArchive(recordings: Video[]) {
-  return recordings.sort((left, right) => {
-    const eventGap = eventByKey(left.event).order - eventByKey(right.event).order
-    if (eventGap !== 0) return eventGap
-    return right.views - left.views
-  })
+  return recordings.sort(compareVideosByRecent)
 }
 
 async function loadVideoPageUncached(): Promise<VideoPageContent | null> {
   const page = await loadGraphPage("videos")
   if (!page) return null
 
-  const performanceSlugById = await loadPerformanceSlugsById()
+  const performanceMetadata = await loadPerformanceVideoMetadata()
   const featuredVideos = videosFromSectionItems(
     sectionItems(page, "videos-featured"),
-    performanceSlugById,
+    performanceMetadata,
   )
   const popularVideos = videosFromSectionItems(
     sectionItems(page, "videos-popular"),
-    performanceSlugById,
+    performanceMetadata,
   )
   const libraryVideos = sortVideoArchive(
-    videosFromSectionItems(sectionItems(page, "videos-library"), performanceSlugById),
+    videosFromSectionItems(sectionItems(page, "videos-library"), performanceMetadata),
   )
 
   return {
@@ -1752,7 +1766,7 @@ export async function loadDraftPreviewPage(
   }
 
   if (page.page.slug === "videos") {
-    const performanceSlugById = await loadPerformanceSlugsById(true)
+    const performanceMetadata = await loadPerformanceVideoMetadata(true)
 
     return {
       kind: "videos",
@@ -1761,16 +1775,16 @@ export async function loadDraftPreviewPage(
       sections,
       featuredVideos: videosFromSectionItems(
         sectionItems(page, "videos-featured"),
-        performanceSlugById,
+        performanceMetadata,
       ),
       popularVideos: videosFromSectionItems(
         sectionItems(page, "videos-popular"),
-        performanceSlugById,
+        performanceMetadata,
       ),
       libraryVideos: sortVideoArchive(
         videosFromSectionItems(
           sectionItems(page, "videos-library"),
-          performanceSlugById,
+          performanceMetadata,
         ),
       ),
     }

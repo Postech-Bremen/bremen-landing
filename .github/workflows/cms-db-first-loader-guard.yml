@@ -7,6 +7,10 @@ on:
       - "app/ponix/**"
       - "app/ponix-canvas/**"
       - "lib/cms/**"
+      - "lib/data/content-graph.ts"
+      - "lib/data/videos.ts"
+      - "components/videos-section.tsx"
+      - "scripts/qa-video-library.mjs"
       - "scripts/qa-cms-db-first-loaders.mjs"
       - "scripts/qa-cms-legacy-bridge-boundary.mjs"
       - "package.json"
@@ -43,3 +47,6 @@ jobs:
 
       - name: Run CMS legacy bridge boundary guard
         run: pnpm run qa:cms-legacy-bridge-boundary
+
+      - name: Verify complete video library and chronological ordering
+        run: pnpm run qa:video-library
