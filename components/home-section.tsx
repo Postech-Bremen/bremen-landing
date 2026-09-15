@@ -467,28 +467,28 @@ export function HomeSection({
                 aria-hidden
                 className="absolute inset-0 -translate-x-full bg-foreground/[0.035] transition-transform duration-500 group-hover:translate-x-0"
               />
-              <div className="relative grid grid-cols-12 gap-6 py-7 items-center">
-                <div className="col-span-3 md:col-span-2">
+              <div className="relative grid grid-cols-[5rem_minmax(0,1fr)] items-center gap-4 px-4 py-6 md:grid-cols-[6rem_minmax(0,1fr)_auto] md:gap-6 md:px-6 md:py-7">
+                <div>
                   <p className="caps tabular-nums">{event.year}</p>
-                  <p className="font-serif italic tabular-nums text-4xl md:text-5xl mt-1 tracking-tight">
+                  <p className="mt-1 whitespace-nowrap font-serif text-4xl italic tabular-nums tracking-normal md:text-5xl">
                     {event.date}
                   </p>
                 </div>
-                <div className="col-span-9 md:col-span-7">
-                  <h3 className="font-serif-kr text-xl md:text-2xl">{event.title}</h3>
+                <div className="min-w-0">
+                  <h3 className="break-keep font-serif-kr text-xl leading-snug [overflow-wrap:anywhere] md:text-2xl">{event.title}</h3>
                   <div className="mt-2 flex flex-wrap items-center gap-x-5 gap-y-1 text-sm text-muted-foreground">
-                    <span className="inline-flex items-center gap-1.5">
-                      <MapPin weight="light" className="w-3.5 h-3.5" />
-                      {event.location}
+                    <span className="inline-flex min-w-0 items-center gap-1.5">
+                      <MapPin weight="light" className="h-3.5 w-3.5 shrink-0" />
+                      <span className="min-w-0 break-words">{event.location}</span>
                     </span>
                     <span className="inline-flex items-center gap-1.5 tabular-nums">
-                      <Clock weight="light" className="w-3.5 h-3.5" />
+                      <Clock weight="light" className="h-3.5 w-3.5 shrink-0" />
                       {event.time}
                     </span>
                   </div>
                 </div>
-                <div className="col-span-12 md:col-span-3 md:text-right">
-                  <CalendarBlank weight="light" className="hidden md:inline-block w-4 h-4 text-muted-foreground" />
+                <div aria-hidden="true" className="hidden md:block">
+                  <CalendarBlank weight="light" className="h-4 w-4 text-muted-foreground" />
                 </div>
               </div>
             </Reveal>
