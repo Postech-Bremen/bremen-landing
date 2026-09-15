@@ -17,7 +17,10 @@ export type Video = {
   team?: string
   event: EventKey
   eventLabel?: string
-  eventOrder?: number
+  /** Performance date, independent of the video's upload date. */
+  eventDate?: string
+  /** Existing archive timestamp for recordings without a performance date. */
+  sortAt?: string
   duration: string
   views: number
   /** 채널 highlights / 메인 영상 (커버 아닌 종합 영상) */
@@ -127,6 +130,24 @@ export function eventByKey(key: EventKey): Event {
     year: "",
     order: Number.MAX_SAFE_INTEGER,
   }
+}
+
+export function videoEventOrder(video: Video): number {
+  for (const value of [video.eventDate, video.sortAt]) {
+    if (!value) continue
+    const timestamp = Date.parse(value)
+    if (Number.isFinite(timestamp)) return -timestamp
+  }
+
+  return eventByKey(video.event).order
+}
+
+export function compareVideosByRecent(left: Video, right: Video): number {
+  return (
+    videoEventOrder(left) - videoEventOrder(right) ||
+    right.views - left.views ||
+    left.id.localeCompare(right.id)
+  )
 }
 
 export function videosByEvent(): Map<EventKey, Video[]> {

@@ -54,7 +54,9 @@ import type {
   ContentSectionConfig,
 } from "@/lib/data/content-graph"
 import {
+  compareVideosByRecent,
   eventByKey,
+  videoEventOrder,
   thumbnailUrl as youtubeThumbnailUrl,
   watchUrl,
   formatViews,
@@ -86,10 +88,6 @@ function videoWatchUrl(video: Video) {
 
 function videoEventLabel(video: Video) {
   return video.eventLabel ?? eventByKey(video.event).shortLabel
-}
-
-function videoEventOrder(video: Video) {
-  return video.eventOrder ?? eventByKey(video.event).order
 }
 
 function videoDisplayTitle(video: Video) {
@@ -126,9 +124,7 @@ function sortVideos(videos: Video[], sortBy: SortOption) {
       )
     }
 
-    const eventGap = videoEventOrder(left) - videoEventOrder(right)
-    if (eventGap !== 0) return eventGap
-    return right.views - left.views
+    return compareVideosByRecent(left, right)
   })
 }
 
@@ -753,9 +749,7 @@ export function VideosSection({
     featuredVideos[0]
   if (!featured) return null
 
-  const library = featured
-    ? [...sourceVideos].filter((video) => video.id !== featured.id)
-    : [...sourceVideos]
+  const library = sourceVideos
   const picks = popularVideos
     .filter((video) => video.id !== featured.id)
     .slice(0, 3)

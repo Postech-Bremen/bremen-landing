@@ -9,6 +9,7 @@
     "lint": "eslint .",
     "qa:auth-navigation-sync": "node scripts/qa-auth-navigation-sync.mjs",
     "qa:content-graph": "node scripts/qa-content-graph-integrity.mjs",
+    "qa:video-library": "node scripts/qa-video-library.mjs",
     "qa:cms-db-first-loaders": "node scripts/qa-cms-db-first-loaders.mjs",
     "qa:cms-schema-registry": "node scripts/qa-cms-schema-registry.mjs",
     "qa:cms-legacy-bridge-boundary": "node scripts/qa-cms-legacy-bridge-boundary.mjs",

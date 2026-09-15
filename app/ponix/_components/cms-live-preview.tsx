@@ -1102,7 +1102,8 @@ function videoFromEntity(entity: PreviewLinkedEntity): Video | null {
     team: stringOrUndefined(data.team) ?? parsed.team,
     event: (stringOrNull(data.event_slug) ?? "recording") as EventKey,
     eventLabel: stringOrUndefined(data.event_title),
-    eventOrder: numberOrUndefined(data.source_index),
+    eventDate: stringOrUndefined(data.event_date),
+    sortAt: entity.sortAt,
     duration: stringOrNull(data.duration) ?? "",
     views: numberOrNull(data.views) ?? 0,
     highlight: booleanOrNull(data.is_highlight) ?? false,
@@ -1358,10 +1359,6 @@ function numberOrNull(value: unknown) {
   }
 
   return null
-}
-
-function numberOrUndefined(value: unknown) {
-  return numberOrNull(value) ?? undefined
 }
 
 function booleanOrNull(value: unknown) {
