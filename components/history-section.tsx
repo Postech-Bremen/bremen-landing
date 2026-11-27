@@ -36,7 +36,7 @@ export function HistoryTimelineSurface({
       </Reveal>
 
       <ol className="border-t">
-        {milestones.map((item, index) => (
+        {[...milestones].sort((a, b) => b.year.localeCompare(a.year, "ko", { numeric: true })).map((item, index) => (
           <Reveal
             key={item.id}
             as="li"
