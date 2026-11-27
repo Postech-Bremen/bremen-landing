@@ -531,7 +531,7 @@ export function HomeSection({
                 <article
                   style={tiltStyle}
                   className={
-                    "stage-card activity-card group relative h-full overflow-hidden rounded-md border " +
+                    "stage-card group relative h-full overflow-hidden rounded-md border " +
                     "tilt-card hover:shadow-2xl " +
                     (isColor
                       ? "bg-accent text-accent-foreground border-transparent shadow-md"
